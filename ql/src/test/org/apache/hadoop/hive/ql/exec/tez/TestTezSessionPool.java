@@ -260,6 +260,43 @@ public class TestTezSessionPool {
     }
   }
 
+  @Test
+  public void testLlapDefaultSessionReuse() {
+    conf.setBoolVar(ConfVars.HIVE_SERVER2_ENABLE_DOAS, false);
+    conf.setVar(ConfVars.HIVE_SERVER2_TEZ_DEFAULT_QUEUES, "default,llap,llap0,llap1");
+    conf.setIntVar(ConfVars.HIVE_SERVER2_TEZ_SESSIONS_PER_DEFAULT_QUEUE, 1);
+    conf.setIntVar(HiveConf.ConfVars.HIVE_SERVER2_LLAP_CONCURRENT_QUERIES, 2);
+    conf.setBoolVar(ConfVars.HIVE_SERVER2_TEZ_PARALLEL_DEFAULT_SESSIONS_REUSE, true);
+    poolManager = new TestTezSessionPoolManager();
+    try {
+      poolManager.setupPool(conf);
+      poolManager.startPool();
+
+    } catch (Exception e) {
+      LOG.error("Initialization error", e);
+      fail();
+    }
+
+    TezSessionState session0 = null;
+    try {
+      // Given: a default session being used
+      session0 = poolManager.getSession(null, conf, true, true);
+      assertEquals("Session0 should be default", true, session0.isDefault());
+
+      // When: the same session is reused but hasn't been returned to the pool
+      TezSessionState session1 = poolManager.getSession(session0, conf, true, true);
+      assertEquals("Session1 should be default", true, session1.isDefault());
+
+      // Then: a new unused session should be returned from the pool
+      assertNotEquals("The new session should be a different session",
+          session1.getSessionId(), session0.getSessionId());
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail();
+    }
+  }
+
+
   public class SessionThread implements Runnable {
 
     private boolean llap = false;

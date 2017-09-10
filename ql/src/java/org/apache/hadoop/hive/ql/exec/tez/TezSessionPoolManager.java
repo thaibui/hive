@@ -447,8 +447,14 @@ public class TezSessionPoolManager extends TezSessionPoolSession.AbstractTrigger
       LOG.info("Current queue name is " + queueName + " incoming queue name is " + confQueueName);
       return (queueName == null) ? confQueueName == null : queueName.equals(confQueueName);
     } else {
-      // this session should never be a default session unless something has messed up.
-      throw new HiveException("The pool session " + session + " should have been returned to the pool"); 
+      boolean parallelDefaultSessionsReuse = conf.getBoolVar(ConfVars.HIVE_SERVER2_TEZ_PARALLEL_DEFAULT_SESSIONS_REUSE);
+      if (parallelDefaultSessionsReuse) {
+        LOG.info("Skipping a currently used session from user " + session.getUser());
+        return false;
+      } else {
+        // this session should never be a default session unless parallel default sessions reuse is turned on
+        throw new HiveException("The pool session " + session + " should have been returned to the pool");
+      }
     }
   }
 

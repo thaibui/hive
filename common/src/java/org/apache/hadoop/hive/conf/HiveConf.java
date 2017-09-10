@@ -3024,6 +3024,11 @@ public class HiveConf extends Configuration {
     HIVE_SERVER2_TEZ_QUEUE_ACCESS_CHECK("hive.server2.tez.queue.access.check", false,
         "Whether to check user access to explicitly specified YARN queues. " +
           "yarn.resourcemanager.webapp.address must be configured to use this."),
+    HIVE_SERVER2_TEZ_PARALLEL_DEFAULT_SESSIONS_REUSE("hive.server2.tez.parallel.default.sessions.reuse",
+        false,
+        "Whether to allow parallel default sessions reused. If the session is still being used\n" +
+        "(e.g. hasn't been returned to the pool), this session will be skipped and an unused\n" +
+        "session will be returned from the pool."),
     HIVE_SERVER2_TEZ_SESSION_LIFETIME("hive.server2.tez.session.lifetime", "162h",
         new TimeValidator(TimeUnit.HOURS),
         "The lifetime of the Tez sessions launched by HS2 when default sessions are enabled.\n" +
