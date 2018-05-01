@@ -97,7 +97,7 @@ STAGE PLANS:
             GatherStats: false
             Filter Operator
               isSamplingPred: false
-              predicate: (date is not null and dealid is not null and cityid is not null and userid is not null) (type: boolean)
+              predicate: (cityid is not null and date is not null and dealid is not null and userid is not null) (type: boolean)
               Statistics: Num rows: 1 Data size: 36 Basic stats: COMPLETE Column stats: NONE
               Select Operator
                 expressions: dealid (type: int), date (type: string), cityid (type: int), userid (type: int)
@@ -141,8 +141,9 @@ STAGE PLANS:
             input format: org.apache.hadoop.mapred.TextInputFormat
             output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns dealid,date,time,cityid,userid
               columns.comments 
@@ -162,8 +163,9 @@ STAGE PLANS:
               input format: org.apache.hadoop.mapred.TextInputFormat
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
-                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns dealid,date,time,cityid,userid
                 columns.comments 
@@ -277,8 +279,9 @@ STAGE PLANS:
             input format: org.apache.hadoop.mapred.TextInputFormat
             output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns dealid,date,time,cityid,userid
               columns.comments 
@@ -298,8 +301,9 @@ STAGE PLANS:
               input format: org.apache.hadoop.mapred.TextInputFormat
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
-                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns dealid,date,time,cityid,userid
                 columns.comments 
@@ -414,8 +418,9 @@ STAGE PLANS:
             input format: org.apache.hadoop.mapred.TextInputFormat
             output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns dealid,date,time,cityid,userid
               columns.comments 
@@ -435,8 +440,9 @@ STAGE PLANS:
               input format: org.apache.hadoop.mapred.TextInputFormat
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
-                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"cityid":"true","date":"true","dealid":"true","time":"true","userid":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns dealid,date,time,cityid,userid
                 columns.comments 
@@ -551,8 +557,9 @@ STAGE PLANS:
             input format: org.apache.hadoop.mapred.TextInputFormat
             output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"userid":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns userid
               columns.comments 
@@ -572,8 +579,9 @@ STAGE PLANS:
               input format: org.apache.hadoop.mapred.TextInputFormat
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
-                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+                COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"userid":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns userid
                 columns.comments 

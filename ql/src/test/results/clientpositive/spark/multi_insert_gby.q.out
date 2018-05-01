@@ -46,13 +46,14 @@ STAGE PLANS:
                   alias: src
                   Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((key > 500) or (key > 450)) (type: boolean)
+                    predicate: ((key > 450) or (key > 500)) (type: boolean)
                     Statistics: Num rows: 332 Data size: 3527 Basic stats: COMPLETE Column stats: NONE
                     Reduce Output Operator
                       key expressions: key (type: string)
                       sort order: +
                       Map-reduce partition columns: key (type: string)
                       Statistics: Num rows: 332 Data size: 3527 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Reducer 2 
             Reduce Operator Tree:
               Forward
@@ -111,7 +112,8 @@ STAGE PLANS:
               name: default.e1
 
   Stage: Stage-3
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-1
     Move Operator
@@ -124,7 +126,8 @@ STAGE PLANS:
               name: default.e2
 
   Stage: Stage-4
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM src
 INSERT OVERWRITE TABLE e1
@@ -241,6 +244,7 @@ STAGE PLANS:
                       sort order: +
                       Map-reduce partition columns: key (type: string)
                       Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Reducer 2 
             Reduce Operator Tree:
               Forward
@@ -296,7 +300,8 @@ STAGE PLANS:
               name: default.e2
 
   Stage: Stage-3
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-0
     Move Operator
@@ -309,7 +314,8 @@ STAGE PLANS:
               name: default.e1
 
   Stage: Stage-4
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM src
 INSERT OVERWRITE TABLE e1

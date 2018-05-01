@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -231,12 +231,12 @@ public class JoinOperator extends CommonJoinOperator<JoinDesc> implements Serial
         // Step1: rename tmp output folder to intermediate path. After this
         // point, updates from speculative tasks still writing to tmpPath
         // will not appear in finalPath.
-        log.info("Moving tmp dir: " + tmpPath + " to: " + intermediatePath);
+        Utilities.FILE_OP_LOGGER.info("Moving tmp dir: " + tmpPath + " to: " + intermediatePath + "(spec " + specPath + ")");
         Utilities.rename(fs, tmpPath, intermediatePath);
         // Step2: remove any tmp file or double-committed output files
-        Utilities.removeTempOrDuplicateFiles(fs, intermediatePath);
+        Utilities.removeTempOrDuplicateFiles(fs, intermediatePath, false);
         // Step3: move to the file destination
-        log.info("Moving tmp dir: " + intermediatePath + " to: " + specPath);
+        Utilities.FILE_OP_LOGGER.info("Moving tmp dir: " + intermediatePath + " to: " + specPath);
         Utilities.renameOrMoveFiles(fs, intermediatePath, specPath);
       }
     } else {

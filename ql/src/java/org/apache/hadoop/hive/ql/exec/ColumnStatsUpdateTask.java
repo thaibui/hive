@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -36,6 +36,7 @@ import org.apache.hadoop.hive.metastore.api.Date;
 import org.apache.hadoop.hive.metastore.api.Decimal;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.SetPartitionsStatsRequest;
+import org.apache.hadoop.hive.metastore.api.utils.DecimalUtils;
 import org.apache.hadoop.hive.metastore.columnstats.cache.DateColumnStatsDataInspector;
 import org.apache.hadoop.hive.metastore.columnstats.cache.DecimalColumnStatsDataInspector;
 import org.apache.hadoop.hive.metastore.columnstats.cache.DoubleColumnStatsDataInspector;
@@ -48,10 +49,8 @@ import org.apache.hadoop.hive.ql.QueryState;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.hive.ql.plan.ColumnStatsDesc;
 import org.apache.hadoop.hive.ql.plan.ColumnStatsUpdateWork;
 import org.apache.hadoop.hive.ql.plan.api.StageType;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,25 +77,22 @@ public class ColumnStatsUpdateTask extends Task<ColumnStatsUpdateWork> {
   private ColumnStatistics constructColumnStatsFromInput()
       throws SemanticException, MetaException {
 
-    String dbName = SessionState.get().getCurrentDatabase();
-    ColumnStatsDesc desc = work.getColStats();
-    String tableName = desc.getTableName();
+    String dbName = work.dbName();
+    String tableName = work.getTableName();
     String partName = work.getPartName();
-    List<String> colName = desc.getColName();
-    List<String> colType = desc.getColType();
+    String colName = work.getColName();
+    String columnType = work.getColType();
 
     ColumnStatisticsObj statsObj = new ColumnStatisticsObj();
 
     // grammar prohibits more than 1 column so we are guaranteed to have only 1
     // element in this lists.
 
-    statsObj.setColName(colName.get(0));
+    statsObj.setColName(colName);
 
-    statsObj.setColType(colType.get(0));
+    statsObj.setColType(columnType);
 
     ColumnStatisticsData statsData = new ColumnStatisticsData();
-
-    String columnType = colType.get(0);
 
     if (columnType.equalsIgnoreCase("long") || columnType.equalsIgnoreCase("tinyint")
         || columnType.equalsIgnoreCase("smallint") || columnType.equalsIgnoreCase("int")
@@ -231,11 +227,11 @@ public class ColumnStatsUpdateTask extends Task<ColumnStatsUpdateWork> {
           decimalStats.setNumDVs(Long.parseLong(value));
         } else if (fName.equals("lowValue")) {
           BigDecimal d = new BigDecimal(value);
-          decimalStats.setLowValue(new Decimal(ByteBuffer.wrap(d
+          decimalStats.setLowValue(DecimalUtils.getDecimal(ByteBuffer.wrap(d
               .unscaledValue().toByteArray()), (short) d.scale()));
         } else if (fName.equals("highValue")) {
           BigDecimal d = new BigDecimal(value);
-          decimalStats.setHighValue(new Decimal(ByteBuffer.wrap(d
+          decimalStats.setHighValue(DecimalUtils.getDecimal(ByteBuffer.wrap(d
               .unscaledValue().toByteArray()), (short) d.scale()));
         } else {
           throw new SemanticException("Unknown stat");
@@ -268,8 +264,7 @@ public class ColumnStatsUpdateTask extends Task<ColumnStatsUpdateWork> {
     } else {
       throw new SemanticException("Unsupported type");
     }
-    String [] names = Utilities.getDbTableName(dbName, tableName);
-    ColumnStatisticsDesc statsDesc = getColumnStatsDesc(names[0], names[1],
+    ColumnStatisticsDesc statsDesc = getColumnStatsDesc(dbName, tableName,
         partName, partName == null);
     ColumnStatistics colStat = new ColumnStatistics();
     colStat.setStatsDesc(statsDesc);
@@ -305,6 +300,7 @@ public class ColumnStatsUpdateTask extends Task<ColumnStatsUpdateWork> {
       Hive db = getHive();
       return persistColumnStats(db);
     } catch (Exception e) {
+      setException(e);
       LOG.info("Failed to persist stats in metastore", e);
     }
     return 1;
@@ -327,7 +323,7 @@ public class ColumnStatsUpdateTask extends Task<ColumnStatsUpdateWork> {
       return new Date(writableVal.getDays());
     } catch (IllegalArgumentException err) {
       // Fallback to integer parsing
-      LOG.debug("Reading date value as days since epoch: " + dateStr);
+      LOG.debug("Reading date value as days since epoch: {}", dateStr);
       return new Date(Long.parseLong(dateStr));
     }
   }

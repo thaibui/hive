@@ -53,6 +53,7 @@ STAGE PLANS:
                       Map-reduce partition columns: key (type: string)
                       Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
                       value expressions: substr(value, 5) (type: string)
+            Execution mode: vectorized
         Reducer 2 
             Reduce Operator Tree:
               Forward
@@ -105,7 +106,8 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-3
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-1
     Move Operator
@@ -118,7 +120,8 @@ STAGE PLANS:
               name: default.dest2
 
   Stage: Stage-4
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM SRC
 INSERT OVERWRITE TABLE DEST1 SELECT SRC.key, sum(SUBSTR(SRC.value,5)) GROUP BY SRC.key

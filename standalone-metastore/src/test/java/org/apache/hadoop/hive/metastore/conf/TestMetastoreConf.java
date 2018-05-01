@@ -17,13 +17,17 @@
  */
 package org.apache.hadoop.hive.metastore.conf;
 
+import org.apache.hadoop.hive.metastore.annotation.MetastoreUnitTest;
 import org.apache.hadoop.hive.metastore.conf.MetastoreConf.ConfVars;
 import org.apache.hadoop.conf.Configuration;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.core.StringContains;
+import org.hamcrest.core.StringEndsWith;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +40,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+@Category(MetastoreUnitTest.class)
 public class TestMetastoreConf {
 
   private static final Logger LOG = LoggerFactory.getLogger(TestMetastoreConf.class);
@@ -45,8 +50,9 @@ public class TestMetastoreConf {
 
   @After
   public void unsetProperties() {
+    MetastoreConf.setHiveSiteLocation(null);
     for (MetastoreConf.ConfVars var : MetastoreConf.dataNucleusAndJdoConfs) {
-      System.getProperties().remove(var.varname);
+      System.getProperties().remove(var.getVarname());
     }
   }
 
@@ -127,8 +133,8 @@ public class TestMetastoreConf {
     Assert.assertTrue(list.contains("c"));
     Assert.assertSame(TestClass1.class,
         MetastoreConf.getClass(conf, ConfVars.CLASS_TEST_ENTRY, TestClass1.class, Runnable.class));
-    Assert.assertEquals("defaultval", MetastoreConf.get(conf, ConfVars.STR_TEST_ENTRY.varname));
-    Assert.assertEquals("defaultval", MetastoreConf.get(conf, ConfVars.STR_TEST_ENTRY.hiveName));
+    Assert.assertEquals("defaultval", MetastoreConf.get(conf, ConfVars.STR_TEST_ENTRY.getVarname()));
+    Assert.assertEquals("defaultval", MetastoreConf.get(conf, ConfVars.STR_TEST_ENTRY.getHiveName()));
     Assert.assertEquals("defaultval", MetastoreConf.getAsString(conf, ConfVars.STR_TEST_ENTRY));
     Assert.assertEquals("42", MetastoreConf.getAsString(conf, ConfVars.LONG_TEST_ENTRY));
     Assert.assertEquals("3.141592654", MetastoreConf.getAsString(conf, ConfVars.DOUBLE_TEST_ENTRY));
@@ -143,7 +149,7 @@ public class TestMetastoreConf {
         "test.double", "1.8",
         "test.bool", "false",
         "test.time", "30s",
-        "test.str.list", "d,e",
+        "test.str.list", "d",
         "test.class", TestClass2.class.getName()
     ));
     conf = MetastoreConf.newMetastoreConf();
@@ -157,13 +163,12 @@ public class TestMetastoreConf {
     Assert.assertEquals(30000,
         MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY, TimeUnit.MILLISECONDS));
     Collection<String> list = MetastoreConf.getStringCollection(conf, ConfVars.STR_LIST_ENTRY);
-    Assert.assertEquals(2, list.size());
+    Assert.assertEquals(1, list.size());
     Assert.assertTrue(list.contains("d"));
-    Assert.assertTrue(list.contains("e"));
     Assert.assertSame(TestClass2.class,
         MetastoreConf.getClass(conf, ConfVars.CLASS_TEST_ENTRY, TestClass1.class, Runnable.class));
-    Assert.assertEquals("1.8", MetastoreConf.get(conf, ConfVars.DOUBLE_TEST_ENTRY.varname));
-    Assert.assertEquals("1.8", MetastoreConf.get(conf, ConfVars.DOUBLE_TEST_ENTRY.hiveName));
+    Assert.assertEquals("1.8", MetastoreConf.get(conf, ConfVars.DOUBLE_TEST_ENTRY.getVarname()));
+    Assert.assertEquals("1.8", MetastoreConf.get(conf, ConfVars.DOUBLE_TEST_ENTRY.getHiveName()));
     Assert.assertEquals("notthedefault", MetastoreConf.getAsString(conf, ConfVars.STR_TEST_ENTRY));
     Assert.assertEquals("37", MetastoreConf.getAsString(conf, ConfVars.LONG_TEST_ENTRY));
     Assert.assertEquals("1.8", MetastoreConf.getAsString(conf, ConfVars.DOUBLE_TEST_ENTRY));
@@ -179,7 +184,7 @@ public class TestMetastoreConf {
     Assert.assertEquals(24, MetastoreConf.getLongVar(conf, ConfVars.LONG_TEST_ENTRY));
   }
 
-  @Ignore // Ignore for now as Hive's tests create a hive-site.xml in the test directory
+  @Test
   public void readHiveSiteWithHiveConfDir() throws IOException {
     createConfFile("hive-site.xml", false, "HIVE_CONF_DIR", instaMap(
         "test.double", "1.8"
@@ -189,7 +194,7 @@ public class TestMetastoreConf {
         0.01);
   }
 
-  @Ignore // Ignore for now as Hive's tests create a hive-site.xml in the test directory
+  @Test
   public void readHiveSiteWithHiveHomeDir() throws IOException {
     createConfFile("hive-site.xml", true, "HIVE_HOME", instaMap(
         "test.bool", "false"
@@ -198,7 +203,7 @@ public class TestMetastoreConf {
     Assert.assertFalse(MetastoreConf.getBoolVar(conf, ConfVars.BOOLEAN_TEST_ENTRY));
   }
 
-  @Ignore // Ignore for now as Hive's tests create a hive-metastoresite.xml in the test directory
+  @Test
   public void readHiveMetastoreSiteWithHiveConfDir() throws IOException {
     createConfFile("hivemetastore-site.xml", false, "HIVE_CONF_DIR", instaMap(
         "test.double", "1.8"
@@ -208,7 +213,7 @@ public class TestMetastoreConf {
         0.01);
   }
 
-  @Ignore // Ignore for now as Hive's tests create a hive-metastoresite.xml in the test directory
+  @Test
   public void readHiveMetastoreSiteWithHiveHomeDir() throws IOException {
     createConfFile("hivemetastore-site.xml", true, "HIVE_HOME", instaMap(
         "test.bool", "false"
@@ -240,11 +245,11 @@ public class TestMetastoreConf {
   @Test
   public void valuesSetFromProperties() {
     try {
-      System.setProperty(MetastoreConf.ConfVars.STR_TEST_ENTRY.varname, "from-properties");
+      System.setProperty(MetastoreConf.ConfVars.STR_TEST_ENTRY.getVarname(), "from-properties");
       conf = MetastoreConf.newMetastoreConf();
       Assert.assertEquals("from-properties", MetastoreConf.getVar(conf, ConfVars.STR_TEST_ENTRY));
     } finally {
-      System.getProperties().remove(MetastoreConf.ConfVars.STR_TEST_ENTRY.varname);
+      System.getProperties().remove(MetastoreConf.ConfVars.STR_TEST_ENTRY.getVarname());
     }
   }
 
@@ -286,8 +291,8 @@ public class TestMetastoreConf {
     Assert.assertTrue(list.contains("j"));
     Assert.assertSame(TestClass2.class,
         MetastoreConf.getClass(conf, ConfVars.CLASS_TEST_ENTRY, TestClass1.class, Runnable.class));
-    Assert.assertEquals("3s", MetastoreConf.get(conf, ConfVars.TIME_TEST_ENTRY.varname));
-    Assert.assertEquals("3s", MetastoreConf.get(conf, ConfVars.TIME_TEST_ENTRY.hiveName));
+    Assert.assertEquals("3s", MetastoreConf.get(conf, ConfVars.TIME_TEST_ENTRY.getVarname()));
+    Assert.assertEquals("3s", MetastoreConf.get(conf, ConfVars.TIME_TEST_ENTRY.getHiveName()));
     Assert.assertEquals("hivedefault", MetastoreConf.getAsString(conf, ConfVars.STR_TEST_ENTRY));
     Assert.assertEquals("89", MetastoreConf.getAsString(conf, ConfVars.LONG_TEST_ENTRY));
     Assert.assertEquals("1.9", MetastoreConf.getAsString(conf, ConfVars.DOUBLE_TEST_ENTRY));
@@ -298,52 +303,52 @@ public class TestMetastoreConf {
   public void timeUnits() throws IOException {
     conf = MetastoreConf.newMetastoreConf();
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30s");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30s");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.SECONDS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30seconds");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30seconds");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.SECONDS));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30ms");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30ms");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MILLISECONDS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30msec");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30msec");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MILLISECONDS));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30us");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30us");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MICROSECONDS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30usec");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30usec");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MICROSECONDS));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30m");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30m");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MINUTES));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30minutes");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30minutes");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.MINUTES));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30ns");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30ns");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.NANOSECONDS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30nsec");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30nsec");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.NANOSECONDS));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30h");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30h");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.HOURS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30hours");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30hours");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.HOURS));
 
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30d");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30d");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.DAYS));
-    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.varname, "30days");
+    conf.set(MetastoreConf.ConfVars.TIME_TEST_ENTRY.getVarname(), "30days");
     Assert.assertEquals(30, MetastoreConf.getTimeVar(conf, ConfVars.TIME_TEST_ENTRY,
         TimeUnit.DAYS));
   }
@@ -398,9 +403,9 @@ public class TestMetastoreConf {
 
   @Test
   public void unprintable() {
-    Assert.assertTrue(MetastoreConf.isPrintable(ConfVars.STR_TEST_ENTRY.varname));
-    Assert.assertFalse(MetastoreConf.isPrintable(ConfVars.PWD.varname));
-    Assert.assertFalse(MetastoreConf.isPrintable(ConfVars.PWD.hiveName));
+    Assert.assertTrue(MetastoreConf.isPrintable(ConfVars.STR_TEST_ENTRY.getVarname()));
+    Assert.assertFalse(MetastoreConf.isPrintable(ConfVars.PWD.getVarname()));
+    Assert.assertFalse(MetastoreConf.isPrintable(ConfVars.PWD.getHiveName()));
   }
 
   @Test
@@ -411,4 +416,18 @@ public class TestMetastoreConf {
     Assert.assertEquals("abc", MetastoreConf.get(conf, "a.random.key"));
   }
 
+  @Test
+  public void dumpConfig() throws IOException {
+    createConfFile("metastore-site.xml", true, "METASTORE_HOME", instaMap(
+        "test.long", "23"
+    ));
+    conf = MetastoreConf.newMetastoreConf();
+    String dump = MetastoreConf.dumpConfig(conf);
+    Assert.assertThat(dump, new StringContains("Used metastore-site file: file:/"));
+    Assert.assertThat(dump, new StringContains("Key: <test.long> old hive key: <hive.test.long>  value: <23>"));
+    Assert.assertThat(dump, new StringContains("Key: <test.str> old hive key: <hive.test.str>  value: <defaultval>"));
+    Assert.assertThat(dump, new StringEndsWith("Finished MetastoreConf object.\n"));
+    // Make sure the hidden keys didn't get published
+    Assert.assertThat(dump, CoreMatchers.not(new StringContains(ConfVars.PWD.getVarname())));
+  }
 }

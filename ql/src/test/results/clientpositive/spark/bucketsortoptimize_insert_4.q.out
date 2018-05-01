@@ -154,7 +154,8 @@ STAGE PLANS:
               name: default.test_table3
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table3 PARTITION (ds = '1')
 SELECT a.key, a.key, concat(a.value, b.value) 
@@ -189,18 +190,7 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table3
 POSTHOOK: Input: default@test_table3@ds=1
 #### A masked pattern was here ####
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
-0	0	val_0val_0	1
 2	2	val_2val_2	1
-4	4	val_4val_4	1
-8	8	val_8val_8	1
 PREHOOK: query: select * from test_table3 tablesample (bucket 2 out of 2) s where ds = '1'
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table3
@@ -211,6 +201,16 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table3
 POSTHOOK: Input: default@test_table3@ds=1
 #### A masked pattern was here ####
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+0	0	val_0val_0	1
+4	4	val_4val_4	1
 5	5	val_5val_5	1
 5	5	val_5val_5	1
 5	5	val_5val_5	1
@@ -220,6 +220,7 @@ POSTHOOK: Input: default@test_table3@ds=1
 5	5	val_5val_5	1
 5	5	val_5val_5	1
 5	5	val_5val_5	1
+8	8	val_8val_8	1
 9	9	val_9val_9	1
 PREHOOK: query: DROP TABLE test_table3
 PREHOOK: type: DROPTABLE
@@ -345,7 +346,8 @@ STAGE PLANS:
               name: default.test_table3
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table3 PARTITION (ds = '1')
 SELECT a.key, a.value
@@ -391,6 +393,7 @@ POSTHOOK: Input: default@test_table3@ds=1
 2	val_2	1
 4	val_4	1
 8	val_8	1
+9	val_9	1
 PREHOOK: query: select * from test_table3 tablesample (bucket 2 out of 2) s where ds = '1'
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table3
@@ -410,7 +413,6 @@ POSTHOOK: Input: default@test_table3@ds=1
 5	val_5	1
 5	val_5	1
 5	val_5	1
-9	val_9	1
 PREHOOK: query: DROP TABLE test_table3
 PREHOOK: type: DROPTABLE
 PREHOOK: Input: default@test_table3

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -162,8 +162,12 @@ public class TableDesc implements Serializable, Cloneable {
 
   @Explain(displayName = "name", explainLevels = { Level.USER, Level.DEFAULT, Level.EXTENDED })
   public String getTableName() {
-    return properties
-        .getProperty(hive_metastoreConstants.META_TABLE_NAME);
+    return properties.getProperty(hive_metastoreConstants.META_TABLE_NAME);
+  }
+
+  @Explain(displayName = "name", explainLevels = { Level.USER, Level.DEFAULT, Level.EXTENDED })
+  public String getDbName() {
+    return properties.getProperty(hive_metastoreConstants.META_TABLE_DB);
   }
 
   @Explain(displayName = "input format")
@@ -178,6 +182,11 @@ public class TableDesc implements Serializable, Cloneable {
 
   public boolean isNonNative() {
     return (properties.getProperty(hive_metastoreConstants.META_TABLE_STORAGE) != null);
+  }
+
+  public int getBucketingVersion() {
+    return Utilities.getBucketingVersion(
+        properties.getProperty(hive_metastoreConstants.TABLE_BUCKETING_VERSION));
   }
 
   @Override
@@ -233,5 +242,12 @@ public class TableDesc implements Serializable, Cloneable {
     ret = ret && (jobProperties == null ? target.jobProperties == null :
       jobProperties.equals(target.jobProperties));
     return ret;
+  }
+
+  @Override
+  public String toString() {
+    return "TableDesc [inputFileFormatClass=" + inputFileFormatClass
+        + ", outputFileFormatClass=" + outputFileFormatClass + ", properties="
+        + properties + ", jobProperties=" + jobProperties + "]";
   }
 }

@@ -60,12 +60,10 @@ POSTHOOK: query: describe formatted exim_employee
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: importer@exim_employee
 # col_name            	data_type           	comment             
-	 	 
 emp_id              	int                 	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 emp_country         	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -75,6 +73,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numPartitions       	1                   
 	numRows             	0                   

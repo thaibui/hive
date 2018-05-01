@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,11 +32,13 @@ import java.util.Properties;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.FileUtils;
-import org.apache.hadoop.hive.common.ValidTxnList;
+import org.apache.hadoop.hive.common.ValidReaderWriteIdList;
+import org.apache.hadoop.hive.common.ValidWriteIdList;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.mr.ExecMapperContext;
 import org.apache.hadoop.hive.ql.io.AcidUtils;
@@ -76,6 +79,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 /**
  * FetchTask implementation.
@@ -106,7 +110,7 @@ public class FetchOperator implements Serializable {
 
   private transient Iterator<Path> iterPath;
   private transient Iterator<PartitionDesc> iterPartDesc;
-  private transient Iterator<FetchInputFormatSplit> iterSplits = Iterators.emptyIterator();
+  private transient Iterator<FetchInputFormatSplit> iterSplits = Collections.emptyIterator();
 
   private transient Path currPath;
   private transient PartitionDesc currDesc;
@@ -147,8 +151,9 @@ public class FetchOperator implements Serializable {
     initialize();
   }
 
-  public void setValidTxnList(String txnStr) {
-    job.set(ValidTxnList.VALID_TXNS_KEY, txnStr);
+  public void setValidWriteIdList(String writeIdStr) {
+    job.set(ValidWriteIdList.VALID_WRITEIDS_KEY, writeIdStr);
+    LOG.debug("FetchOperator set writeIdStr: " + writeIdStr);
   }
   private void initialize() throws HiveException {
     if (isStatReader) {
@@ -270,6 +275,10 @@ public class FetchOperator implements Serializable {
       }
       FileSystem fs = currPath.getFileSystem(job);
       if (fs.exists(currPath)) {
+        if (extractValidWriteIdList() != null &&
+            AcidUtils.isInsertOnlyTable(currDesc.getTableDesc().getProperties())) {
+          return true;
+        }
         for (FileStatus fStat : listStatusUnderPath(fs, currPath)) {
           if (fStat.getLen() > 0) {
             return true;
@@ -306,6 +315,7 @@ public class FetchOperator implements Serializable {
       if (splits == null) {
         return null;
       }
+
       if (!isPartitioned || convertedOI == null) {
         currSerDe = tableSerDe;
         ObjectConverter = null;
@@ -369,6 +379,12 @@ public class FetchOperator implements Serializable {
       Class<? extends InputFormat> formatter = currDesc.getInputFileFormatClass();
       Utilities.copyTableJobPropertiesToConf(currDesc.getTableDesc(), job);
       InputFormat inputFormat = getInputFormatFromCache(formatter, job);
+      String inputs = processCurrPathForMmWriteIds(inputFormat);
+      if (Utilities.FILE_OP_LOGGER.isTraceEnabled()) {
+        Utilities.FILE_OP_LOGGER.trace("Setting fetch inputs to " + inputs);
+      }
+      if (inputs == null) return null;
+      job.set("mapred.input.dir", inputs);
 
       InputSplit[] splits = inputFormat.getSplits(job, 1);
       FetchInputFormatSplit[] inputSplits = new FetchInputFormatSplit[splits.length];
@@ -386,6 +402,40 @@ public class FetchOperator implements Serializable {
       }
     }
     return null;
+  }
+
+  private String processCurrPathForMmWriteIds(InputFormat inputFormat) throws IOException {
+    if (inputFormat instanceof HiveInputFormat) {
+      return StringUtils.escapeString(currPath.toString()); // No need to process here.
+    }
+    ValidWriteIdList validWriteIdList;
+    if (AcidUtils.isInsertOnlyTable(currDesc.getTableDesc().getProperties())) {
+      validWriteIdList = extractValidWriteIdList();
+    } else {
+      validWriteIdList = null;  // non-MM case
+    }
+    if (validWriteIdList != null) {
+      Utilities.FILE_OP_LOGGER.info("Processing " + currDesc.getTableName() + " for MM paths");
+    }
+
+    Path[] dirs = HiveInputFormat.processPathsForMmRead(Lists.newArrayList(currPath), job, validWriteIdList);
+    if (dirs == null || dirs.length == 0) {
+      return null; // No valid inputs. This condition is logged inside the call.
+    }
+    StringBuffer str = new StringBuffer(StringUtils.escapeString(dirs[0].toString()));
+    for(int i = 1; i < dirs.length;i++) {
+      str.append(",").append(StringUtils.escapeString(dirs[i].toString()));
+    }
+    return str.toString();
+  }
+
+  private ValidWriteIdList extractValidWriteIdList() {
+    if (currDesc.getTableName() == null || !org.apache.commons.lang.StringUtils.isBlank(currDesc.getTableName())) {
+      String txnString = job.get(ValidWriteIdList.VALID_WRITEIDS_KEY);
+      LOG.debug("FetchOperator get writeIdStr: " + txnString);
+      return txnString == null ? new ValidReaderWriteIdList() : new ValidReaderWriteIdList(txnString);
+    }
+    return null;  // not fetching from a table directly but from a temp location
   }
 
   private FetchInputFormatSplit[] splitSampling(SplitSample splitSample,
@@ -544,7 +594,7 @@ public class FetchOperator implements Serializable {
       this.currPath = null;
       this.iterPath = null;
       this.iterPartDesc = null;
-      this.iterSplits = Iterators.emptyIterator();
+      this.iterSplits = Collections.emptyIterator();
     } catch (Exception e) {
       throw new HiveException("Failed with exception " + e.getMessage()
           + StringUtils.stringifyException(e));
@@ -699,7 +749,7 @@ public class FetchOperator implements Serializable {
       return inputFormat.getRecordReader(getInputSplit(), job, Reporter.NULL);
     }
   }
-  
+
   private static class FetchInputFormatSplitComparator implements Comparator<FetchInputFormatSplit> {
     @Override
     public int compare(FetchInputFormatSplit a, FetchInputFormatSplit b) {
@@ -710,5 +760,9 @@ public class FetchOperator implements Serializable {
       }
       return Long.signum(a.getLength() - b.getLength());
     }
+  }
+
+  public Configuration getJobConf() {
+    return job;
   }
 }

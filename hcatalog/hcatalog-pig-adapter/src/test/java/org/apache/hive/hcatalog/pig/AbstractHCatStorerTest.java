@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -35,7 +35,6 @@ import java.util.List;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hive.hcatalog.HcatTestUtils;
 import org.apache.hive.hcatalog.mapreduce.HCatBaseTest;
@@ -416,15 +415,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testPartColsInData() throws IOException, CommandNeedRetryException {
+  public void testPartColsInData() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int", "b string", driver, storageFormat);
 
-    driver.run("drop table junit_unparted");
-    String createTable =
-        "create table junit_unparted(a int) partitioned by (b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
     int LOOP_SIZE = 11;
     String[] input = new String[LOOP_SIZE];
     for (int i = 0; i < LOOP_SIZE; i++) {
@@ -456,15 +450,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   @Test
   public void testMultiPartColsInData() throws Exception {
 
-    driver.run("drop table employee");
-    String createTable =
-        "CREATE TABLE employee (emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING ) "
-            + " PARTITIONED BY (emp_country STRING , emp_state STRING ) STORED AS " + storageFormat;
-
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+    AbstractHCatLoaderTest.dropTable("employee", driver);
+    AbstractHCatLoaderTest.createTable("employee",
+        "emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING",
+        "emp_country STRING , emp_state STRING", driver, storageFormat);
 
     String[] inputData =
         { "111237\tKrishna\t01/01/1990\tM\tIN\tTN", "111238\tKalpana\t01/01/2000\tF\tIN\tKA",
@@ -512,13 +501,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   @Test
   public void testStoreInPartiitonedTbl() throws Exception {
 
-    driver.run("drop table junit_unparted");
-    String createTable =
-        "create table junit_unparted(a int) partitioned by (b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int", "b string",
+        driver, storageFormat);
+
     int LOOP_SIZE = 11;
     String[] input = new String[LOOP_SIZE];
     for (int i = 0; i < LOOP_SIZE; i++) {
@@ -552,15 +538,9 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testNoAlias() throws IOException, CommandNeedRetryException {
-    driver.run("drop table junit_parted");
-    String createTable =
-        "create table junit_parted(a int, b string) partitioned by (ds string) stored as "
-            + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testNoAlias() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_parted", driver);
+    AbstractHCatLoaderTest.createTable("junit_parted","a int, b string", "ds string", driver, storageFormat);
     PigServer server = new PigServer(ExecType.LOCAL);
     boolean errCaught = false;
     try {
@@ -602,20 +582,14 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testStoreMultiTables() throws IOException, CommandNeedRetryException {
+  public void testStoreMultiTables() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int, b string", null,
+        driver, storageFormat);
 
-    driver.run("drop table junit_unparted");
-    String createTable = "create table junit_unparted(a int, b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
-    driver.run("drop table junit_unparted2");
-    createTable = "create table junit_unparted2(a int, b string) stored as RCFILE";
-    retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+    AbstractHCatLoaderTest.dropTable("junit_unparted2", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted2","a int, b string", null,
+        driver, "RCFILE");
 
     int LOOP_SIZE = 3;
     String[] input = new String[LOOP_SIZE * LOOP_SIZE];
@@ -659,14 +633,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testStoreWithNoSchema() throws IOException, CommandNeedRetryException {
-
-    driver.run("drop table junit_unparted");
-    String createTable = "create table junit_unparted(a int, b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testStoreWithNoSchema() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int, b string", null,
+        driver, storageFormat);
 
     int LOOP_SIZE = 3;
     String[] input = new String[LOOP_SIZE * LOOP_SIZE];
@@ -699,14 +669,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testStoreWithNoCtorArgs() throws IOException, CommandNeedRetryException {
-
-    driver.run("drop table junit_unparted");
-    String createTable = "create table junit_unparted(a int, b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testStoreWithNoCtorArgs() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int, b string", null,
+        driver, storageFormat);
 
     int LOOP_SIZE = 3;
     String[] input = new String[LOOP_SIZE * LOOP_SIZE];
@@ -739,14 +705,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testEmptyStore() throws IOException, CommandNeedRetryException {
+  public void testEmptyStore() throws Exception {
 
-    driver.run("drop table junit_unparted");
-    String createTable = "create table junit_unparted(a int, b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int, b string", null, driver, storageFormat);
 
     int LOOP_SIZE = 3;
     String[] input = new String[LOOP_SIZE * LOOP_SIZE];
@@ -776,16 +738,12 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testBagNStruct() throws IOException, CommandNeedRetryException {
-    driver.run("drop table junit_unparted");
-    String createTable =
-        "create table junit_unparted(b string,a struct<a1:int>,  arr_of_struct array<string>, "
-            + "arr_of_struct2 array<struct<s1:string,s2:string>>,  arr_of_struct3 array<struct<s3:string>>) stored as "
-            + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testBagNStruct() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted",
+        "b string,a struct<a1:int>,  arr_of_struct array<string>, " +
+            "arr_of_struct2 array<struct<s1:string,s2:string>>,  arr_of_struct3 array<struct<s3:string>>",
+        null, driver, storageFormat);
 
     String[] inputData =
         new String[] { "zookeeper\t(2)\t{(pig)}\t{(pnuts,hdfs)}\t{(hadoop),(hcat)}",
@@ -822,16 +780,11 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testStoreFuncAllSimpleTypes() throws IOException, CommandNeedRetryException {
-
-    driver.run("drop table junit_unparted");
-    String createTable =
-        "create table junit_unparted(a int, b float, c double, d bigint, e string, h boolean, f binary, g binary) stored as "
-            + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testStoreFuncAllSimpleTypes() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted",
+        "a int, b float, c double, d bigint, e string, h boolean, f binary, g binary", null,
+        driver, storageFormat);
 
     int i = 0;
     String[] input = new String[3];
@@ -886,14 +839,10 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testStoreFuncSimple() throws IOException, CommandNeedRetryException {
-
-    driver.run("drop table junit_unparted");
-    String createTable = "create table junit_unparted(a int, b string) stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testStoreFuncSimple() throws Exception {
+    AbstractHCatLoaderTest.dropTable("junit_unparted", driver);
+    AbstractHCatLoaderTest.createTable("junit_unparted","a int, b string", null,
+        driver, storageFormat);
 
     int LOOP_SIZE = 3;
     String[] inputData = new String[LOOP_SIZE * LOOP_SIZE];
@@ -928,18 +877,11 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testDynamicPartitioningMultiPartColsInDataPartialSpec() throws IOException,
-      CommandNeedRetryException {
-
-    driver.run("drop table if exists employee");
-    String createTable =
-        "CREATE TABLE employee (emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING ) "
-            + " PARTITIONED BY (emp_country STRING , emp_state STRING ) STORED AS " + storageFormat;
-
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testDynamicPartitioningMultiPartColsInDataPartialSpec() throws Exception {
+    AbstractHCatLoaderTest.dropTable("employee", driver);
+    AbstractHCatLoaderTest.createTable("employee",
+        "emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING",
+        "emp_country STRING , emp_state STRING", driver, storageFormat);
 
     String[] inputData =
         { "111237\tKrishna\t01/01/1990\tM\tIN\tTN", "111238\tKalpana\t01/01/2000\tF\tIN\tKA",
@@ -968,18 +910,11 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testDynamicPartitioningMultiPartColsInDataNoSpec() throws IOException,
-      CommandNeedRetryException {
-
-    driver.run("drop table if exists employee");
-    String createTable =
-        "CREATE TABLE employee (emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING ) "
-            + " PARTITIONED BY (emp_country STRING , emp_state STRING ) STORED AS " + storageFormat;
-
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
+  public void testDynamicPartitioningMultiPartColsInDataNoSpec() throws Exception {
+    AbstractHCatLoaderTest.dropTable("employee", driver);
+    AbstractHCatLoaderTest.createTable("employee",
+        "emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING",
+        "emp_country STRING , emp_state STRING", driver, storageFormat);
 
     String[] inputData =
         { "111237\tKrishna\t01/01/1990\tM\tIN\tTN", "111238\tKalpana\t01/01/2000\tF\tIN\tKA",
@@ -1007,18 +942,12 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testDynamicPartitioningMultiPartColsNoDataInDataNoSpec() throws IOException,
-      CommandNeedRetryException {
+  public void testDynamicPartitioningMultiPartColsNoDataInDataNoSpec() throws Exception {
+    AbstractHCatLoaderTest.dropTable("employee", driver);
+    AbstractHCatLoaderTest.createTable("employee",
+        "emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING",
+        "emp_country STRING , emp_state STRING", driver, storageFormat);
 
-    driver.run("drop table if exists employee");
-    String createTable =
-        "CREATE TABLE employee (emp_id INT, emp_name STRING, emp_start_date STRING , emp_gender STRING ) "
-            + " PARTITIONED BY (emp_country STRING , emp_state STRING ) STORED AS " + storageFormat;
-
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
 
     String[] inputData = {};
     HcatTestUtils.createTestDataFile(INPUT_FILE_NAME, inputData);
@@ -1039,16 +968,11 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
   }
 
   @Test
-  public void testPartitionPublish() throws IOException, CommandNeedRetryException {
+  public void testPartitionPublish() throws Exception {
+    AbstractHCatLoaderTest.dropTable("ptn_fail", driver);
+    AbstractHCatLoaderTest.createTable("ptn_fail","a int, c string", "b string",
+        driver, storageFormat);
 
-    driver.run("drop table ptn_fail");
-    String createTable =
-        "create table ptn_fail(a int, c string) partitioned by (b string) stored as "
-            + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table.");
-    }
     int LOOP_SIZE = 11;
     String[] input = new String[LOOP_SIZE];
 
@@ -1065,7 +989,7 @@ public abstract class AbstractHCatStorerTest extends HCatBaseTest {
     server.executeBatch();
 
     String query = "show partitions ptn_fail";
-    retCode = driver.run(query).getResponseCode();
+    int retCode = driver.run(query).getResponseCode();
 
     if (retCode != 0) {
       throw new IOException("Error " + retCode + " running query " + query);

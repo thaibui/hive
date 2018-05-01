@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -39,7 +39,7 @@ import org.apache.hive.hcatalog.data.schema.HCatSchema;
  *   Don't use it to store data on the physical device.
  */
 @InterfaceAudience.Public
-@InterfaceStability.Evolving
+@InterfaceStability.Stable
 public abstract class HCatRecord implements HCatRecordable {
 
   public abstract Object get(String fieldName, HCatSchema recordSchema) throws HCatException;

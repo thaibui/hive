@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -172,7 +172,7 @@ public class UDFToByte extends UDF {
           return null;
         }
       try {
-        byteWritable.set(LazyByte.parseByte(i.getBytes(), 0, i.getLength(), 10));
+        byteWritable.set(LazyByte.parseByte(i.getBytes(), 0, i.getLength(), 10, true));
         return byteWritable;
       } catch (NumberFormatException e) {
         // MySQL returns 0 if the string is not a well-formed numeric value.

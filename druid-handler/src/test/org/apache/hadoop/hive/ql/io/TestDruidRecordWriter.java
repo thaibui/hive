@@ -116,7 +116,7 @@ public class TestDruidRecordWriter {
             DruidStorageHandlerUtils.DEFAULT_TIMESTAMP_COLUMN, DruidTable.DEFAULT_TIMESTAMP_COLUMN
     );
   }
-  // This test fails due to conflict of guava classes with hive-exec jar.
+  //Test is failing due to Guava dependency, Druid 0.13.0 should have less dependency on Guava
   @Ignore
   @Test
   public void testWrite() throws IOException, SegmentLoadingException {
@@ -144,13 +144,14 @@ public class TestDruidRecordWriter {
             new UniformGranularitySpec(
                     Granularities.DAY, Granularities.NONE, ImmutableList.of(INTERVAL_FULL)
             ),
+        null,
             objectMapper
     );
 
     IndexSpec indexSpec = new IndexSpec(new RoaringBitmapSerdeFactory(true), null, null, null);
     RealtimeTuningConfig tuningConfig = new RealtimeTuningConfig(null, null, null,
             temporaryFolder.newFolder(), null, null, null, null, indexSpec, null, 0, 0, null, null,
-            0L
+            0L, null
     );
     LocalFileSystem localFileSystem = FileSystem.getLocal(config);
     DataSegmentPusher dataSegmentPusher = new LocalDataSegmentPusher(
@@ -187,7 +188,7 @@ public class TestDruidRecordWriter {
     }
     druidRecordWriter.close(false);
     List<DataSegment> dataSegmentList = DruidStorageHandlerUtils
-            .getPublishedSegments(segmentDescriptroPath, config);
+            .getCreatedSegments(segmentDescriptroPath, config);
     Assert.assertEquals(1, dataSegmentList.size());
     File tmpUnzippedSegmentDir = temporaryFolder.newFolder();
     new LocalDataSegmentPuller().getSegmentFiles(dataSegmentList.get(0), tmpUnzippedSegmentDir);
@@ -198,6 +199,7 @@ public class TestDruidRecordWriter {
 
     Firehose firehose = new IngestSegmentFirehose(
             ImmutableList.of(new WindowedStorageAdapter(adapter, adapter.getInterval())),
+            null,
             ImmutableList.of("host"),
             ImmutableList.of("visited_sum", "unique_hosts"),
             null
@@ -228,11 +230,11 @@ public class TestDruidRecordWriter {
               actual.getTimestamp().getMillis()
       );
       Assert.assertEquals(expected.get("host"), actual.getDimension("host"));
-      Assert.assertEquals(expected.get("visited_sum"), actual.getLongMetric("visited_sum"));
+      Assert.assertEquals(expected.get("visited_sum"), actual.getMetric("visited_sum"));
       Assert.assertEquals(
               (Double) expected.get("unique_hosts"),
               (Double) HyperUniquesAggregatorFactory
-                      .estimateCardinality(actual.getRaw("unique_hosts")),
+                      .estimateCardinality(actual.getRaw("unique_hosts"), false),
               0.001
       );
     }

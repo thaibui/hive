@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -76,12 +76,18 @@ public class VectorExpressionDescriptor {
     INTERVAL_YEAR_MONTH     (0x100),
     INTERVAL_DAY_TIME       (0x200),
     BINARY                  (0x400),
+    STRUCT                  (0x800),
+    DECIMAL_64              (0x1000),
+    LIST                    (0x2000),
+    MAP                     (0x4000),
+    VOID                    (0x8000),
+    INT_DECIMAL_64_FAMILY   (INT_FAMILY.value | DECIMAL_64.value),
     DATETIME_FAMILY         (DATE.value | TIMESTAMP.value),
     INTERVAL_FAMILY         (INTERVAL_YEAR_MONTH.value | INTERVAL_DAY_TIME.value),
     INT_INTERVAL_YEAR_MONTH     (INT_FAMILY.value | INTERVAL_YEAR_MONTH.value),
     INT_DATE_INTERVAL_YEAR_MONTH  (INT_FAMILY.value | DATE.value | INTERVAL_YEAR_MONTH.value),
     STRING_DATETIME_FAMILY  (STRING_FAMILY.value | DATETIME_FAMILY.value),
-    ALL_FAMILY              (0xFFF);
+    ALL_FAMILY              (0xFFFF);
 
     private final int value;
 
@@ -122,9 +128,14 @@ public class VectorExpressionDescriptor {
         return INTERVAL_YEAR_MONTH;
       } else if (lower.equals(serdeConstants.INTERVAL_DAY_TIME_TYPE_NAME)) {
         return INTERVAL_DAY_TIME;
+      } else if (VectorizationContext.structTypePattern.matcher(lower).matches()) {
+        return STRUCT;
+      } else if (VectorizationContext.listTypePattern.matcher(lower).matches()) {
+        return LIST;
+      } else if (VectorizationContext.mapTypePattern.matcher(lower).matches()) {
+        return MAP;
       } else if (lower.equals("void")) {
-        // The old code let void through...
-        return INT_FAMILY;
+        return VOID;
       } else {
         return NONE;
       }
@@ -340,21 +351,36 @@ public class VectorExpressionDescriptor {
     }
   }
 
-  public Class<?> getVectorExpressionClass(Class<?> udf, Descriptor descriptor) throws HiveException {
+  public Class<?> getVectorExpressionClass(Class<?> udf, Descriptor descriptor,
+      boolean useCheckedExpressionIfAvailable) throws HiveException {
     VectorizedExpressions annotation =
         AnnotationUtils.getAnnotation(udf, VectorizedExpressions.class);
     if (annotation == null || annotation.value() == null) {
       return null;
     }
     Class<? extends VectorExpression>[] list = annotation.value();
+    Class<? extends VectorExpression> matchedVe = null;
     for (Class<? extends VectorExpression> ve : list) {
       try {
-        if (ve.newInstance().getDescriptor().matches(descriptor)) {
-          return ve;
+        VectorExpression candidateVe = ve.newInstance();
+        if (candidateVe.getDescriptor().matches(descriptor)) {
+          if (!useCheckedExpressionIfAvailable) {
+            // no need to look further for a checked variant of this expression
+            return ve;
+          } else if (candidateVe.supportsCheckedExecution()) {
+            return ve;
+          } else {
+            // vector expression doesn't support checked execution
+            // hold on to it in case there is no available checked variant
+            matchedVe = ve;
+          }
         }
       } catch (Exception ex) {
         throw new HiveException("Could not instantiate VectorExpression class " + ve.getSimpleName(), ex);
       }
+    }
+    if (matchedVe != null) {
+      return matchedVe;
     }
     if (LOG.isDebugEnabled()) {
       LOG.debug("getVectorExpressionClass udf " + udf.getSimpleName() + " descriptor: " + descriptor.toString());

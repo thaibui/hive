@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,8 +31,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.CopyOnFirstWriteProperties;
 import org.apache.hadoop.hive.common.StringInternUtils;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
 import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
@@ -75,21 +75,27 @@ public class PartitionDesc implements Serializable, Cloneable {
   public PartitionDesc() {
   }
 
+  private final static org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(PartitionDesc.class);
+
   public PartitionDesc(final TableDesc table, final LinkedHashMap<String, String> partSpec) {
     this.tableDesc = table;
     setPartSpec(partSpec);
   }
 
-  public PartitionDesc(final Partition part) throws HiveException {
-    PartitionDescConstructorHelper(part, getTableDesc(part.getTable()), true);
+  public PartitionDesc(final Partition part, final TableDesc tableDesc) throws HiveException {
+    PartitionDescConstructorHelper(part, tableDesc, true);
     if (Utilities.isInputFileFormatSelfDescribing(this)) {
       // if IF is self describing no need to send column info per partition, since its not used anyway.
       Table tbl = part.getTable();
-      setProperties(MetaStoreUtils.getSchemaWithoutCols(part.getTPartition().getSd(), part.getTPartition().getSd(),
+      setProperties(MetaStoreUtils.getSchemaWithoutCols(part.getTPartition().getSd(),
           part.getParameters(), tbl.getDbName(), tbl.getTableName(), tbl.getPartitionKeys()));
     } else {
       setProperties(part.getMetadataFromPartitionSchema());
     }
+  }
+
+  public PartitionDesc(final Partition part) throws HiveException {
+    this(part, getTableDesc(part.getTable()));
   }
 
   /**
@@ -227,10 +233,8 @@ public class PartitionDesc implements Serializable, Cloneable {
     }
   }
 
-  private static TableDesc getTableDesc(Table table) {
-    TableDesc tableDesc = Utilities.getTableDesc(table);
-    internProperties(tableDesc.getProperties());
-    return tableDesc;
+  public static TableDesc getTableDesc(Table table) {
+    return Utilities.getTableDesc(table);
   }
 
   private static void internProperties(Properties properties) {
@@ -388,5 +392,14 @@ public class PartitionDesc implements Serializable, Cloneable {
 
   public VectorPartitionDesc getVectorPartitionDesc() {
     return vectorPartitionDesc;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionDesc [tableDesc=" + tableDesc + ", partSpec=" + partSpec
+        + ", inputFileFormatClass=" + inputFileFormatClass
+        + ", outputFileFormatClass=" + outputFileFormatClass + ", properties="
+        + properties + ", baseFileName=" + baseFileName
+        + ", vectorPartitionDesc=" + vectorPartitionDesc + "]";
   }
 }

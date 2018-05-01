@@ -82,7 +82,12 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: int, string
+          Table: default.test_table2
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
 SELECT x.key, x.value from 
@@ -123,7 +128,7 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 POSTHOOK: Input: default@test_table2@ds=1
 #### A masked pattern was here ####
-247
+243
 PREHOOK: query: select count(*) from test_table2 tablesample (bucket 2 out of 2) s where ds = '1'
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table2
@@ -134,7 +139,7 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 POSTHOOK: Input: default@test_table2@ds=1
 #### A masked pattern was here ####
-253
+257
 PREHOOK: query: EXPLAIN
 INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
 SELECT * from 
@@ -187,7 +192,12 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: int, string
+          Table: default.test_table2
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
 SELECT * from 
@@ -228,7 +238,7 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 POSTHOOK: Input: default@test_table2@ds=1
 #### A masked pattern was here ####
-247
+243
 PREHOOK: query: select count(*) from test_table2 tablesample (bucket 2 out of 2) s where ds = '1'
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table2
@@ -239,7 +249,7 @@ POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 POSTHOOK: Input: default@test_table2@ds=1
 #### A masked pattern was here ####
-253
+257
 PREHOOK: query: EXPLAIN
 INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
 SELECT x.key, concat(x.value, x.value) from 
@@ -292,7 +302,12 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: int, string
+          Table: default.test_table2
 
 PREHOOK: query: EXPLAIN
 INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
@@ -311,7 +326,8 @@ POSTHOOK: type: QUERY
 STAGE DEPENDENCIES:
   Stage-1 is a root stage
   Stage-0 depends on stages: Stage-1
-  Stage-2 depends on stages: Stage-0
+  Stage-2 depends on stages: Stage-0, Stage-3
+  Stage-3 depends on stages: Stage-1
 
 STAGE PLANS:
   Stage: Stage-1
@@ -343,6 +359,22 @@ STAGE PLANS:
                 output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                 serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                 name: default.test_table2
+          Select Operator
+            expressions: _col0 (type: int), _col1 (type: string), '1' (type: string)
+            outputColumnNames: key, value, ds
+            Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+            Group By Operator
+              aggregations: compute_stats(key, 'hll'), compute_stats(value, 'hll')
+              keys: ds (type: string)
+              mode: hash
+              outputColumnNames: _col0, _col1, _col2
+              Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+              File Output Operator
+                compressed: false
+                table:
+                    input format: org.apache.hadoop.mapred.SequenceFileInputFormat
+                    output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
+                    serde: org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe
 
   Stage: Stage-0
     Move Operator
@@ -357,7 +389,41 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: int, string
+          Table: default.test_table2
+
+  Stage: Stage-3
+    Map Reduce
+      Map Operator Tree:
+          TableScan
+            Reduce Output Operator
+              key expressions: _col0 (type: string)
+              sort order: +
+              Map-reduce partition columns: _col0 (type: string)
+              Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+              value expressions: _col1 (type: struct<columntype:string,min:bigint,max:bigint,countnulls:bigint,bitvector:binary>), _col2 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>)
+      Reduce Operator Tree:
+        Group By Operator
+          aggregations: compute_stats(VALUE._col0), compute_stats(VALUE._col1)
+          keys: KEY._col0 (type: string)
+          mode: mergepartial
+          outputColumnNames: _col0, _col1, _col2
+          Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
+          Select Operator
+            expressions: _col1 (type: struct<columntype:string,min:bigint,max:bigint,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col2 (type: struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col0 (type: string)
+            outputColumnNames: _col0, _col1, _col2
+            Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
+            File Output Operator
+              compressed: false
+              Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
+              table:
+                  input format: org.apache.hadoop.mapred.SequenceFileInputFormat
+                  output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
+                  serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
 
 PREHOOK: query: EXPLAIN
 INSERT OVERWRITE TABLE test_table2 PARTITION (ds = '1')
@@ -411,5 +477,10 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: int, string
+          Table: default.test_table2
 

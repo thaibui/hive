@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -39,8 +39,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
+import org.apache.hadoop.hive.metastore.HiveMetaStoreUtils;
 import org.apache.hadoop.hive.metastore.TableType;
+import org.apache.hadoop.hive.metastore.Warehouse;
+import org.apache.hadoop.hive.metastore.api.CreationMetadata;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Order;
@@ -48,6 +50,7 @@ import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.SkewedInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
 import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
@@ -185,6 +188,9 @@ public class Table implements Serializable {
       // set create time
       t.setCreateTime((int) (System.currentTimeMillis() / 1000));
     }
+    // Explictly set the bucketing version
+    t.getParameters().put(hive_metastoreConstants.TABLE_BUCKETING_VERSION,
+        "2");
     return t;
   }
 
@@ -211,12 +217,9 @@ public class Table implements Serializable {
       }
     }
 
-    if (isView()) {
+    if (isView() || isMaterializedView()) {
       assert (getViewOriginalText() != null);
       assert (getViewExpandedText() != null);
-    } else if (isMaterializedView()) {
-      assert(getViewOriginalText() != null);
-      assert(getViewExpandedText() == null);
     } else {
       assert(getViewOriginalText() == null);
       assert(getViewExpandedText() == null);
@@ -270,7 +273,7 @@ public class Table implements Serializable {
   }
 
   final public Class<? extends Deserializer> getDeserializerClass() throws Exception {
-    return MetaStoreUtils.getDeserializerClass(SessionState.getSessionConf(), tTable);
+    return HiveMetaStoreUtils.getDeserializerClass(SessionState.getSessionConf(), tTable);
   }
 
   final public Deserializer getDeserializer(boolean skipConfError) {
@@ -282,7 +285,7 @@ public class Table implements Serializable {
 
   final public Deserializer getDeserializerFromMetaStore(boolean skipConfError) {
     try {
-      return MetaStoreUtils.getDeserializer(SessionState.getSessionConf(), tTable, skipConfError);
+      return HiveMetaStoreUtils.getDeserializer(SessionState.getSessionConf(), tTable, skipConfError);
     } catch (MetaException e) {
       throw new RuntimeException(e);
     }
@@ -382,7 +385,9 @@ public class Table implements Serializable {
       if (spec.containsKey(fs.getName())) {
         ++columnsFound;
       }
-      if (columnsFound == spec.size()) break;
+      if (columnsFound == spec.size()) {
+        break;
+      }
     }
     if (columnsFound < spec.size()) {
       throw new ValidationFailureSemanticException("Partition spec " + spec + " contains non-partition columns");
@@ -397,6 +402,9 @@ public class Table implements Serializable {
     tTable.getParameters().put(name, value);
   }
 
+  // Please note : Be very careful in using this function. If not used carefully,
+  // you may end up overwriting all the existing properties. If the usecase is to
+  // add or update certain properties use setProperty() instead.
   public void setParameters(Map<String, String> params) {
     tTable.setParameters(params);
   }
@@ -446,6 +454,11 @@ public class Table implements Serializable {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public int getBucketingVersion() {
+    return Utilities.getBucketingVersion(
+        getProperty(hive_metastoreConstants.TABLE_BUCKETING_VERSION));
   }
 
    @Override
@@ -642,7 +655,7 @@ public class Table implements Serializable {
           SessionState.getSessionConf(), serializationLib, tTable.getParameters())) {
         return Hive.getFieldsFromDeserializerForMsStorage(this, getDeserializer());
       } else {
-        return MetaStoreUtils.getFieldsFromDeserializer(getTableName(), getDeserializer());
+        return HiveMetaStoreUtils.getFieldsFromDeserializer(getTableName(), getDeserializer());
       }
     } catch (Exception e) {
       LOG.error("Unable to get field from serde: " + serializationLib, e);
@@ -843,6 +856,21 @@ public class Table implements Serializable {
     tTable.setRewriteEnabled(rewriteEnabled);
   }
 
+  /**
+   * @return the creation metadata (only for materialized views)
+   */
+  public CreationMetadata getCreationMetadata() {
+    return tTable.getCreationMetadata();
+  }
+
+  /**
+   * @param creationMetadata
+   *          the creation metadata (only for materialized views)
+   */
+  public void setCreationMetadata(CreationMetadata creationMetadata) {
+    tTable.setCreationMetadata(creationMetadata);
+  }
+
   public void clearSerDeInfo() {
     tTable.getSd().getSerdeInfo().getParameters().clear();
   }
@@ -856,13 +884,6 @@ public class Table implements Serializable {
 
   public boolean isMaterializedView() {
     return TableType.MATERIALIZED_VIEW.equals(getTableType());
-  }
-
-  /**
-   * @return whether this table is actually an index table
-   */
-  public boolean isIndexTable() {
-    return TableType.INDEX_TABLE.equals(getTableType());
   }
 
   /**
@@ -910,6 +931,10 @@ public class Table implements Serializable {
     return getProperty(
       org.apache.hadoop.hive.metastore.api.hive_metastoreConstants.META_TABLE_STORAGE)
       != null;
+  }
+
+  public String getFullyQualifiedName() {
+    return Warehouse.getQualifiedName(tTable);
   }
 
   /**
@@ -969,12 +994,20 @@ public class Table implements Serializable {
 
   public static boolean shouldStoreFieldsInMetastore(
       HiveConf conf, String serdeLib, Map<String, String> tableParams) {
-    if (hasMetastoreBasedSchema(conf, serdeLib))  return true;
+    if (hasMetastoreBasedSchema(conf, serdeLib)) {
+      return true;
+    }
+    if (HiveConf.getBoolVar(conf, ConfVars.HIVE_LEGACY_SCHEMA_FOR_ALL_SERDES)) {
+      return true;
+    }
     // Table may or may not be using metastore. Only the SerDe can tell us.
     AbstractSerDe deserializer = null;
     try {
       Class<?> clazz = conf.getClassByName(serdeLib);
-      if (!AbstractSerDe.class.isAssignableFrom(clazz)) return true; // The default.
+      if (!AbstractSerDe.class.isAssignableFrom(clazz))
+       {
+        return true; // The default.
+      }
       deserializer = ReflectionUtil.newInstance(
           conf.getClassByName(serdeLib).asSubclass(AbstractSerDe.class), conf);
     } catch (Exception ex) {
@@ -1026,5 +1059,4 @@ public class Table implements Serializable {
   public boolean hasDeserializer() {
     return deserializer != null;
   }
-
 };

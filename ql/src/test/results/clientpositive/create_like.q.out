@@ -13,7 +13,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table1
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -25,6 +24,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"a\":\"true\",\"b\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -56,7 +56,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table2
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table2
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -107,7 +106,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table3
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table3
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -342,7 +340,6 @@ POSTHOOK: query: DESCRIBE FORMATTED doctors
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@doctors
 # col_name            	data_type           	comment             
-	 	 
 number              	int                 	Order of playing the role
 first_name          	string              	first name of actor playing role
 last_name           	string              	last name of actor playing role
@@ -377,6 +374,7 @@ Table Parameters:
 	                    	    }               
 	                    	  ]                 
 	                    	}                   
+	bucketing_version   	2                   
 	k1                  	v1                  
 	k2                  	v2                  
 #### A masked pattern was here ####
@@ -411,7 +409,6 @@ POSTHOOK: query: DESCRIBE FORMATTED doctors2
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@doctors2
 # col_name            	data_type           	comment             
-	 	 
 number              	int                 	Order of playing the role
 first_name          	string              	first name of actor playing role
 last_name           	string              	last name of actor playing role
@@ -485,7 +482,6 @@ POSTHOOK: query: DESCRIBE FORMATTED LikePropertiedParquetTable
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@likepropertiedparquettable
 # col_name            	data_type           	comment             
-	 	 
 a                   	int                 	                    
 b                   	string              	                    
 	 	 
@@ -529,7 +525,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table5
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table5
 # col_name            	data_type           	comment             
-	 	 
 col1                	int                 	                    
 col2                	string              	                    
 	 	 
@@ -541,6 +536,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"col1\":\"true\",\"col2\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -572,7 +568,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table6
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table6
 # col_name            	data_type           	comment             
-	 	 
 col1                	int                 	                    
 col2                	string              	                    
 	 	 
@@ -625,7 +620,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table6
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table6
 # col_name            	data_type           	comment             
-	 	 
 col1                	int                 	                    
 col2                	string              	                    
 	 	 
@@ -683,7 +677,6 @@ POSTHOOK: query: describe formatted orc_table_using_like
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_table_using_like
 # col_name            	data_type           	comment             
-	 	 
 time                	string              	                    
 	 	 
 # Detailed Table Information	 	 

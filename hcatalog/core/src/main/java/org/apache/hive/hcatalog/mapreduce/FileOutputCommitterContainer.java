@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,7 +38,6 @@ import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.Warehouse;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
@@ -582,9 +581,9 @@ class FileOutputCommitterContainer extends OutputCommitterContainer {
 
             final Path parentDir = finalOutputPath.getParent();
             // Create the directory
-            Path placeholder = new Path(parentDir, "_placeholder");
+            Path placeholder = new Path(parentDir, "_placeholder" + String.valueOf(Math.random()));
             if (fs.mkdirs(parentDir)) {
-              // It is weired but we need a placeholder, 
+              // It is weird but we need a placeholder,
               // otherwise rename cannot move file to the right place
               fs.create(placeholder).close();
             }
@@ -610,7 +609,8 @@ class FileOutputCommitterContainer extends OutputCommitterContainer {
           }
 
         } else {
-          if(immutable && fs.exists(finalOutputPath) && !MetaStoreUtils.isDirEmpty(fs, finalOutputPath)) {
+          if(immutable && fs.exists(finalOutputPath) &&
+              !org.apache.hadoop.hive.metastore.utils.FileUtils.isDirEmpty(fs, finalOutputPath)) {
 
             throw new HCatException(ErrorType.ERROR_DUPLICATE_PARTITION, "Data already exists in " + finalOutputPath
                 + ", duplicate publish not possible.");
@@ -732,7 +732,7 @@ class FileOutputCommitterContainer extends OutputCommitterContainer {
         for (FileStatus st : status) {
           LinkedHashMap<String, String> fullPartSpec = new LinkedHashMap<String, String>();
           if (!customDynamicLocationUsed) {
-            Warehouse.makeSpecFromName(fullPartSpec, st.getPath());
+            Warehouse.makeSpecFromName(fullPartSpec, st.getPath(), null);
           } else {
             HCatFileUtil.getPartKeyValuesForCustomLocation(fullPartSpec, jobInfo,
                 st.getPath().toString());
@@ -1010,10 +1010,17 @@ class FileOutputCommitterContainer extends OutputCommitterContainer {
       // In the latter case the HCAT_KEY_TOKEN_SIGNATURE property in
       // the conf will not be set
       String tokenStrForm = client.getTokenStrForm();
+      String hCatKeyTokenSignature = context.getConfiguration().get(
+          HCatConstants.HCAT_KEY_TOKEN_SIGNATURE);
       if (tokenStrForm != null
-          && context.getConfiguration().get(
-              HCatConstants.HCAT_KEY_TOKEN_SIGNATURE) != null) {
+          && hCatKeyTokenSignature != null) {
+        LOG.info("FileOutputCommitterContainer::cancelDelegationTokens(): " +
+            "Cancelling token fetched for HCAT_KEY_TOKEN_SIGNATURE == (" + hCatKeyTokenSignature + ").");
         client.cancelDelegationToken(tokenStrForm);
+      }
+      else {
+        LOG.info("FileOutputCommitterContainer::cancelDelegationTokens(): " +
+            "Could not find tokenStrForm, or HCAT_KEY_TOKEN_SIGNATURE. Skipping token cancellation.");
       }
     } catch (MetaException e) {
       LOG.warn("MetaException while cancelling delegation token.", e);

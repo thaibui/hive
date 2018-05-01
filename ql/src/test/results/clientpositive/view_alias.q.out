@@ -21,7 +21,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 _c1                 	string              	                    
 	 	 
@@ -31,6 +30,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -88,7 +88,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 _c1                 	string              	                    
 	 	 
@@ -98,6 +97,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -156,7 +156,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 _c1                 	string              	                    
@@ -167,6 +166,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -225,7 +225,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 _c121               	string              	                    
@@ -236,6 +235,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -293,7 +293,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 _c1                 	bigint              	                    
 	 	 
@@ -303,6 +302,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -403,7 +403,6 @@ POSTHOOK: query: desc formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 _c0                 	string              	                    
 ca                  	string              	                    
 caa                 	string              	                    
@@ -418,6 +417,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 

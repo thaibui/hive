@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -27,7 +27,9 @@ import java.lang.management.MemoryMXBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.lang.StringUtils;
@@ -63,7 +65,6 @@ import org.apache.hadoop.hive.ql.exec.TableScanOperator;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.tez.TezSessionPoolManager;
-import org.apache.hadoop.hive.ql.exec.tez.TezSessionState;
 import org.apache.hadoop.hive.ql.io.BucketizedHiveInputFormat;
 import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
 import org.apache.hadoop.hive.ql.io.HiveKey;
@@ -174,6 +175,12 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
       CompilationOpContext opContext) {
     super.initialize(queryState, queryPlan, driverContext, opContext);
 
+    Iterator<Map.Entry<String, String>> iter = conf.iterator();
+    while(iter.hasNext()) {
+      String key = iter.next().getKey();
+      conf.set(key, conf.get(key));
+    }
+
     job = new JobConf(conf, ExecDriver.class);
 
     initializeFiles("tmpjars", getResource(conf, SessionState.ResourceType.JAR));
@@ -208,7 +215,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
   public boolean checkFatalErrors(Counters ctrs, StringBuilder errMsg) {
      Counters.Counter cntr = ctrs.findCounter(
         HiveConf.getVar(job, HiveConf.ConfVars.HIVECOUNTERGROUP),
-        Operator.HIVECOUNTERFATAL);
+        Operator.HIVE_COUNTER_FATAL);
     return cntr != null && cntr.getValue() > 0;
   }
 
@@ -257,6 +264,7 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
     //See the javadoc on HiveOutputFormatImpl and HadoopShims.prepareJobOutput()
     job.setOutputFormat(HiveOutputFormatImpl.class);
 
+    job.setMapRunnerClass(ExecMapRunner.class);
     job.setMapperClass(ExecMapper.class);
 
     job.setMapOutputKeyClass(HiveKey.class);
@@ -399,10 +407,10 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
       Utilities.createTmpDirs(job, rWork);
 
       SessionState ss = SessionState.get();
-      if (HiveConf.getVar(job, HiveConf.ConfVars.HIVE_EXECUTION_ENGINE).equals("tez")
-          && ss != null) {
-        TezSessionState session = ss.getTezSession();
-        TezSessionPoolManager.getInstance().closeIfNotDefault(session, true);
+      // TODO: why is there a TezSession in MR ExecDriver?
+      if (ss != null && HiveConf.getVar(job, ConfVars.HIVE_EXECUTION_ENGINE).equals("tez")) {
+        // TODO: this is the only place that uses keepTmpDir. Why?
+        TezSessionPoolManager.closeIfNotDefault(ss.getTezSession(), true);
       }
 
       HiveConfUtil.updateJobCredentialProviders(job);
@@ -457,9 +465,9 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
           jc.close();
         }
       } catch (Exception e) {
-	LOG.warn("Failed while cleaning up ", e);
+        LOG.warn("Failed while cleaning up ", e);
       } finally {
-	HadoopJobExecHelper.runningJobs.remove(rj);
+        HadoopJobExecHelper.runningJobs.remove(rj);
       }
     }
 
@@ -574,11 +582,6 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
     if (mWork.getInputformat() != null) {
       HiveConf.setVar(conf, ConfVars.HIVEINPUTFORMAT, mWork.getInputformat());
     }
-    if (mWork.getIndexIntermediateFile() != null) {
-      conf.set(ConfVars.HIVE_INDEX_COMPACT_FILE.varname, mWork.getIndexIntermediateFile());
-      conf.set(ConfVars.HIVE_INDEX_BLOCKFILTER_FILE.varname, mWork.getIndexIntermediateFile());
-    }
-
     // Intentionally overwrites anything the user may have put here
     conf.setBoolean("hive.input.format.sorted", mWork.isInputFormatSorted());
 

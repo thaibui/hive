@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.DateTimeException;
@@ -29,6 +30,8 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.hive.common.classification.InterfaceAudience;
+import org.apache.hadoop.hive.common.classification.InterfaceStability;
 import org.apache.hadoop.hive.common.type.TimestampTZ;
 import org.apache.hadoop.hive.common.type.TimestampTZUtil;
 import org.apache.hadoop.hive.ql.util.TimestampUtils;
@@ -77,6 +80,8 @@ public final class PrimitiveObjectInspectorUtils {
   /**
    * TypeEntry stores information about a Hive Primitive TypeInfo.
    */
+  @InterfaceAudience.Public
+  @InterfaceStability.Stable
   public static class PrimitiveTypeEntry implements Writable, Cloneable {
 
     /**
@@ -528,10 +533,10 @@ public final class PrimitiveObjectInspectorUtils {
       StringObjectInspector soi = (StringObjectInspector) oi;
       if (soi.preferWritable()) {
         Text t = soi.getPrimitiveWritableObject(o);
-        result = t.getLength() != 0;
+        result = parseBoolean(t);
       } else {
         String s = soi.getPrimitiveJavaObject(o);
-        result = s.length() != 0;
+        result = parseBoolean(s);
       }
       break;
     case TIMESTAMP:
@@ -548,6 +553,74 @@ public final class PrimitiveObjectInspectorUtils {
           + oi.getTypeName());
     }
     return result;
+  }
+
+
+  enum FalseValues {
+    FALSE("false"), OFF("off"), NO("no"), ZERO("0"), EMPTY("");
+
+    private final byte[] bytes;
+    private String str;
+
+    FalseValues(String s) {
+      str = s;
+      bytes = s.getBytes(StandardCharsets.UTF_8);
+    }
+
+    public boolean accept(byte[] arr, int st) {
+      for (int i = 0; i < bytes.length; i++) {
+        byte b = arr[i + st];
+        if (!(b == bytes[i] || b + 'a' - 'A' == bytes[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    public boolean accept(String s) {
+      return str.equalsIgnoreCase(s);
+    }
+  }
+  /**
+   * Parses a boolean from string
+   *
+   * Accepts "false","off","no","0" and "" as FALSE
+   * All other values are interpreted as true.
+   */
+  public static boolean parseBoolean(byte[] arr, int st, int len) {
+    switch (len) {
+    case 5:
+      return !FalseValues.FALSE.accept(arr, st);
+    case 3:
+      return !FalseValues.OFF.accept(arr, st);
+    case 2:
+      return !FalseValues.NO.accept(arr, st);
+    case 1:
+      return !FalseValues.ZERO.accept(arr, st);
+    case 0:
+      return false;
+    default:
+      return true;
+    }
+  }
+
+  private static final FalseValues[] FALSE_BOOLEANS = FalseValues.values();
+
+  private static boolean parseBoolean(String s) {
+    for (int i = 0; i < FALSE_BOOLEANS.length; i++) {
+      if (FALSE_BOOLEANS[i].accept(s)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean parseBoolean(Text t) {
+    if(t.getLength()>5) {
+      return true;
+    }
+    String strVal=t.toString();
+    return parseBoolean(strVal);
   }
 
   /**
@@ -1352,8 +1425,8 @@ public final class PrimitiveObjectInspectorUtils {
         return PrimitiveGrouping.STRING_GROUP;
       case BOOLEAN:
         return PrimitiveGrouping.BOOLEAN_GROUP;
-      case TIMESTAMP:
       case DATE:
+      case TIMESTAMP:
       case TIMESTAMPLOCALTZ:
         return PrimitiveGrouping.DATE_GROUP;
       case INTERVAL_YEAR_MONTH:

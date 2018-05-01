@@ -83,6 +83,7 @@ STAGE PLANS:
                         keys:
                           0 _col0 (type: int)
                           1 _col0 (type: int)
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
 
@@ -124,6 +125,7 @@ STAGE PLANS:
                                 output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                                 serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                                 name: default.dest_j1
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
 
@@ -138,7 +140,8 @@ STAGE PLANS:
               name: default.dest_j1
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: INSERT OVERWRITE TABLE dest_j1 
 SELECT /*+ MAPJOIN(x) */ x.key, x.cnt, y.cnt

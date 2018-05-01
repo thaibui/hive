@@ -1,19 +1,19 @@
 /*
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.hadoop.hive.ql.parse.repl.dump;
 
@@ -22,10 +22,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.PartitionIterable;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer.TableSpec;
 import org.apache.hadoop.hive.ql.parse.EximUtil;
@@ -38,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -54,18 +59,17 @@ public class TableExport {
   private final String distCpDoAsUser;
   private final HiveConf conf;
   private final Paths paths;
-  private final AuthEntities authEntities = new AuthEntities();
 
-  public TableExport(Paths paths, TableSpec tableSpec,
-      ReplicationSpec replicationSpec, Hive db, String distCpDoAsUser, HiveConf conf)
-      throws SemanticException {
+  public TableExport(Paths paths, TableSpec tableSpec, ReplicationSpec replicationSpec, Hive db,
+      String distCpDoAsUser, HiveConf conf) {
     this.tableSpec = (tableSpec != null
         && tableSpec.tableHandle.isTemporary()
         && replicationSpec.isInReplicationScope())
         ? null
         : tableSpec;
     this.replicationSpec = replicationSpec;
-    if (this.tableSpec != null && this.tableSpec.tableHandle.isView()) {
+    if (conf.getBoolVar(HiveConf.ConfVars.REPL_DUMP_METADATA_ONLY) || (this.tableSpec != null
+        && this.tableSpec.tableHandle.isView())) {
       this.replicationSpec.setIsMetadataOnly(true);
     }
     this.db = db;
@@ -74,26 +78,24 @@ public class TableExport {
     this.paths = paths;
   }
 
-  public AuthEntities write() throws SemanticException {
+  public boolean write() throws SemanticException {
     if (tableSpec == null) {
       writeMetaData(null);
+      return true;
     } else if (shouldExport()) {
-      //first we should get the correct replication spec before doing metadata/data export
-      if (tableSpec.tableHandle.isView()) {
-        replicationSpec.setIsMetadataOnly(true);
-      }
-      PartitionIterable withPartitions = partitions();
+      PartitionIterable withPartitions = getPartitions();
       writeMetaData(withPartitions);
       if (!replicationSpec.isMetadataOnly()) {
         writeData(withPartitions);
       }
+      return true;
     }
-    return authEntities;
+    return false;
   }
 
-  private PartitionIterable partitions() throws SemanticException {
+  private PartitionIterable getPartitions() throws SemanticException {
     try {
-      if (tableSpec.tableHandle.isPartitioned()) {
+      if (tableSpec != null && tableSpec.tableHandle != null && tableSpec.tableHandle.isPartitioned()) {
         if (tableSpec.specType == TableSpec.SpecType.TABLE_ONLY) {
           // TABLE-ONLY, fetch partitions if regular export, don't if metadata-only
           if (replicationSpec.isMetadataOnly()) {
@@ -111,7 +113,11 @@ public class TableExport {
         // or this is a noop-replication export, so we can skip looking at ptns.
         return null;
       }
-    } catch (Exception e) {
+    } catch (HiveException e) {
+      if (e.getCause() instanceof NoSuchObjectException) {
+        // If table is dropped when dump in progress, just skip partitions dump
+        return new PartitionIterable(new ArrayList<>());
+      }
       throw new SemanticException("Error when identifying partitions", e);
     }
   }
@@ -123,7 +129,8 @@ public class TableExport {
           paths.metaDataExportFile(),
           tableSpec == null ? null : tableSpec.tableHandle,
           partitions,
-          replicationSpec);
+          replicationSpec,
+          conf);
       logger.debug("_metadata file written into " + paths.metaDataExportFile().toString());
     } catch (Exception e) {
       // the path used above should not be used on a second try as each dump request is written to a unique location.
@@ -137,26 +144,29 @@ public class TableExport {
     try {
       if (tableSpec.tableHandle.isPartitioned()) {
         if (partitions == null) {
-          throw new IllegalStateException(
-              "partitions cannot be null for partitionTable :" + tableSpec.tableName);
+          throw new IllegalStateException("partitions cannot be null for partitionTable :"
+              + tableSpec.tableName);
         }
-        new PartitionExport(paths, partitions, distCpDoAsUser, conf, authEntities)
-                .write(replicationSpec);
+        new PartitionExport(paths, partitions, distCpDoAsUser, conf).write(replicationSpec);
       } else {
         Path fromPath = tableSpec.tableHandle.getDataLocation();
-        //this is the data copy
+        // this is the data copy
         new FileOperations(fromPath, paths.dataExportDir(), distCpDoAsUser, conf)
-                .export(replicationSpec);
-        authEntities.inputs.add(new ReadEntity(tableSpec.tableHandle));
+            .export(replicationSpec);
       }
-      authEntities.outputs.add(toWriteEntity(paths.exportRootDir, conf));
     } catch (Exception e) {
       throw new SemanticException(e);
     }
   }
 
-  private boolean shouldExport() throws SemanticException {
-    return EximUtil.shouldExportTable(replicationSpec, tableSpec.tableHandle);
+  private boolean shouldExport() {
+    // Note: this is a temporary setting that is needed because replication does not support
+    //       ACID or MM tables at the moment. It will eventually be removed.
+    if (conf.getBoolVar(HiveConf.ConfVars.REPL_DUMP_INCLUDE_ACID_TABLES)
+        && AcidUtils.isTransactionalTable(tableSpec.tableHandle)) {
+      return true;
+    }
+    return Utils.shouldReplicate(replicationSpec, tableSpec.tableHandle, conf);
   }
 
   /**
@@ -166,20 +176,22 @@ public class TableExport {
   public static class Paths {
     private final String astRepresentationForErrorMsg;
     private final HiveConf conf;
-    public final Path exportRootDir;
+    private final Path exportRootDir;
     private final FileSystem exportFileSystem;
+    private boolean writeData;
 
-    public Paths(String astRepresentationForErrorMsg, Path dbRoot, String tblName,
-        HiveConf conf) throws SemanticException {
+    public Paths(String astRepresentationForErrorMsg, Path dbRoot, String tblName, HiveConf conf,
+        boolean shouldWriteData) throws SemanticException {
       this.astRepresentationForErrorMsg = astRepresentationForErrorMsg;
       this.conf = conf;
+      this.writeData = shouldWriteData;
       Path tableRoot = new Path(dbRoot, tblName);
       URI exportRootDir = EximUtil.getValidatedURI(conf, tableRoot.toUri().toString());
       validateTargetDir(exportRootDir);
       this.exportRootDir = new Path(exportRootDir);
       try {
         this.exportFileSystem = this.exportRootDir.getFileSystem(conf);
-        if (!exportFileSystem.exists(this.exportRootDir)) {
+        if (!exportFileSystem.exists(this.exportRootDir) && writeData) {
           exportFileSystem.mkdirs(this.exportRootDir);
         }
       } catch (IOException e) {
@@ -187,14 +199,15 @@ public class TableExport {
       }
     }
 
-    public Paths(String astRepresentationForErrorMsg, String path, HiveConf conf)
-        throws SemanticException {
+    public Paths(String astRepresentationForErrorMsg, String path, HiveConf conf,
+        boolean shouldWriteData) throws SemanticException {
       this.astRepresentationForErrorMsg = astRepresentationForErrorMsg;
       this.conf = conf;
       this.exportRootDir = new Path(EximUtil.getValidatedURI(conf, path));
+      this.writeData = shouldWriteData;
       try {
         this.exportFileSystem = exportRootDir.getFileSystem(conf);
-        if (!exportFileSystem.exists(this.exportRootDir)) {
+        if (!exportFileSystem.exists(this.exportRootDir) && writeData) {
           exportFileSystem.mkdirs(this.exportRootDir);
         }
       } catch (IOException e) {
@@ -227,7 +240,7 @@ public class TableExport {
      * Partition's data export directory is created within the export semantics of partition.
      */
     private Path dataExportDir() throws SemanticException {
-      return exportDir(new Path(exportRootDir, EximUtil.DATA_PATH_NAME));
+      return exportDir(new Path(getExportRootDir(), EximUtil.DATA_PATH_NAME));
     }
 
     /**
@@ -260,6 +273,10 @@ public class TableExport {
         throw new SemanticException(astRepresentationForErrorMsg, e);
       }
     }
+
+    public Path getExportRootDir() {
+      return exportRootDir;
+    }
   }
 
   public static class AuthEntities {
@@ -270,5 +287,33 @@ public class TableExport {
      */
     public final Set<ReadEntity> inputs = Collections.newSetFromMap(new ConcurrentHashMap<>());
     public final Set<WriteEntity> outputs = new HashSet<>();
+  }
+
+  public AuthEntities getAuthEntities() throws SemanticException {
+    AuthEntities authEntities = new AuthEntities();
+    try {
+      // Return if metadata-only
+      if (replicationSpec.isMetadataOnly()) {
+        return authEntities;
+      }
+      PartitionIterable partitions = getPartitions();
+      if (tableSpec != null) {
+        if (tableSpec.tableHandle.isPartitioned()) {
+          if (partitions == null) {
+            throw new IllegalStateException("partitions cannot be null for partitionTable :"
+                + tableSpec.tableName);
+          }
+          for (Partition partition : partitions) {
+            authEntities.inputs.add(new ReadEntity(partition));
+          }
+        } else {
+          authEntities.inputs.add(new ReadEntity(tableSpec.tableHandle));
+        }
+      }
+      authEntities.outputs.add(toWriteEntity(paths.getExportRootDir(), conf));
+    } catch (Exception e) {
+      throw new SemanticException(e);
+    }
+    return authEntities;
   }
 }

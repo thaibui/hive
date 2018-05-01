@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,6 +19,7 @@
 package org.apache.hadoop.hive.ql.udf.generic;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
@@ -40,6 +41,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.hive.common.ValidTxnList;
+import org.apache.hadoop.hive.common.ValidTxnWriteIdList;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.llap.FieldDesc;
@@ -57,10 +60,10 @@ import org.apache.hadoop.hive.llap.security.LlapTokenIdentifier;
 import org.apache.hadoop.hive.llap.security.LlapTokenLocalClient;
 import org.apache.hadoop.hive.llap.tez.Converters;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
 import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.QueryPlan;
+import org.apache.hadoop.hive.ql.QueryState;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -69,6 +72,8 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.exec.tez.DagUtils;
 import org.apache.hadoop.hive.ql.exec.tez.HiveSplitGenerator;
 import org.apache.hadoop.hive.ql.exec.tez.TezTask;
+import org.apache.hadoop.hive.ql.lockmgr.HiveTxnManager;
+import org.apache.hadoop.hive.ql.lockmgr.TxnManagerFactory;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.plan.MapWork;
 import org.apache.hadoop.hive.ql.plan.PlanUtils;
@@ -112,7 +117,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * GenericUDTFGetSplits.
- * 
+ *
  */
 @Description(name = "get_splits", value = "_FUNC_(string,int) - "
     + "Returns an array of length int serialized splits for the referenced tables string.")
@@ -184,12 +189,21 @@ public class GenericUDTFGetSplits extends GenericUDTF {
     String query = stringOI.getPrimitiveJavaObject(arguments[0]);
     int num = intOI.get(arguments[1]);
 
-    PlanFragment fragment = createPlanFragment(query, num);
+    // Generate applicationId for the LLAP splits
+    LlapCoordinator coordinator = LlapCoordinator.getInstance();
+    if (coordinator == null) {
+      throw new HiveException("LLAP coordinator is not initialized; must be running in HS2 with "
+          + ConfVars.LLAP_HS2_ENABLE_COORDINATOR.varname + " enabled");
+    }
+    ApplicationId applicationId = coordinator.createExtClientAppId();
+    LOG.info("Generated appID {} for LLAP splits", applicationId.toString());
+
+    PlanFragment fragment = createPlanFragment(query, num, applicationId);
     TezWork tezWork = fragment.work;
     Schema schema = fragment.schema;
 
     try {
-      for (InputSplit s : getSplits(jc, num, tezWork, schema)) {
+      for (InputSplit s : getSplits(jc, num, tezWork, schema, applicationId)) {
         Object[] os = new Object[1];
         bos.reset();
         s.write(dos);
@@ -202,7 +216,7 @@ public class GenericUDTFGetSplits extends GenericUDTF {
     }
   }
 
-  public PlanFragment createPlanFragment(String query, int num)
+  public PlanFragment createPlanFragment(String query, int num, ApplicationId splitsAppId)
       throws HiveException {
 
     HiveConf conf = new HiveConf(SessionState.get().getConf());
@@ -224,9 +238,18 @@ public class GenericUDTFGetSplits extends GenericUDTF {
       throw new HiveException(e);
     }
 
-    Driver driver = new Driver(conf);
+    // Instantiate Driver to compile the query passed in.
+    // This UDF is running as part of an existing query, which may already be using the
+    // SessionState TxnManager. If this new Driver also tries to use the same TxnManager
+    // then this may mess up the existing state of the TxnManager.
+    // So initialize the new Driver with a new TxnManager so that it does not use the
+    // Session TxnManager that is already in use.
+    HiveTxnManager txnManager = TxnManagerFactory.getTxnManagerFactory().getTxnManager(conf);
+    Driver driver = new Driver(new QueryState.Builder().withHiveConf(conf).nonIsolated().build(), null, null, txnManager);
+    DriverCleanup driverCleanup = new DriverCleanup(driver, txnManager, splitsAppId.toString());
+    boolean needsCleanup = true;
     try {
-      CommandProcessorResponse cpr = driver.compileAndRespond(query);
+      CommandProcessorResponse cpr = driver.compileAndRespond(query, false);
       if (cpr.getResponseCode() != 0) {
         throw new HiveException("Failed to compile query: " + cpr.getException());
       }
@@ -247,14 +270,9 @@ public class GenericUDTFGetSplits extends GenericUDTF {
 
         String ctas = "create temporary table " + tableName + " as " + query;
         LOG.info("Materializing the query for LLAPIF; CTAS: " + ctas);
-
-        try {
-          driver.resetQueryState();
-          HiveConf.setVar(conf, ConfVars.HIVE_EXECUTION_MODE, originalMode);
-          cpr = driver.run(ctas, false);
-        } catch (CommandNeedRetryException e) {
-          throw new HiveException(e);
-        }
+        driver.releaseResources();
+        HiveConf.setVar(conf, ConfVars.HIVE_EXECUTION_MODE, originalMode);
+        cpr = driver.run(ctas, false);
 
         if(cpr.getResponseCode() != 0) {
           throw new HiveException("Failed to create temp table: " + cpr.getException());
@@ -262,7 +280,7 @@ public class GenericUDTFGetSplits extends GenericUDTF {
 
         HiveConf.setVar(conf, ConfVars.HIVE_EXECUTION_MODE, "llap");
         query = "select * from " + tableName;
-        cpr = driver.compileAndRespond(query);
+        cpr = driver.compileAndRespond(query, true);
         if(cpr.getResponseCode() != 0) {
           throw new HiveException("Failed to create temp table: "+cpr.getException());
         }
@@ -276,16 +294,51 @@ public class GenericUDTFGetSplits extends GenericUDTF {
         }
 
         tezWork = ((TezTask)roots.get(0)).getWork();
+      } else {
+        // Table will be queried directly by LLAP
+        // Acquire locks if necessary - they will be released during session cleanup.
+        // The read will have READ_COMMITTED level semantics.
+        try {
+          driver.lockAndRespond();
+        } catch (CommandProcessorResponse cpr1) {
+          throw new HiveException("Failed to acquire locks", cpr1);
+        }
+
+        // Attach the resources to the session cleanup.
+        SessionState.get().addCleanupItem(driverCleanup);
+        needsCleanup = false;
+      }
+
+      // Pass the ValidTxnList and ValidTxnWriteIdList snapshot configurations corresponding to the input query
+      HiveConf driverConf = driver.getConf();
+      String validTxnString = driverConf.get(ValidTxnList.VALID_TXNS_KEY);
+      if (validTxnString != null) {
+        jc.set(ValidTxnList.VALID_TXNS_KEY, validTxnString);
+      }
+      String validWriteIdString = driverConf.get(ValidTxnWriteIdList.VALID_TABLES_WRITEIDS_KEY);
+      if (validWriteIdString != null) {
+        assert  validTxnString != null;
+        jc.set(ValidTxnWriteIdList.VALID_TABLES_WRITEIDS_KEY, validWriteIdString);
       }
 
       return new PlanFragment(tezWork, schema, jc);
     } finally {
-      driver.close();
-      driver.destroy();
+      if (needsCleanup) {
+        if (driverCleanup != null) {
+          try {
+            driverCleanup.close();
+          } catch (IOException err) {
+            throw new HiveException(err);
+          }
+        } else if (driver != null) {
+          driver.close();
+          driver.destroy();
+        }
+      }
     }
   }
 
-  public InputSplit[] getSplits(JobConf job, int numSplits, TezWork work, Schema schema)
+  public InputSplit[] getSplits(JobConf job, int numSplits, TezWork work, Schema schema, ApplicationId applicationId)
     throws IOException {
 
     DAG dag = DAG.create(work.getName());
@@ -301,7 +354,7 @@ public class GenericUDTFGetSplits extends GenericUDTF {
     Path scratchDir = utils.createTezDir(ctx.getMRScratchDir(), job);
     FileSystem fs = scratchDir.getFileSystem(job);
     try {
-      LocalResource appJarLr = createJarLocalResource(utils.getExecJarPathLocal(), utils, job);
+      LocalResource appJarLr = createJarLocalResource(utils.getExecJarPathLocal(ctx.getConf()), utils, job);
 
       LlapCoordinator coordinator = LlapCoordinator.getInstance();
       if (coordinator == null) {
@@ -311,11 +364,9 @@ public class GenericUDTFGetSplits extends GenericUDTF {
 
       // Update the queryId to use the generated applicationId. See comment below about
       // why this is done.
-      ApplicationId applicationId = coordinator.createExtClientAppId();
       HiveConf.setVar(wxConf, HiveConf.ConfVars.HIVEQUERYID, applicationId.toString());
-      Vertex wx = utils.createVertex(wxConf, mapWork, scratchDir, appJarLr,
-          new ArrayList<LocalResource>(), fs, ctx, false, work,
-          work.getVertexType(mapWork));
+      Vertex wx = utils.createVertex(wxConf, mapWork, scratchDir, fs, ctx, false, work,
+          work.getVertexType(mapWork), DagUtils.createTezLrMap(appJarLr, null));
       String vertexName = wx.getName();
       dag.addVertex(wx);
       utils.addCredentials(mapWork, dag);
@@ -352,7 +403,7 @@ public class GenericUDTFGetSplits extends GenericUDTF {
       LlapSigner signer = null;
       if (UserGroupInformation.isSecurityEnabled()) {
         signer = coordinator.getLlapSigner(job);
- 
+
         // 1. Generate the token for query user (applies to all splits).
         queryUser = SessionState.getUserFromAuthenticator();
         if (queryUser == null) {
@@ -412,6 +463,37 @@ public class GenericUDTFGetSplits extends GenericUDTF {
     }
   }
 
+  private static class DriverCleanup implements Closeable {
+    private final Driver driver;
+    private final HiveTxnManager txnManager;
+    private final String applicationId;
+
+    public DriverCleanup(Driver driver, HiveTxnManager txnManager, String applicationId) {
+      this.driver = driver;
+      this.txnManager = txnManager;
+      this.applicationId = applicationId;
+    }
+
+    @Override
+    public void close() throws IOException {
+      try {
+        LOG.info("DriverCleanup for LLAP splits: {}", applicationId);
+        driver.releaseLocksAndCommitOrRollback(true);
+        driver.close();
+        driver.destroy();
+        txnManager.closeTxnManager();
+      } catch (Exception err) {
+        LOG.error("Error closing driver resources", err);
+        throw new IOException(err);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "DriverCleanup for LLAP splits: " + applicationId;
+    }
+  }
+
   private static class JobTokenCreator {
     private static Token<JobTokenIdentifier> createJobToken(ApplicationId applicationId) {
       String tokenIdentifier = applicationId.toString();
@@ -426,6 +508,10 @@ public class GenericUDTFGetSplits extends GenericUDTF {
 
   private SplitLocationInfo[] makeLocationHints(TaskLocationHint hint) {
     Set<String> hosts = hint.getHosts();
+    if (hosts == null) {
+      LOG.warn("No hosts");
+      return new SplitLocationInfo[0];
+    }
     if (hosts.size() != 1) {
       LOG.warn("Bad # of locations: " + hosts.size());
     }
@@ -490,7 +576,7 @@ public class GenericUDTFGetSplits extends GenericUDTF {
   /**
    * Returns a local resource representing a jar. This resource will be used to
    * execute the plan on the cluster.
-   * 
+   *
    * @param localJarPath
    *          Local path to the jar to be localized.
    * @return LocalResource corresponding to the localized hive exec resource.

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.hive.ql.exec.vector.expressions;
 
+import java.util.Arrays;
+
 import org.apache.hadoop.hive.common.type.HiveIntervalYearMonth;
 import org.apache.hadoop.hive.ql.exec.vector.BytesColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
@@ -32,16 +34,18 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 public class CastStringToIntervalYearMonth extends VectorExpression {
   private static final long serialVersionUID = 1L;
 
-  private int inputColumn;
-  private int outputColumn;
+  private final int inputColumn;
 
   public CastStringToIntervalYearMonth() {
+    super();
 
+    // Dummy final assignments.
+    inputColumn = -1;
   }
 
-  public CastStringToIntervalYearMonth(int inputColumn, int outputColumn) {
+  public CastStringToIntervalYearMonth(int inputColumn, int outputColumnNum) {
+    super(outputColumnNum);
     this.inputColumn = inputColumn;
-    this.outputColumn = outputColumn;
   }
 
   @Override
@@ -51,10 +55,13 @@ public class CastStringToIntervalYearMonth extends VectorExpression {
       super.evaluateChildren(batch);
     }
 
-    BytesColumnVector inV = (BytesColumnVector) batch.cols[inputColumn];
+    BytesColumnVector inputColVector = (BytesColumnVector) batch.cols[inputColumn];
     int[] sel = batch.selected;
     int n = batch.size;
-    LongColumnVector outV = (LongColumnVector) batch.cols[outputColumn];
+    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumnNum];
+
+    boolean[] inputIsNull = inputColVector.isNull;
+    boolean[] outputIsNull = outputColVector.isNull;
 
     if (n == 0) {
 
@@ -62,92 +69,102 @@ public class CastStringToIntervalYearMonth extends VectorExpression {
       return;
     }
 
-    if (inV.noNulls) {
-      outV.noNulls = true;
-      if (inV.isRepeating) {
-        outV.isRepeating = true;
-        evaluate(outV, inV, 0);
-      } else if (batch.selectedInUse) {
-        for(int j = 0; j != n; j++) {
-          int i = sel[j];
-          evaluate(outV, inV, i);
-        }
-        outV.isRepeating = false;
-      } else {
-        for(int i = 0; i != n; i++) {
-          evaluate(outV, inV, i);
-        }
-        outV.isRepeating = false;
-      }
-    } else {
+    // We do not need to do a column reset since we are carefully changing the output.
+    outputColVector.isRepeating = false;
 
-      // Handle case with nulls. Don't do function if the value is null,
-      // because the data may be undefined for a null value.
-      outV.noNulls = false;
-      if (inV.isRepeating) {
-        outV.isRepeating = true;
-        outV.isNull[0] = inV.isNull[0];
-        if (!inV.isNull[0]) {
-          evaluate(outV, inV, 0);
+    if (inputColVector.isRepeating) {
+      if (inputColVector.noNulls || !inputIsNull[0]) {
+        // Set isNull before call in case it changes it mind.
+        outputIsNull[0] = false;
+        evaluate(outputColVector, inputColVector, 0);
+      } else {
+        outputIsNull[0] = true;
+        outputColVector.noNulls = false;
+      }
+      outputColVector.isRepeating = true;
+      return;
+    }
+
+    if (inputColVector.noNulls) {
+      if (batch.selectedInUse) {
+
+        // CONSIDER: For large n, fill n or all of isNull array and use the tighter ELSE loop.
+
+        if (!outputColVector.noNulls) {
+          for(int j = 0; j != n; j++) {
+           final int i = sel[j];
+           // Set isNull before call in case it changes it mind.
+           outputIsNull[i] = false;
+           evaluate(outputColVector, inputColVector, i);
+         }
+        } else {
+          for(int j = 0; j != n; j++) {
+            final int i = sel[j];
+            evaluate(outputColVector, inputColVector, i);
+          }
         }
-      } else if (batch.selectedInUse) {
+      } else {
+        if (!outputColVector.noNulls) {
+
+          // Assume it is almost always a performance win to fill all of isNull so we can
+          // safely reset noNulls.
+          Arrays.fill(outputIsNull, false);
+          outputColVector.noNulls = true;
+        }
+        for(int i = 0; i != n; i++) {
+          evaluate(outputColVector, inputColVector, i);
+        }
+      }
+    } else /* there are NULLs in the inputColVector */ {
+
+      /*
+       * Do careful maintenance of the outputColVector.noNulls flag.
+       */
+
+      if (batch.selectedInUse) {
         for(int j = 0; j != n; j++) {
           int i = sel[j];
-          outV.isNull[i] = inV.isNull[i];
-          if (!inV.isNull[i]) {
-            evaluate(outV, inV, i);
+          if (!inputColVector.isNull[i]) {
+            // Set isNull before call in case it changes it mind.
+            outputIsNull[i] = false;
+            evaluate(outputColVector, inputColVector, i);
+          } else {
+            outputIsNull[i] = true;
+            outputColVector.noNulls = false;
           }
         }
-        outV.isRepeating = false;
       } else {
-        System.arraycopy(inV.isNull, 0, outV.isNull, 0, n);
+        // Set isNull before calls in case they change their mind.
+        System.arraycopy(inputColVector.isNull, 0, outputColVector.isNull, 0, n);
         for(int i = 0; i != n; i++) {
-          if (!inV.isNull[i]) {
-            evaluate(outV, inV, i);
+          if (!inputColVector.isNull[i]) {
+            // Set isNull before call in case it changes it mind.
+            outputIsNull[i] = false;
+            evaluate(outputColVector, inputColVector, i);
+          } else {
+            outputIsNull[i] = true;
+            outputColVector.noNulls = false;
           }
         }
-        outV.isRepeating = false;
       }
     }
   }
 
-  private void evaluate(LongColumnVector outV, BytesColumnVector inV, int i) {
+  private void evaluate(LongColumnVector outputColVector, BytesColumnVector inputColVector, int i) {
     try {
       HiveIntervalYearMonth interval = HiveIntervalYearMonth.valueOf(
-          new String(inV.vector[i], inV.start[i], inV.length[i], "UTF-8"));
-      outV.vector[i] = interval.getTotalMonths();
+          new String(inputColVector.vector[i], inputColVector.start[i], inputColVector.length[i], "UTF-8"));
+      outputColVector.vector[i] = interval.getTotalMonths();
     } catch (Exception e) {
-      outV.vector[i] = 1;
-      outV.isNull[i] = true;
-      outV.noNulls = false;
+      outputColVector.vector[i] = 1;
+      outputColVector.isNull[i] = true;
+      outputColVector.noNulls = false;
     }
-  }
-
-  @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
-  }
-
-  public int getInputColumn() {
-    return inputColumn;
-  }
-
-  public void setInputColumn(int inputColumn) {
-    this.inputColumn = inputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return serdeConstants.INTERVAL_YEAR_MONTH_TYPE_NAME;
   }
 
   @Override
   public String vectorExpressionParameters() {
-    return "col " + inputColumn;
+    return getColumnParamString(0, inputColumn);
   }
 
   @Override

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -32,7 +32,6 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveVariableSource;
 import org.apache.hadoop.hive.conf.SystemVariables;
 import org.apache.hadoop.hive.conf.VariableSubstitution;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveOperationType;
 import org.apache.hadoop.hive.ql.session.SessionState;
@@ -40,19 +39,15 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 
 public class ResetProcessor implements CommandProcessor {
 
-  @Override
-  public void init() {
-  }
-
   private final static String DEFAULT_ARG = "-d";
 
   @Override
-  public CommandProcessorResponse run(String command) throws CommandNeedRetryException {
+  public CommandProcessorResponse run(String command) {
     return run(SessionState.get(), command);
   }
 
   @VisibleForTesting
-  CommandProcessorResponse run(SessionState ss, String command) throws CommandNeedRetryException {
+  CommandProcessorResponse run(SessionState ss, String command) {
     CommandProcessorResponse authErrResp =
         CommandUtil.authorizeCommand(ss, HiveOperationType.RESET, Arrays.asList(command));
     if (authErrResp != null) {
@@ -68,7 +63,9 @@ public class ResetProcessor implements CommandProcessor {
     boolean isDefault = false;
     List<String> varnames = new ArrayList<>(parts.length);
     for (String part : parts) {
-      if (part.isEmpty()) continue;
+      if (part.isEmpty()) {
+        continue;
+      }
       if (DEFAULT_ARG.equals(part)) {
         isDefault = true;
       } else {
@@ -95,7 +92,9 @@ public class ResetProcessor implements CommandProcessor {
   }
 
   private static void resetOverridesOnly(SessionState ss) {
-    if (ss.getOverriddenConfigurations().isEmpty()) return;
+    if (ss.getOverriddenConfigurations().isEmpty()) {
+      return;
+    }
     HiveConf conf = new HiveConf();
     for (String key : ss.getOverriddenConfigurations().keySet()) {
       setSessionVariableFromConf(ss, key, conf);
@@ -104,7 +103,9 @@ public class ResetProcessor implements CommandProcessor {
   }
 
   private static void resetOverrideOnly(SessionState ss, String varname) {
-    if (!ss.getOverriddenConfigurations().containsKey(varname)) return;
+    if (!ss.getOverriddenConfigurations().containsKey(varname)) {
+      return;
+    }
     setSessionVariableFromConf(ss, varname, new HiveConf());
     ss.getOverriddenConfigurations().remove(varname);
   }
@@ -150,7 +151,13 @@ public class ResetProcessor implements CommandProcessor {
 
   private static HiveConf.ConfVars getConfVar(String propName) {
     HiveConf.ConfVars confVars = HiveConf.getConfVars(propName);
-    if (confVars == null) throw new IllegalArgumentException(propName + " not found");
+    if (confVars == null) {
+      throw new IllegalArgumentException(propName + " not found");
+    }
     return confVars;
+  }
+
+  @Override
+  public void close() throws Exception {
   }
 }

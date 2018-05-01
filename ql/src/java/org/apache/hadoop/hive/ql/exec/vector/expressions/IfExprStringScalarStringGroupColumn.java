@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -36,19 +36,26 @@ public class IfExprStringScalarStringGroupColumn extends VectorExpression {
 
   private static final long serialVersionUID = 1L;
 
-  private int arg1Column, arg3Column;
-  private byte[] arg2Scalar;
-  private int outputColumn;
+  private final int arg1Column;
+  private final byte[] arg2Scalar;
+  private final int arg3Column;
 
-  public IfExprStringScalarStringGroupColumn(int arg1Column, byte[] arg2Scalar, int arg3Column, int outputColumn) {
+
+  public IfExprStringScalarStringGroupColumn(int arg1Column, byte[] arg2Scalar, int arg3Column,
+      int outputColumnNum) {
+    super(outputColumnNum);
     this.arg1Column = arg1Column;
     this.arg2Scalar = arg2Scalar;
     this.arg3Column = arg3Column;
-    this.outputColumn = outputColumn;
   }
 
   public IfExprStringScalarStringGroupColumn() {
     super();
+
+    // Dummy final assignments.
+    arg1Column = -1;
+    arg2Scalar = null;
+    arg3Column = -1;
   }
 
   @Override
@@ -60,11 +67,18 @@ public class IfExprStringScalarStringGroupColumn extends VectorExpression {
 
     LongColumnVector arg1ColVector = (LongColumnVector) batch.cols[arg1Column];
     BytesColumnVector arg3ColVector = (BytesColumnVector) batch.cols[arg3Column];
-    BytesColumnVector outputColVector = (BytesColumnVector) batch.cols[outputColumn];
+    BytesColumnVector outputColVector = (BytesColumnVector) batch.cols[outputColumnNum];
     int[] sel = batch.selected;
     boolean[] outputIsNull = outputColVector.isNull;
-    outputColVector.noNulls = arg3ColVector.noNulls;
-    outputColVector.isRepeating = false; // may override later
+
+    if (!outputColVector.noNulls) {
+      // TEMPORARILY:
+      outputColVector.reset();
+    }
+
+    // We do not need to do a column reset since we are carefully changing the output.
+    outputColVector.isRepeating = false;
+
     int n = batch.size;
     long[] vector1 = arg1ColVector.vector;
 
@@ -82,7 +96,7 @@ public class IfExprStringScalarStringGroupColumn extends VectorExpression {
      * of code paths.
      */
     if (arg1ColVector.isRepeating) {
-      if (vector1[0] == 1) {
+      if ((arg1ColVector.noNulls || !arg1ColVector.isNull[0]) && vector1[0] == 1) {
         outputColVector.fill(arg2Scalar);
       } else {
         arg3ColVector.copySelected(batch.selectedInUse, sel, n, outputColVector);
@@ -92,6 +106,11 @@ public class IfExprStringScalarStringGroupColumn extends VectorExpression {
 
     // extend any repeating values and noNulls indicator in the input
     arg3ColVector.flatten(batch.selectedInUse, sel, n);
+
+    /*
+     * Do careful maintenance of NULLs.
+     */
+    outputColVector.noNulls = false;
 
     if (arg1ColVector.noNulls) {
       if (batch.selectedInUse) {
@@ -156,18 +175,8 @@ public class IfExprStringScalarStringGroupColumn extends VectorExpression {
   }
 
   @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return "String";
-  }
-
-  @Override
   public String vectorExpressionParameters() {
-    return "col " + arg1Column + ", val "+ displayUtf8Bytes(arg2Scalar) + ", col "+ arg3Column;
+    return getColumnParamString(0, arg1Column) + ", val "+ displayUtf8Bytes(arg2Scalar) + getColumnParamString(2, arg3Column);
   }
 
   @Override

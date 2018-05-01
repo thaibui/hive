@@ -36,6 +36,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"col1":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns col1
                 columns.comments 
@@ -54,7 +55,8 @@ STAGE PLANS:
               name: default.hive_test_src
 
   Stage: Stage-1
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: load data local inpath '../../data/files/test.dat' overwrite into table hive_test_src
 PREHOOK: type: LOAD
@@ -71,7 +73,6 @@ POSTHOOK: query: desc formatted hive_test_src
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@hive_test_src
 # col_name            	data_type           	comment             
-	 	 
 col1                	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -81,6 +82,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -204,12 +206,10 @@ POSTHOOK: query: describe formatted hive_test_dst
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@hive_test_dst
 # col_name            	data_type           	comment             
-	 	 
 col1                	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 pcol1               	string              	                    
 pcol2               	string              	                    
 	 	 
@@ -221,6 +221,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numPartitions       	1                   
 	numRows             	6                   

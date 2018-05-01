@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,8 +20,6 @@ package org.apache.hadoop.hive.ql.exec;
 
 import static org.apache.hadoop.hive.serde.serdeConstants.STRING_TYPE_NAME;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Serializable;
@@ -32,82 +30,49 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.common.ObjectPair;
 import org.apache.hadoop.hive.common.jsonexplain.JsonParser;
 import org.apache.hadoop.hive.common.jsonexplain.JsonParserFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.conf.Validator.StringSet;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.DriverContext;
-import org.apache.hadoop.hive.ql.exec.spark.SparkTask;
-import org.apache.hadoop.hive.ql.exec.tez.TezTask;
-import org.apache.hadoop.hive.ql.exec.vector.VectorGroupByOperator;
-import org.apache.hadoop.hive.ql.exec.vector.VectorizationContext;
-import org.apache.hadoop.hive.ql.exec.vector.expressions.VectorExpression;
-import org.apache.hadoop.hive.ql.exec.vector.expressions.aggregates.VectorAggregateExpression;
-import org.apache.hadoop.hive.ql.plan.MapJoinDesc;
-import org.apache.hadoop.hive.ql.plan.ReduceSinkDesc;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.io.AcidUtils;
-import org.apache.hadoop.hive.ql.lib.DefaultGraphWalker;
-import org.apache.hadoop.hive.ql.lib.DefaultRuleDispatcher;
-import org.apache.hadoop.hive.ql.lib.Dispatcher;
-import org.apache.hadoop.hive.ql.lib.GraphWalker;
-import org.apache.hadoop.hive.ql.lib.Node;
-import org.apache.hadoop.hive.ql.lib.NodeProcessor;
-import org.apache.hadoop.hive.ql.lib.NodeProcessorCtx;
-import org.apache.hadoop.hive.ql.lib.Rule;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.optimizer.physical.StageIDsRearranger;
-import org.apache.hadoop.hive.ql.optimizer.physical.Vectorizer;
-import org.apache.hadoop.hive.ql.optimizer.physical.VectorizerReason;
 import org.apache.hadoop.hive.ql.parse.BaseSemanticAnalyzer;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration.VectorizationDetailLevel;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.hive.ql.plan.BaseWork;
 import org.apache.hadoop.hive.ql.plan.Explain;
 import org.apache.hadoop.hive.ql.plan.Explain.Level;
 import org.apache.hadoop.hive.ql.plan.Explain.Vectorization;
-import org.apache.hadoop.hive.ql.plan.AggregationDesc;
 import org.apache.hadoop.hive.ql.plan.ExplainWork;
-import org.apache.hadoop.hive.ql.plan.GroupByDesc;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
-import org.apache.hadoop.hive.ql.plan.MapredWork;
-import org.apache.hadoop.hive.ql.plan.MapWork;
-import org.apache.hadoop.hive.ql.plan.ReduceWork;
 import org.apache.hadoop.hive.ql.plan.OperatorDesc;
+import org.apache.hadoop.hive.ql.plan.ReduceSinkDesc;
 import org.apache.hadoop.hive.ql.plan.SparkWork;
-import org.apache.hadoop.hive.ql.plan.TableDesc;
 import org.apache.hadoop.hive.ql.plan.TezWork;
-import org.apache.hadoop.hive.ql.plan.VectorReduceSinkInfo;
-import org.apache.hadoop.hive.ql.plan.VectorReduceSinkDesc;
-import org.apache.hadoop.hive.ql.plan.VectorGroupByDesc;
 import org.apache.hadoop.hive.ql.plan.api.StageType;
 import org.apache.hadoop.hive.ql.security.authorization.AuthorizationFactory;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hadoop.hive.serde2.Deserializer;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.hive.common.util.AnnotationUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * ExplainTask implementation.
@@ -392,8 +357,8 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
             jsonParser.print(jsonPlan, out);
           } catch (Exception e) {
             // if there is anything wrong happen, we bail out.
-            LOG.error("Running explain user level has problem: " + e.toString()
-                + ". Falling back to normal explain");
+            LOG.error("Running explain user level has problem." +
+              " Falling back to normal explain.", e);
             work.getConfig().setFormatted(false);
             work.getConfig().setUserLevelExplain(false);
             jsonPlan = getJSONPlan(out, work);
@@ -405,7 +370,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
             JsonParser jsonParser = JsonParserFactory.getParser(conf);
             if (jsonParser != null) {
               jsonParser.print(jsonPlan, null);
-              LOG.info("JsonPlan is augmented to " + jsonPlan.toString());
+              LOG.info("JsonPlan is augmented to {}", jsonPlan);
             }
             out.print(jsonPlan);
           }
@@ -417,8 +382,8 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
       return (0);
     }
     catch (Exception e) {
-      console.printError("Failed with exception " + e.getMessage(),
-          "\n" + StringUtils.stringifyException(e));
+      LOG.error(org.apache.hadoop.util.StringUtils.stringifyException(e));
+      setException(e);
       return (1);
     }
     finally {
@@ -461,6 +426,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
       Class itface = SessionState.get().getAuthorizerInterface();
       Object authorizer = AuthorizationFactory.create(delegate, itface,
           new AuthorizationFactory.AuthorizationExceptionHandler() {
+            @Override
             public void exception(Exception exception) {
               exceptions.add(exception.getMessage());
             }
@@ -643,7 +609,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
   }
 
   private JSONArray outputList(List<?> l, PrintStream out, boolean hasHeader,
-      boolean extended, boolean jsonOutput, int indent) throws Exception {
+      boolean extended, boolean jsonOutput, int indent, boolean inTest) throws Exception {
 
     boolean first_el = true;
     boolean nl = false;
@@ -667,7 +633,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
           out.println();
         }
         JSONObject jsonOut = outputPlan(o, out, extended,
-            jsonOutput, jsonOutput ? 0 : (hasHeader ? indent + 2 : indent));
+            jsonOutput, jsonOutput ? 0 : (hasHeader ? indent + 2 : indent), "", inTest);
         if (jsonOutput) {
           outputArray.put(jsonOut);
         }
@@ -705,6 +671,13 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
   @VisibleForTesting
   JSONObject outputPlan(Object work, PrintStream out,
       boolean extended, boolean jsonOutput, int indent, String appendToHeader) throws Exception {
+    return outputPlan(work, out, extended, jsonOutput, indent, appendToHeader,
+            queryState.getConf().getBoolVar(ConfVars.HIVE_IN_TEST));
+  }
+
+  public JSONObject outputPlan(Object work, PrintStream out,
+                               boolean extended, boolean jsonOutput, int indent,
+                               String appendToHeader, boolean inTest) throws Exception {
     // Check if work has an explain annotation
     Annotation note = AnnotationUtils.getAnnotation(work.getClass(), Explain.class);
 
@@ -802,7 +775,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
       if (operator.getConf() != null) {
         String appender = isLogical ? " (" + operator.getOperatorId() + ")" : "";
         JSONObject jsonOut = outputPlan(operator.getConf(), out, extended,
-            jsonOutput, jsonOutput ? 0 : indent, appender);
+            jsonOutput, jsonOutput ? 0 : indent, appender, inTest);
         if (this.work != null && (this.work.isUserLevelExplain() || this.work.isFormatted())) {
           if (jsonOut != null && jsonOut.length() > 0) {
             ((JSONObject) jsonOut.get(JSONObject.getNames(jsonOut)[0])).put("OperatorId:",
@@ -824,7 +797,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
         if (operator.getChildOperators() != null) {
           int cindent = jsonOutput ? 0 : indent + 2;
           for (Operator<? extends OperatorDesc> op : operator.getChildOperators()) {
-            JSONObject jsonOut = outputPlan(op, out, extended, jsonOutput, cindent);
+            JSONObject jsonOut = outputPlan(op, out, extended, jsonOutput, cindent, "", inTest);
             if (jsonOutput) {
               ((JSONObject)json.get(JSONObject.getNames(json)[0])).accumulate("children", jsonOut);
             }
@@ -920,7 +893,12 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
 
           Object val = null;
           try {
-            val = m.invoke(work);
+            if(postProcess(xpl_note)) {
+              val = m.invoke(work, inTest);
+            }
+            else{
+              val = m.invoke(work);
+            }
           }
           catch (InvocationTargetException ex) {
             // Ignore the exception, this may be caused by external jars
@@ -928,6 +906,10 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
           }
 
           if (val == null) {
+            continue;
+          }
+
+          if(xpl_note.jsonOnly() && !jsonOutput) {
             continue;
           }
 
@@ -991,7 +973,8 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
               out.print(header);
             }
 
-            JSONArray jsonOut = outputList(l, out, !skipHeader && !emptyHeader, extended, jsonOutput, ind);
+            JSONArray jsonOut = outputList(l, out, !skipHeader && !emptyHeader, extended,
+                    jsonOutput, ind, inTest);
 
             if (jsonOutput && !l.isEmpty()) {
               json.put(header, jsonOut);
@@ -1005,7 +988,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
             if (!skipHeader && out != null) {
               out.println(header);
             }
-            JSONObject jsonOut = outputPlan(val, out, extended, jsonOutput, ind);
+            JSONObject jsonOut = outputPlan(val, out, extended, jsonOutput, ind, "", inTest);
             if (jsonOutput && jsonOut != null && jsonOut.length() != 0) {
               if (!skipHeader) {
                 json.put(header, jsonOut);
@@ -1034,6 +1017,15 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
       return json;
     }
     return null;
+  }
+
+  /**
+   * use case: this is only use for testing purposes. For instance, we might
+   * want to sort the expressions in a filter so we get deterministic comparable
+   * golden files
+   */
+  private boolean postProcess(Explain exp) {
+    return exp.postProcess();
   }
 
   /**
@@ -1237,7 +1229,7 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
     return "EXPLAIN";
   }
 
-  public List<FieldSchema> getResultSchema() {
+  public static List<FieldSchema> getResultSchema() {
     FieldSchema tmpFieldSchema = new FieldSchema();
     List<FieldSchema> colList = new ArrayList<FieldSchema>();
 
@@ -1246,5 +1238,10 @@ public class ExplainTask extends Task<ExplainWork> implements Serializable {
 
     colList.add(tmpFieldSchema);
     return colList;
+  }
+
+  @Override
+  public boolean canExecuteInParallel() {
+    return false;
   }
 }

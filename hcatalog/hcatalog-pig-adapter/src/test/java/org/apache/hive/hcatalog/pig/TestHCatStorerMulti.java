@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,8 +30,8 @@ import java.util.Set;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.io.StorageFormats;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
@@ -60,7 +60,7 @@ public class TestHCatStorerMulti {
 
   private static final String BASIC_TABLE = "junit_unparted_basic";
   private static final String PARTITIONED_TABLE = "junit_parted_basic";
-  private static Driver driver;
+  private static IDriver driver;
 
   private static Map<Integer, Pair<Integer, String>> basicInputData;
 
@@ -78,24 +78,15 @@ public class TestHCatStorerMulti {
     this.storageFormat = storageFormat;
   }
 
-  private void dropTable(String tablename) throws IOException, CommandNeedRetryException {
+  private void dropTable(String tablename) throws Exception {
     driver.run("drop table " + tablename);
   }
 
-  private void createTable(String tablename, String schema, String partitionedBy) throws IOException, CommandNeedRetryException {
-    String createTable;
-    createTable = "create table " + tablename + "(" + schema + ") ";
-    if ((partitionedBy != null) && (!partitionedBy.trim().isEmpty())) {
-      createTable = createTable + "partitioned by (" + partitionedBy + ") ";
-    }
-    createTable = createTable + "stored as " + storageFormat;
-    int retCode = driver.run(createTable).getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table. [" + createTable + "], return code from hive driver : [" + retCode + "]");
-    }
+  private void createTable(String tablename, String schema, String partitionedBy) throws Exception {
+    AbstractHCatLoaderTest.createTable(tablename, schema, partitionedBy, driver, storageFormat);
   }
 
-  private void createTable(String tablename, String schema) throws IOException, CommandNeedRetryException {
+  private void createTable(String tablename, String schema) throws Exception {
     createTable(tablename, schema, null);
   }
 
@@ -113,7 +104,7 @@ public class TestHCatStorerMulti {
       hiveConf
       .setVar(HiveConf.ConfVars.HIVE_AUTHORIZATION_MANAGER,
           "org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactory");
-      driver = new Driver(hiveConf);
+      driver = DriverFactory.newDriver(hiveConf);
       SessionState.start(new CliSessionState(hiveConf));
     }
 
@@ -220,7 +211,7 @@ public class TestHCatStorerMulti {
     writer.close();
   }
 
-  private void cleanup() throws IOException, CommandNeedRetryException {
+  private void cleanup() throws Exception {
     File f = new File(TEST_WAREHOUSE_DIR);
     if (f.exists()) {
       FileUtil.fullyDelete(f);

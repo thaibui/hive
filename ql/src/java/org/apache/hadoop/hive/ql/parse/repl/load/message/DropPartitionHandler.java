@@ -53,8 +53,7 @@ public class DropPartitionHandler extends AbstractMessageHandler {
         DropTableDesc dropPtnDesc = new DropTableDesc(actualDbName + "." + actualTblName,
             partSpecs, null, true, context.eventOnlyReplicationSpec());
         Task<DDLWork> dropPtnTask = TaskFactory.get(
-            new DDLWork(readEntitySet, writeEntitySet, dropPtnDesc),
-            context.hiveConf
+            new DDLWork(readEntitySet, writeEntitySet, dropPtnDesc), context.hiveConf
         );
         context.log.debug("Added drop ptn task : {}:{},{}", dropPtnTask.getId(),
             dropPtnDesc.getTableName(), msg.getPartitions());
@@ -92,7 +91,7 @@ public class DropPartitionHandler extends AbstractMessageHandler {
         PrimitiveTypeInfo pti = TypeInfoFactory.getPrimitiveTypeInfo(type);
         ExprNodeColumnDesc column = new ExprNodeColumnDesc(pti, key, null, true);
         ExprNodeGenericFuncDesc op = DDLSemanticAnalyzer.makeBinaryPredicate(
-            "=", column, new ExprNodeConstantDesc(pti, val));
+            "=", column, new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, val));
         expr = (expr == null) ? op : DDLSemanticAnalyzer.makeBinaryPredicate("and", expr, op);
       }
       if (expr != null) {

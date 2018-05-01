@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,12 +14,20 @@
 package org.apache.hadoop.hive.ql.io.parquet;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DataCache;
 import org.apache.hadoop.hive.common.io.FileMetadataCache;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedInputFormatInterface;
+import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
 import org.apache.hadoop.hive.ql.io.LlapCacheOnlyInputFormatInterface;
+import org.apache.hadoop.hive.ql.io.parquet.serde.ParquetTableUtils;
+import org.apache.hadoop.hive.ql.plan.MapWork;
+import org.apache.hadoop.hive.ql.plan.PartitionDesc;
+import org.apache.hadoop.mapred.FileSplit;
+import org.apache.hadoop.mapred.JobConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hive.ql.exec.Utilities;
@@ -66,7 +74,7 @@ public class MapredParquetInputFormat extends FileInputFormat<NullWritable, Arra
       final org.apache.hadoop.mapred.Reporter reporter
       ) throws IOException {
     try {
-      if (Utilities.getUseVectorizedInputFileFormat(job)) {
+      if (Utilities.getIsVectorized(job)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Using vectorized record reader");
         }

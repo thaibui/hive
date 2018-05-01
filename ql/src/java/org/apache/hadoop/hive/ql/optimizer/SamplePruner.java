@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -34,6 +34,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.FilterOperator;
 import org.apache.hadoop.hive.ql.exec.TableScanOperator;
+import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.apache.hadoop.hive.ql.lib.DefaultGraphWalker;
 import org.apache.hadoop.hive.ql.lib.DefaultRuleDispatcher;
 import org.apache.hadoop.hive.ql.lib.Dispatcher;
@@ -190,7 +191,9 @@ public class SamplePruner extends Transform {
     String fullScanMsg = "";
 
     // check if input pruning is possible
-    if (sampleDescr.getInputPruning()) {
+    // TODO: this code is buggy - it relies on having one file per bucket; no MM support (by design).
+    boolean isMmTable = AcidUtils.isInsertOnlyTable(part.getTable().getParameters());
+    if (sampleDescr.getInputPruning() && !isMmTable) {
       LOG.trace("numerator = " + num);
       LOG.trace("denominator = " + den);
       LOG.trace("bucket count = " + bucketCount);
@@ -217,7 +220,7 @@ public class SamplePruner extends Transform {
       }
     } else {
       // need to do full scan
-      fullScanMsg = "Tablesample not on clustered columns";
+      fullScanMsg = isMmTable ? "MM table" : "Tablesample not on clustered columns";
     }
     LOG.warn(fullScanMsg + ", using full table scan");
     Path[] ret = part.getPath();

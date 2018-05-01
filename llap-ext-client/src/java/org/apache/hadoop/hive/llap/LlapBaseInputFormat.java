@@ -30,12 +30,12 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.collections4.ListUtils;
@@ -53,6 +53,7 @@ import org.apache.hadoop.hive.llap.registry.LlapServiceInstanceSet;
 import org.apache.hadoop.hive.llap.registry.impl.LlapRegistryService;
 import org.apache.hadoop.hive.llap.security.LlapTokenIdentifier;
 import org.apache.hadoop.hive.llap.tez.Converters;
+import org.apache.hadoop.hive.registry.ServiceInstanceSet;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.NullWritable;
@@ -96,7 +97,8 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
   private static final Logger LOG = LoggerFactory.getLogger(LlapBaseInputFormat.class);
 
   private static String driverName = "org.apache.hive.jdbc.HiveDriver";
-  private static final Map<String, Connection> connectionMap = new ConcurrentHashMap<String, Connection>();
+  private static final Object lock = new Object();
+  private static final Map<String, List<Connection>> connectionMap = new HashMap<String, List<Connection>>();
 
   private String url;  // "jdbc:hive2://localhost:10000/default"
   private String user; // "hive",
@@ -222,10 +224,6 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
       handleId = UUID.randomUUID().toString();
       LOG.info("Handle ID not specified - generated handle ID {}", handleId);
     }
-    // Check if the handle has already been used in the registry
-    if (connectionMap.containsKey(handleId)) {
-      throw new IllegalStateException("Handle ID " + handleId + " has already been used. This must be unique.");
-    }
 
     try {
       Class.forName(driverName);
@@ -261,18 +259,22 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
 
       // Keep connection open to hang on to associated resources (temp tables, locks).
       // Save to connectionMap so it can be closed at user's convenience.
-      Connection putResult = connectionMap.putIfAbsent(handleId, conn);
-      // Hopefully no one has used the same handle ID during the time that we executed the statement.
-      if (putResult != null) {
-        String msg = "Handle ID " + handleId + " has already been used. This must be unique.";
-        LOG.error(msg);
-        conn.close();
-        throw new IllegalStateException(msg);
-      }
+      addConnection(handleId, conn);
     } catch (Exception e) {
       throw new IOException(e);
     }
     return ins.toArray(new InputSplit[ins.size()]);
+  }
+
+  private void addConnection(String handleId, Connection connection) {
+    synchronized (lock) {
+      List<Connection> handleConnections = connectionMap.get(handleId);
+      if (handleConnections == null) {
+        handleConnections = new ArrayList<Connection>();
+        connectionMap.put(handleId, handleConnections);
+      }
+      handleConnections.add(connection);
+    }
   }
 
   /**
@@ -282,16 +284,21 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
    * @throws IOException
    */
   public static void close(String handleId) throws IOException {
-    Connection conn = connectionMap.remove(handleId);
-    if (conn != null) {
-      try {
-        LOG.debug("Closing connection for handle ID {}", handleId);
-        conn.close();
-      } catch (Exception err) {
-        throw new IOException(err);
+    List<Connection> handleConnections;
+    synchronized (lock) {
+      handleConnections = connectionMap.remove(handleId);
+    }
+    if (handleConnections != null) {
+      LOG.debug("Closing {} connections for handle ID {}", handleConnections.size(), handleId);
+      for (Connection conn : handleConnections) {
+        try {
+          conn.close();
+        } catch (Exception err) {
+          LOG.error("Error while closing connection for " + handleId, err);
+        }
       }
     } else {
-      LOG.info("No connection found for handle ID {}", handleId);
+      LOG.debug("No connection found for handle ID {}", handleId);
     }
   }
 
@@ -321,11 +328,17 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
 
   private LlapServiceInstance getServiceInstance(JobConf job, LlapInputSplit llapSplit) throws IOException {
     LlapRegistryService registryService = LlapRegistryService.getClient(job);
-    String host = llapSplit.getLocations()[0];
+    LlapServiceInstance serviceInstance = null;
+    String[] hosts = llapSplit.getLocations();
+    if (hosts != null && hosts.length > 0) {
+      String host = llapSplit.getLocations()[0];
+      serviceInstance = getServiceInstanceForHost(registryService, host);
+      if (serviceInstance == null) {
+        LOG.info("No service instances found for " + host + " in registry.");
+      }
+    }
 
-    LlapServiceInstance serviceInstance = getServiceInstanceForHost(registryService, host);
     if (serviceInstance == null) {
-      LOG.info("No service instances found for " + host + " in registry.");
       serviceInstance = getServiceInstanceRandom(registryService);
       if (serviceInstance == null) {
         throw new IOException("No service instances found in registry");
@@ -337,7 +350,7 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
 
   private LlapServiceInstance getServiceInstanceForHost(LlapRegistryService registryService, String host) throws IOException {
     InetAddress address = InetAddress.getByName(host);
-    LlapServiceInstanceSet instanceSet = registryService.getInstances();
+    ServiceInstanceSet<LlapServiceInstance> instanceSet = registryService.getInstances();
     LlapServiceInstance serviceInstance = null;
 
     // The name used in the service registry may not match the host name we're using.
@@ -369,13 +382,13 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
 
 
   private LlapServiceInstance getServiceInstanceRandom(LlapRegistryService registryService) throws IOException {
-    LlapServiceInstanceSet instanceSet = registryService.getInstances();
+    ServiceInstanceSet<LlapServiceInstance> instanceSet = registryService.getInstances();
     LlapServiceInstance serviceInstance = null;
 
     LOG.info("Finding random live service instance");
     Collection<LlapServiceInstance> allInstances = instanceSet.getAll();
     if (allInstances.size() > 0) {
-      int randIdx = rand.nextInt() % allInstances.size();
+      int randIdx = rand.nextInt(allInstances.size());;
       serviceInstance = allInstances.toArray(serviceInstanceArray)[randIdx];
     }
     return serviceInstance;
@@ -468,7 +481,7 @@ public class LlapBaseInputFormat<V extends WritableComparable<?>>
     public void submissionFailed(String fragmentId, Throwable throwable) {
       try {
         sendOrQueueEvent(ReaderEvent.errorEvent(
-            "Received submission failed event for fragment ID " + fragmentId));
+            "Received submission failed event for fragment ID " + fragmentId + ": " + throwable.toString()));
       } catch (Exception err) {
         LOG.error("Error during heartbeat responder:", err);
       }

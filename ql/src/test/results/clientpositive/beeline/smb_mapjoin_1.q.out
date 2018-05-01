@@ -22,30 +22,76 @@ POSTHOOK: query: create table smb_bucket_3(key int, value string) CLUSTERED BY (
 POSTHOOK: type: CREATETABLE
 POSTHOOK: Output: database:default
 POSTHOOK: Output: default@smb_bucket_3
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_1.rc' overwrite into table smb_bucket_1
+PREHOOK: query: load data local inpath '../../data/files/smb_rc1/000000_0' overwrite into table smb_bucket_1
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_1
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_1.rc' overwrite into table smb_bucket_1
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc1/000000_0' overwrite into table smb_bucket_1
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_1
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_2.rc' overwrite into table smb_bucket_2
+PREHOOK: query: load data local inpath '../../data/files/smb_rc2/000000_0' overwrite into table smb_bucket_2
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_2
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_2.rc' overwrite into table smb_bucket_2
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc2/000000_0' overwrite into table smb_bucket_2
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_2
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_3.rc' overwrite into table smb_bucket_3
+PREHOOK: query: load data local inpath '../../data/files/smb_rc3/000000_0' overwrite into table smb_bucket_3
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_3
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_3.rc' overwrite into table smb_bucket_3
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc3/000000_0' overwrite into table smb_bucket_3
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_3
+PREHOOK: query: desc formatted smb_bucket_1
+PREHOOK: type: DESCTABLE
+PREHOOK: Input: default@smb_bucket_1
+POSTHOOK: query: desc formatted smb_bucket_1
+POSTHOOK: type: DESCTABLE
+POSTHOOK: Input: default@smb_bucket_1
+	NULL	NULL
+	NULL	NULL
+	SORTBUCKETCOLSPREFIX	TRUE                
+	bucketing_version   	2                   
+	numFiles            	1                   
+	numRows             	0                   
+	rawDataSize         	0                   
+	serialization.format	1                   
+	totalSize           	208                 
+#### A masked pattern was here ####
+# Detailed Table Information	NULL	NULL
+# Storage Information	NULL	NULL
+# col_name	data_type	comment
+Bucket Columns:     	[key]               	NULL
+Compressed:         	No                  	NULL
+#### A masked pattern was here ####
+Database:           	test_db_smb_mapjoin_1	NULL
+InputFormat:        	org.apache.hadoop.hive.ql.io.RCFileInputFormat	NULL
+LastAccessTime:     	UNKNOWN             	NULL
+#### A masked pattern was here ####
+Num Buckets:        	1                   	NULL
+OutputFormat:       	org.apache.hadoop.hive.ql.io.RCFileOutputFormat	NULL
+#### A masked pattern was here ####
+Retention:          	0                   	NULL
+SerDe Library:      	org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe	NULL
+Sort Columns:       	[Order(col:key, order:1)]	NULL
+Storage Desc Params:	NULL	NULL
+Table Parameters:	NULL	NULL
+Table Type:         	MANAGED_TABLE       	NULL
+key	int	
+value	string	
+PREHOOK: query: select count(*) from smb_bucket_1
+PREHOOK: type: QUERY
+PREHOOK: Input: default@smb_bucket_1
+#### A masked pattern was here ####
+POSTHOOK: query: select count(*) from smb_bucket_1
+POSTHOOK: type: QUERY
+POSTHOOK: Input: default@smb_bucket_1
+#### A masked pattern was here ####
+5
 PREHOOK: query: explain
 select /*+mapjoin(a)*/ * from smb_bucket_1 a join smb_bucket_2 b on a.key = b.key
 PREHOOK: type: QUERY
@@ -62,10 +108,10 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: b
-            Statistics: Num rows: 1 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
               predicate: key is not null (type: boolean)
-              Statistics: Num rows: 1 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+              Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
               Sorted Merge Bucket Map Join Operator
                 condition map:
                      Inner Join 0 to 1
@@ -115,7 +161,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: b
-            Statistics: Num rows: 1 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Left Outer Join 0 to 1
@@ -170,7 +216,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: b
-            Statistics: Num rows: 1 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Right Outer Join 0 to 1
@@ -224,7 +270,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: b
-            Statistics: Num rows: 1 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Outer Join 0 to 1
@@ -283,10 +329,10 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: a
-            Statistics: Num rows: 2 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
               predicate: key is not null (type: boolean)
-              Statistics: Num rows: 2 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+              Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
               Sorted Merge Bucket Map Join Operator
                 condition map:
                      Inner Join 0 to 1
@@ -336,7 +382,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: a
-            Statistics: Num rows: 2 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Left Outer Join 0 to 1
@@ -391,7 +437,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: a
-            Statistics: Num rows: 2 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Right Outer Join 0 to 1
@@ -445,7 +491,7 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: a
-            Statistics: Num rows: 2 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
             Sorted Merge Bucket Map Join Operator
               condition map:
                    Outer Join 0 to 1

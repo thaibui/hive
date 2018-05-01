@@ -82,7 +82,7 @@ rollupOldSyntax
 @init { gParent.pushMsg("rollup old syntax", state); }
 @after { gParent.popMsg(state); }
     :
-    expr=expressionsNotInParenthesis[false]
+    expr=expressionsNotInParenthesis[false, false]
     ((rollup=KW_WITH KW_ROLLUP) | (cube=KW_WITH KW_CUBE)) ?
     (sets=KW_GROUPING KW_SETS
     LPAREN groupingSetExpression ( COMMA groupingSetExpression)*  RPAREN ) ?
@@ -133,14 +133,16 @@ havingCondition
     expression
     ;
 
-expressionsInParenthesis[boolean isStruct]
+expressionsInParenthesis[boolean isStruct, boolean forceStruct]
     :
-    LPAREN! expressionsNotInParenthesis[isStruct] RPAREN!
+    LPAREN! expressionsNotInParenthesis[isStruct, forceStruct] RPAREN!
     ;
 
-expressionsNotInParenthesis[boolean isStruct]
+expressionsNotInParenthesis[boolean isStruct, boolean forceStruct]
     :
     first=expression more=expressionPart[$expression.tree, isStruct]?
+    -> {forceStruct && more==null}?
+       ^(TOK_FUNCTION Identifier["struct"] {$first.tree})
     -> {more==null}?
        {$first.tree}
     -> {$more.tree}
@@ -155,9 +157,9 @@ expressionPart[CommonTree t, boolean isStruct]
 
 expressions
     :
-    (expressionsInParenthesis[false]) => expressionsInParenthesis[false]
+    (expressionsInParenthesis[false, false]) => expressionsInParenthesis[false, false]
     |
-    expressionsNotInParenthesis[false]
+    expressionsNotInParenthesis[false, false]
     ;
 
 columnRefOrderInParenthesis
@@ -324,6 +326,7 @@ constant
     | Number
     | dateLiteral
     | timestampLiteral
+    | timestampLocalTZLiteral
     | StringLiteral
     | stringLiteralSequence
     | IntegralLiteral
@@ -365,6 +368,14 @@ timestampLiteral
     }
     |
     KW_CURRENT_TIMESTAMP -> ^(TOK_FUNCTION KW_CURRENT_TIMESTAMP)
+    ;
+
+timestampLocalTZLiteral
+    :
+    KW_TIMESTAMPLOCALTZ StringLiteral ->
+    {
+      adaptor.create(TOK_TIMESTAMPLOCALTZLITERAL, $StringLiteral.text)
+    }
     ;
 
 intervalValue
@@ -422,7 +433,7 @@ atomExpression
         -> ^(TOK_SUBQUERY_EXPR TOK_SUBQUERY_OP subQueryExpression)
     | (function) => function
     | tableOrColumn
-    | expressionsInParenthesis[true]
+    | expressionsInParenthesis[true, false]
     ;
 
 precedenceFieldExpression
@@ -571,10 +582,10 @@ precedenceSimilarExpressionAtom[CommonTree t]
     KW_BETWEEN (min=precedenceBitwiseOrExpression) KW_AND (max=precedenceBitwiseOrExpression)
     -> ^(TOK_FUNCTION Identifier["between"] KW_FALSE {$t} $min $max)
     |
-    KW_LIKE KW_ANY (expr=expressionsInParenthesis[false])
+    KW_LIKE KW_ANY (expr=expressionsInParenthesis[false, false])
     -> ^(TOK_FUNCTION Identifier["likeany"] {$t} {$expr.tree})
     |
-    KW_LIKE KW_ALL (expr=expressionsInParenthesis[false])
+    KW_LIKE KW_ALL (expr=expressionsInParenthesis[false, false])
     -> ^(TOK_FUNCTION Identifier["likeall"] {$t} {$expr.tree})
     ;
 
@@ -582,7 +593,7 @@ precedenceSimilarExpressionIn[CommonTree t]
     :
     (subQueryExpression) => subQueryExpression -> ^(TOK_SUBQUERY_EXPR ^(TOK_SUBQUERY_OP KW_IN) subQueryExpression {$t})
     |
-    expr=expressionsInParenthesis[false]
+    expr=expressionsInParenthesis[false, false]
     -> ^(TOK_FUNCTION Identifier["in"] {$t} {$expr.tree})
     ;
 
@@ -780,17 +791,17 @@ principalIdentifier
 nonReserved
     :
     KW_ABORT | KW_ADD | KW_ADMIN | KW_AFTER | KW_ANALYZE | KW_ARCHIVE | KW_ASC | KW_BEFORE | KW_BUCKET | KW_BUCKETS
-    | KW_CASCADE | KW_CHANGE | KW_CLUSTER | KW_CLUSTERED | KW_CLUSTERSTATUS | KW_COLLECTION | KW_COLUMNS
+    | KW_CASCADE | KW_CHANGE | KW_CHECK | KW_CLUSTER | KW_CLUSTERED | KW_CLUSTERSTATUS | KW_COLLECTION | KW_COLUMNS
     | KW_COMMENT | KW_COMPACT | KW_COMPACTIONS | KW_COMPUTE | KW_CONCATENATE | KW_CONTINUE | KW_DATA | KW_DAY
     | KW_DATABASES | KW_DATETIME | KW_DBPROPERTIES | KW_DEFERRED | KW_DEFINED | KW_DELIMITED | KW_DEPENDENCY 
     | KW_DESC | KW_DIRECTORIES | KW_DIRECTORY | KW_DISABLE | KW_DISTRIBUTE | KW_DOW | KW_ELEM_TYPE 
-    | KW_ENABLE | KW_ESCAPED | KW_EXCLUSIVE | KW_EXPLAIN | KW_EXPORT | KW_FIELDS | KW_FILE | KW_FILEFORMAT
+    | KW_ENABLE | KW_ENFORCED | KW_ESCAPED | KW_EXCLUSIVE | KW_EXPLAIN | KW_EXPORT | KW_FIELDS | KW_FILE | KW_FILEFORMAT
     | KW_FIRST | KW_FORMAT | KW_FORMATTED | KW_FUNCTIONS | KW_HOLD_DDLTIME | KW_HOUR | KW_IDXPROPERTIES | KW_IGNORE
-    | KW_INDEX | KW_INDEXES | KW_INPATH | KW_INPUTDRIVER | KW_INPUTFORMAT | KW_ITEMS | KW_JAR
+    | KW_INDEX | KW_INDEXES | KW_INPATH | KW_INPUTDRIVER | KW_INPUTFORMAT | KW_ITEMS | KW_JAR | KW_KILL
     | KW_KEYS | KW_KEY_TYPE | KW_LAST | KW_LIMIT | KW_OFFSET | KW_LINES | KW_LOAD | KW_LOCATION | KW_LOCK | KW_LOCKS | KW_LOGICAL | KW_LONG
     | KW_MAPJOIN | KW_MATERIALIZED | KW_METADATA | KW_MINUTE | KW_MONTH | KW_MSCK | KW_NOSCAN | KW_NO_DROP | KW_NULLS | KW_OFFLINE
-    | KW_OPTION | KW_OUTPUTDRIVER | KW_OUTPUTFORMAT | KW_OVERWRITE | KW_OWNER | KW_PARTITIONED | KW_PARTITIONS | KW_PLUS | KW_PRETTY
-    | KW_PRINCIPALS | KW_PROTECTION | KW_PURGE | KW_QUARTER | KW_READ | KW_READONLY | KW_REBUILD | KW_RECORDREADER | KW_RECORDWRITER
+    | KW_OPTION | KW_OUTPUTDRIVER | KW_OUTPUTFORMAT | KW_OVERWRITE | KW_OWNER | KW_PARTITIONED | KW_PARTITIONS | KW_PLUS
+    | KW_PRINCIPALS | KW_PROTECTION | KW_PURGE | KW_QUERY | KW_QUARTER | KW_READ | KW_READONLY | KW_REBUILD | KW_RECORDREADER | KW_RECORDWRITER
     | KW_RELOAD | KW_RENAME | KW_REPAIR | KW_REPLACE | KW_REPLICATION | KW_RESTRICT | KW_REWRITE
     | KW_ROLE | KW_ROLES | KW_SCHEMA | KW_SCHEMAS | KW_SECOND | KW_SEMI | KW_SERDE | KW_SERDEPROPERTIES | KW_SERVER | KW_SETS | KW_SHARED
     | KW_SHOW | KW_SHOW_DATABASE | KW_SKEWED | KW_SORT | KW_SORTED | KW_SSL | KW_STATISTICS | KW_STORED
@@ -820,6 +831,10 @@ nonReserved
     | KW_WAIT
     | KW_ZONE
     | KW_TIMESTAMPTZ
+    | KW_DEFAULT
+    | KW_REOPTIMIZATION
+    | KW_RESOURCE | KW_PLAN | KW_PLANS | KW_QUERY_PARALLELISM | KW_ACTIVATE | KW_MOVE | KW_DO
+    | KW_POOL | KW_ALLOC_FRACTION | KW_SCHEDULING_POLICY | KW_PATH | KW_MAPPING | KW_WORKLOAD | KW_MANAGEMENT | KW_ACTIVE | KW_UNMANAGED
 
 ;
 

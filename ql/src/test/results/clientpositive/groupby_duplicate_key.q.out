@@ -30,6 +30,7 @@ STAGE PLANS:
                   sort order: ++
                   Map-reduce partition columns: _col0 (type: string), '' (type: string)
                   Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           keys: KEY._col0 (type: string), '' (type: string), '' (type: string)
@@ -108,6 +109,7 @@ STAGE PLANS:
                   sort order: ++
                   Map-reduce partition columns: _col0 (type: string), 'X' (type: string)
                   Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           keys: KEY._col0 (type: string), 'X' (type: string), 'X' (type: string)
@@ -143,7 +145,8 @@ STAGE PLANS:
           name: default.dummy
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: create table dummy as
 select distinct key, "X" as dummy1, "X" as dummy2 from src tablesample (10 rows)
@@ -212,6 +215,7 @@ STAGE PLANS:
                   Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
                   TopN Hash Memory Usage: 0.1
                   value expressions: _col1 (type: string), _col2 (type: string)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           aggregations: max(VALUE._col0), max(VALUE._col1)

@@ -25,9 +25,11 @@ import org.apache.hadoop.hive.ql.parse.EximUtil;
 
 import org.apache.hadoop.hive.ql.parse.repl.DumpType;
 
+import org.apache.hadoop.hive.ql.parse.repl.dump.Utils;
 import org.apache.hadoop.hive.ql.parse.repl.load.DumpMetaData;
 
 class AlterTableHandler extends AbstractEventHandler {
+  private final org.apache.hadoop.hive.metastore.api.Table before;
   private final org.apache.hadoop.hive.metastore.api.Table after;
   private final boolean isTruncateOp;
   private final Scenario scenario;
@@ -58,7 +60,7 @@ class AlterTableHandler extends AbstractEventHandler {
   AlterTableHandler(NotificationEvent event) throws Exception {
     super(event);
     AlterTableMessage atm = deserializer.getAlterTableMessage(event.getMessage());
-    org.apache.hadoop.hive.metastore.api.Table before = atm.getTableObjBefore();
+    before = atm.getTableObjBefore();
     after = atm.getTableObjAfter();
     isTruncateOp = atm.getIsTruncateOp();
     scenario = scenarioType(before, after);
@@ -76,23 +78,30 @@ class AlterTableHandler extends AbstractEventHandler {
 
   @Override
   public void handle(Context withinContext) throws Exception {
-    {
-      LOG.info("Processing#{} ALTER_TABLE message : {}", fromEventId(), event.getMessage());
-      if (Scenario.ALTER == scenario) {
-        withinContext.replicationSpec.setIsMetadataOnly(true);
-        Table qlMdTableAfter = new Table(after);
-        Path metaDataPath = new Path(withinContext.eventRoot, EximUtil.METADATA_NAME);
-        EximUtil.createExportDump(
-            metaDataPath.getFileSystem(withinContext.hiveConf),
-            metaDataPath,
-            qlMdTableAfter,
-            null,
-            withinContext.replicationSpec);
-      }
-      DumpMetaData dmd = withinContext.createDmd(this);
-      dmd.setPayload(event.getMessage());
-      dmd.write();
+    LOG.info("Processing#{} ALTER_TABLE message : {}", fromEventId(), event.getMessage());
+
+    Table qlMdTableBefore = new Table(before);
+    if (!Utils
+        .shouldReplicate(withinContext.replicationSpec, qlMdTableBefore, withinContext.hiveConf)) {
+      return;
     }
+
+    if (Scenario.ALTER == scenario) {
+      withinContext.replicationSpec.setIsMetadataOnly(true);
+      Table qlMdTableAfter = new Table(after);
+      Path metaDataPath = new Path(withinContext.eventRoot, EximUtil.METADATA_NAME);
+      EximUtil.createExportDump(
+          metaDataPath.getFileSystem(withinContext.hiveConf),
+          metaDataPath,
+          qlMdTableAfter,
+          null,
+          withinContext.replicationSpec,
+          withinContext.hiveConf);
+    }
+ 
+    DumpMetaData dmd = withinContext.createDmd(this);
+    dmd.setPayload(event.getMessage());
+    dmd.write();
   }
 
   @Override

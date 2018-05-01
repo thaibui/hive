@@ -1,37 +1,40 @@
 /*
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.table;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.Warehouse;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hadoop.hive.ql.exec.ReplCopyTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.repl.ReplStateLogWork;
+import org.apache.hadoop.hive.ql.exec.repl.bootstrap.AddDependencyToLeaves;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.events.TableEvent;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.ReplicationState;
-import org.apache.hadoop.hive.ql.exec.repl.bootstrap.ReplLoadTask;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.TaskTracker;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.util.Context;
+import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.util.PathUtils;
+import org.apache.hadoop.hive.ql.exec.util.DAGTraversal;
+import org.apache.hadoop.hive.ql.lockmgr.HiveTxnManager;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -43,13 +46,20 @@ import org.apache.hadoop.hive.ql.plan.AddPartitionDesc;
 import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.ImportTableDesc;
 import org.apache.hadoop.hive.ql.plan.LoadTableDesc;
+import org.apache.hadoop.hive.ql.plan.LoadTableDesc.LoadFileType;
 import org.apache.hadoop.hive.ql.plan.MoveWork;
+import org.apache.hadoop.hive.ql.session.SessionState;
+import org.datanucleus.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.ReplicationState.PartitionState;
 import static org.apache.hadoop.hive.ql.parse.ImportSemanticAnalyzer.isPartitioned;
@@ -67,16 +77,19 @@ public class LoadPartitions {
 
   private final ImportTableDesc tableDesc;
   private Table table;
+  private final HiveTxnManager txnMgr;
 
   public LoadPartitions(Context context, ReplLogger replLogger, TaskTracker tableTracker,
                         TableEvent event, String dbNameToLoadIn,
-                        TableContext tableContext) throws HiveException, IOException {
-    this(context, replLogger, tableContext, tableTracker, event, dbNameToLoadIn, null);
+                        TableContext tableContext,
+                        HiveTxnManager txnMgr) throws HiveException, IOException {
+    this(context, replLogger, tableContext, tableTracker, event, dbNameToLoadIn, null, txnMgr);
   }
 
   public LoadPartitions(Context context, ReplLogger replLogger, TableContext tableContext,
                         TaskTracker limiter, TableEvent event, String dbNameToLoadIn,
-                        AddPartitionDesc lastReplicatedPartition) throws HiveException, IOException {
+                        AddPartitionDesc lastReplicatedPartition,
+                        HiveTxnManager txnMgr) throws HiveException, IOException {
     this.tracker = new TaskTracker(limiter);
     this.event = event;
     this.context = context;
@@ -86,6 +99,7 @@ public class LoadPartitions {
 
     this.tableDesc = tableContext.overrideProperties(event.tableDesc(dbNameToLoadIn));
     this.table = ImportSemanticAnalyzer.tableIfExists(tableDesc, context.hiveDb);
+    this.txnMgr = txnMgr;
   }
 
   private String location() throws MetaException, HiveException {
@@ -109,7 +123,7 @@ public class LoadPartitions {
     if (tracker.tasks().isEmpty()) {
       tracker.addTask(replLogTask);
     } else {
-      ReplLoadTask.dependency(tracker.tasks(), replLogTask);
+      DAGTraversal.traverse(tracker.tasks(), new AddDependencyToLeaves(replLogTask));
 
       List<Task<? extends Serializable>> visited = new ArrayList<>();
       tracker.updateTaskCount(replLogTask, visited);
@@ -128,7 +142,8 @@ public class LoadPartitions {
       if (table == null) {
         //new table
 
-        table = new Table(tableDesc.getDatabaseName(), tableDesc.getTableName());
+        table = new Table(tableDesc.getDatabaseName(),
+            tableDesc.getTableName());
         if (isPartitioned(tableDesc)) {
           updateReplicationState(initialReplicationState());
           if (!forNewTable().hasReplicationState()) {
@@ -173,21 +188,29 @@ public class LoadPartitions {
   private TaskTracker forNewTable() throws Exception {
     Iterator<AddPartitionDesc> iterator = event.partitionDescriptions(tableDesc).iterator();
     while (iterator.hasNext() && tracker.canAddMoreTasks()) {
-      AddPartitionDesc addPartitionDesc = iterator.next();
-      tracker.addTask(addSinglePartition(table, addPartitionDesc));
-      if (iterator.hasNext() && !tracker.canAddMoreTasks()) {
-        ReplicationState currentReplicationState =
-                new ReplicationState(new PartitionState(table.getTableName(), addPartitionDesc));
-        updateReplicationState(currentReplicationState);
-      }
+      AddPartitionDesc currentPartitionDesc = iterator.next();
+      /*
+       the currentPartitionDesc cannot be inlined as we need the hasNext() to be evaluated post the
+       current retrieved lastReplicatedPartition
+      */
+      addPartition(iterator.hasNext(), currentPartitionDesc);
     }
     return tracker;
+  }
+
+  private void addPartition(boolean hasMorePartitions, AddPartitionDesc addPartitionDesc) throws Exception {
+    tracker.addTask(tasksForAddPartition(table, addPartitionDesc));
+    if (hasMorePartitions && !tracker.canAddMoreTasks()) {
+      ReplicationState currentReplicationState =
+          new ReplicationState(new PartitionState(table.getTableName(), addPartitionDesc));
+      updateReplicationState(currentReplicationState);
+    }
   }
 
   /**
    * returns the root task for adding a partition
    */
-  private Task<? extends Serializable> addSinglePartition(Table table,
+  private Task<? extends Serializable> tasksForAddPartition(Table table,
       AddPartitionDesc addPartitionDesc) throws MetaException, IOException, HiveException {
     AddPartitionDesc.OnePartitionDesc partSpec = addPartitionDesc.getPartition(0);
     Path sourceWarehousePartitionLocation = new Path(partSpec.getLocation());
@@ -196,7 +219,7 @@ public class LoadPartitions {
     LOG.debug("adding dependent CopyWork/AddPart/MoveWork for partition "
         + partSpecToString(partSpec.getPartSpec()) + " with source location: "
         + partSpec.getLocation());
-    Path tmpPath = context.utils.getExternalTmpPath(replicaWarehousePartitionLocation);
+    Path tmpPath = PathUtils.getExternalTmpPath(replicaWarehousePartitionLocation, context.pathInfo);
 
     Task<?> copyTask = ReplCopyTask.getLoadCopyTask(
         event.replicationSpec(),
@@ -222,9 +245,12 @@ public class LoadPartitions {
    */
   private Task<?> movePartitionTask(Table table, AddPartitionDesc.OnePartitionDesc partSpec,
       Path tmpPath) {
+    // Note: this sets LoadFileType incorrectly for ACID; is that relevant for load?
+    //       See setLoadFileType and setIsAcidIow calls elsewhere for an example.
     LoadTableDesc loadTableWork = new LoadTableDesc(
         tmpPath, Utilities.getTableDesc(table), partSpec.getPartSpec(),
-        event.replicationSpec().isReplace()
+        event.replicationSpec().isReplace() ? LoadFileType.REPLACE_ALL : LoadFileType.OVERWRITE_EXISTING,
+        txnMgr.getCurrentTxnId()
     );
     loadTableWork.setInheritTableSpecs(false);
     MoveWork work = new MoveWork(new HashSet<>(), new HashSet<>(), loadTableWork, null, false);
@@ -262,50 +288,48 @@ public class LoadPartitions {
 
   private TaskTracker forExistingTable(AddPartitionDesc lastPartitionReplicated) throws Exception {
     boolean encounteredTheLastReplicatedPartition = (lastPartitionReplicated == null);
+    Map<String, String> lastReplicatedPartSpec = null;
+    if (!encounteredTheLastReplicatedPartition) {
+      lastReplicatedPartSpec = lastPartitionReplicated.getPartition(0).getPartSpec();
+      LOG.info("Start processing from partition info spec : {}",
+          StringUtils.mapToString(lastReplicatedPartSpec));
+    }
+
     ReplicationSpec replicationSpec = event.replicationSpec();
-    LOG.debug("table partitioned");
+    Iterator<AddPartitionDesc> partitionIterator = event.partitionDescriptions(tableDesc).iterator();
+    while (!encounteredTheLastReplicatedPartition && partitionIterator.hasNext()) {
+      AddPartitionDesc addPartitionDesc = partitionIterator.next();
+      Map<String, String> currentSpec = addPartitionDesc.getPartition(0).getPartSpec();
+      encounteredTheLastReplicatedPartition = lastReplicatedPartSpec.equals(currentSpec);
+    }
 
-    Iterator<AddPartitionDesc> iterator = event.partitionDescriptions(tableDesc).iterator();
-    while (iterator.hasNext()) {
-      /*
-      encounteredTheLastReplicatedPartition will be set, when we break creation of partition tasks
-      for a table, as we have reached the limit of number of tasks we should create for execution.
-      in this case on the next run we have to iterate over the partitions desc to reach the last replicated
-      partition so that we can start replicating partitions after that.
-       */
-      AddPartitionDesc addPartitionDesc = iterator.next();
-      if (encounteredTheLastReplicatedPartition && tracker.canAddMoreTasks()) {
-        Map<String, String> partSpec = addPartitionDesc.getPartition(0).getPartSpec();
-        Partition ptn;
-
-        if ((ptn = context.hiveDb.getPartition(table, partSpec, false)) == null) {
-          if (!replicationSpec.isMetadataOnly()) {
-            forNewTable();
-          }
-        } else {
-          // If replicating, then the partition already existing means we need to replace, maybe, if
-          // the destination ptn's repl.last.id is older than the replacement's.
-          if (replicationSpec.allowReplacementInto(ptn.getParameters())) {
-            if (replicationSpec.isMetadataOnly()) {
-              tracker.addTask(alterSinglePartition(addPartitionDesc, replicationSpec, ptn));
-              if (iterator.hasNext() && !tracker.canAddMoreTasks()) {
-                tracker.setReplicationState(
-                    new ReplicationState(new PartitionState(table.getTableName(), addPartitionDesc)
-                    )
-                );
-              }
-            } else {
-              forNewTable();
-            }
-          } else {
-            // ignore this ptn, do nothing, not an error.
-          }
+    while (partitionIterator.hasNext() && tracker.canAddMoreTasks()) {
+      AddPartitionDesc addPartitionDesc = partitionIterator.next();
+      Map<String, String> partSpec = addPartitionDesc.getPartition(0).getPartSpec();
+      Partition ptn = context.hiveDb.getPartition(table, partSpec, false);
+      if (ptn == null) {
+        if (!replicationSpec.isMetadataOnly()) {
+          addPartition(partitionIterator.hasNext(), addPartitionDesc);
         }
       } else {
-        Map<String, String> currentSpec = addPartitionDesc.getPartition(0).getPartSpec();
-        Map<String, String> lastReplicatedPartSpec =
-            lastPartitionReplicated.getPartition(0).getPartSpec();
-        encounteredTheLastReplicatedPartition = lastReplicatedPartSpec.equals(currentSpec);
+        // If replicating, then the partition already existing means we need to replace, maybe, if
+        // the destination ptn's repl.last.id is older than the replacement's.
+        if (replicationSpec.allowReplacementInto(ptn.getParameters())) {
+          if (replicationSpec.isMetadataOnly()) {
+            tracker.addTask(alterSinglePartition(addPartitionDesc, replicationSpec, ptn));
+            if (!tracker.canAddMoreTasks()) {
+              tracker.setReplicationState(
+                  new ReplicationState(
+                      new PartitionState(table.getTableName(), addPartitionDesc)
+                  )
+              );
+            }
+          } else {
+            addPartition(partitionIterator.hasNext(), addPartitionDesc);
+          }
+        } else {
+          // ignore this ptn, do nothing, not an error.
+        }
       }
     }
     return tracker;

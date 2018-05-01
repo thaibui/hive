@@ -23,13 +23,11 @@ POSTHOOK: query: desc formatted stats_part partition (ds='2010-04-08', hr='13')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@stats_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	default             
 value               	string              	default             
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -39,7 +37,7 @@ Database:           	default
 Table:              	stats_part          	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -71,13 +69,11 @@ POSTHOOK: query: desc formatted stats_part partition (ds='2010-04-08', hr='13')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@stats_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	default             
 value               	string              	default             
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 

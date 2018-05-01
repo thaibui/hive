@@ -97,6 +97,7 @@ STAGE PLANS:
                       properties:
                         COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                         bucket_count -1
+                        bucketing_version 2
                         column.name.delimiter ,
                         columns mydata
                         columns.comments 
@@ -117,6 +118,22 @@ STAGE PLANS:
                   TotalFiles: 1
                   GatherStats: true
                   MultiFileSpray: false
+                Select Operator
+                  expressions: _col0 (type: string)
+                  outputColumnNames: mydata
+                  Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+                  Group By Operator
+                    aggregations: compute_stats(mydata, 'hll')
+                    mode: hash
+                    outputColumnNames: _col0
+                    Statistics: Num rows: 1 Data size: 440 Basic stats: COMPLETE Column stats: NONE
+                    Reduce Output Operator
+                      null sort order: 
+                      sort order: 
+                      Statistics: Num rows: 1 Data size: 440 Basic stats: COMPLETE Column stats: NONE
+                      tag: -1
+                      value expressions: _col0 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>)
+                      auto parallelism: false
       Path -> Alias:
 #### A masked pattern was here ####
       Path -> Partition:
@@ -128,6 +145,7 @@ STAGE PLANS:
             properties:
               COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns key,value
               columns.comments 'default','default'
@@ -149,6 +167,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -168,6 +187,35 @@ STAGE PLANS:
             name: default.src
       Truncated Path -> Alias:
         /src [src]
+      Needs Tagging: false
+      Reduce Operator Tree:
+        Group By Operator
+          aggregations: compute_stats(VALUE._col0)
+          mode: mergepartial
+          outputColumnNames: _col0
+          Statistics: Num rows: 1 Data size: 440 Basic stats: COMPLETE Column stats: NONE
+          File Output Operator
+            compressed: false
+            GlobalTableId: 0
+#### A masked pattern was here ####
+            NumFilesPerFileSink: 1
+            Statistics: Num rows: 1 Data size: 440 Basic stats: COMPLETE Column stats: NONE
+#### A masked pattern was here ####
+            table:
+                input format: org.apache.hadoop.mapred.SequenceFileInputFormat
+                output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
+                properties:
+                  columns _col0
+                  columns.types struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>
+                  escape.delim \
+                  hive.serialization.extend.additional.nesting.levels true
+                  serialization.escape.crlf true
+                  serialization.format 1
+                  serialization.lib org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+                serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+            TotalFiles: 1
+            GatherStats: false
+            MultiFileSpray: false
 
   Stage: Stage-7
     Conditional Operator
@@ -189,6 +237,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns mydata
                 columns.comments 
@@ -208,8 +257,14 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 #### A masked pattern was here ####
+      Column Stats Desc:
+          Columns: mydata
+          Column Types: string
+          Table: default.dest1
+          Is Table Level Stats: true
 
   Stage: Stage-3
     Map Reduce
@@ -227,6 +282,7 @@ STAGE PLANS:
                   properties:
                     COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                     bucket_count -1
+                    bucketing_version 2
                     column.name.delimiter ,
                     columns mydata
                     columns.comments 
@@ -258,6 +314,7 @@ STAGE PLANS:
             properties:
               COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns mydata
               columns.comments 
@@ -280,6 +337,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns mydata
                 columns.comments 
@@ -317,6 +375,7 @@ STAGE PLANS:
                   properties:
                     COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                     bucket_count -1
+                    bucketing_version 2
                     column.name.delimiter ,
                     columns mydata
                     columns.comments 
@@ -348,6 +407,7 @@ STAGE PLANS:
             properties:
               COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns mydata
               columns.comments 
@@ -370,6 +430,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"mydata":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns mydata
                 columns.comments 

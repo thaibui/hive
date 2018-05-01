@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -23,22 +23,31 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map.Entry;
 
+import org.apache.hadoop.hive.common.FileUtils;
+import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.common.StringInternUtils;
+import org.apache.hadoop.hive.common.ValidTxnWriteIdList;
+import org.apache.hadoop.hive.common.ValidWriteIdList;
 import org.apache.hadoop.hive.ql.exec.SerializationUtilities;
+import org.apache.hive.common.util.Ref;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.io.HiveIOExceptionHandlerUtil;
@@ -98,6 +107,22 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
   protected Map<Path, PartitionDesc> pathToPartitionInfo;
   protected MapWork mrwork;
 
+  public static final class HiveInputSplitComparator implements Comparator<HiveInputSplit> {
+    @Override
+    public int compare(HiveInputSplit o1, HiveInputSplit o2) {
+      int pathCompare = comparePath(o1.getPath(), o2.getPath());
+      if (pathCompare != 0) {
+        return pathCompare;
+      }
+      return Long.compare(o1.getStart(), o2.getStart());
+    }
+
+    private int comparePath(Path p1, Path p2) {
+      return p1.compareTo(p2);
+    }
+  }
+
+
   /**
    * HiveInputSplit encapsulates an InputSplit with its corresponding
    * inputFormatClass. The reason that it derives from FileSplit is to make sure
@@ -105,6 +130,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
    */
   public static class HiveInputSplit extends FileSplit implements InputSplit,
       Configurable {
+
 
     InputSplit inputSplit;
     String inputFormatClassName;
@@ -202,6 +228,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     }
   }
 
+  @Override
   public void configure(JobConf job) {
     this.job = job;
   }
@@ -215,7 +242,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     String ifName = inputFormat.getClass().getCanonicalName();
     boolean isSupported = inputFormat instanceof LlapWrappableInputFormatInterface;
     boolean isCacheOnly = inputFormat instanceof LlapCacheOnlyInputFormatInterface;
-    boolean isVectorized = Utilities.getUseVectorizedInputFileFormat(conf);
+    boolean isVectorized = Utilities.getIsVectorized(conf);
     if (!isVectorized) {
       // Pretend it's vectorized if the non-vector wrapped is enabled.
       isVectorized = HiveConf.getBoolVar(conf, ConfVars.LLAP_IO_NONVECTOR_WRAPPER_ENABLED)
@@ -360,6 +387,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     return instance;
   }
 
+  @Override
   public RecordReader getRecordReader(InputSplit split, JobConf job,
       Reporter reporter) throws IOException {
     HiveInputSplit hsplit = (HiveInputSplit) split;
@@ -378,7 +406,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     }
 
     boolean nonNative = false;
-    PartitionDesc part = HiveFileFormatUtils.getPartitionDescFromPathRecursively(
+    PartitionDesc part = HiveFileFormatUtils.getFromPathRecursively(
         pathToPartitionInfo, hsplit.getPath(), null);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Found spec for " + hsplit.getPath() + " " + part + " from " + pathToPartitionInfo);
@@ -448,19 +476,49 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
    */
   private void addSplitsForGroup(List<Path> dirs, TableScanOperator tableScan, JobConf conf,
       InputFormat inputFormat, Class<? extends InputFormat> inputFormatClass, int splits,
-      TableDesc table, List<InputSplit> result) throws IOException {
+      TableDesc table, List<InputSplit> result)
+          throws IOException {
+    ValidWriteIdList validWriteIdList = AcidUtils.getTableValidWriteIdList(conf, table.getTableName());
+    ValidWriteIdList validMmWriteIdList;
+    if (AcidUtils.isInsertOnlyTable(table.getProperties())) {
+      if (validWriteIdList == null) {
+        throw new IOException("Insert-Only table: " + table.getTableName()
+                + " is missing from the ValidWriteIdList config: "
+                + conf.get(ValidTxnWriteIdList.VALID_TABLES_WRITEIDS_KEY));
+      }
+      validMmWriteIdList = validWriteIdList;
+    } else {
+      validMmWriteIdList = null;  // for non-MM case
+    }
 
     try {
       Utilities.copyTablePropertiesToConf(table, conf);
+      if (tableScan != null) {
+        AcidUtils.setAcidOperationalProperties(conf, tableScan.getConf().isTranscationalTable(),
+            tableScan.getConf().getAcidOperationalProperties());
+
+        if (tableScan.getConf().isTranscationalTable() && (validWriteIdList == null)) {
+          throw new IOException("Acid table: " + table.getTableName()
+                  + " is missing from the ValidWriteIdList config: "
+                  + conf.get(ValidTxnWriteIdList.VALID_TABLES_WRITEIDS_KEY));
+        }
+        if (validWriteIdList != null) {
+          AcidUtils.setValidWriteIdList(conf, validWriteIdList);
+        }
+      }
     } catch (HiveException e) {
       throw new IOException(e);
     }
 
     if (tableScan != null) {
-      pushFilters(conf, tableScan);
+      pushFilters(conf, tableScan, this.mrwork);
     }
 
-    FileInputFormat.setInputPaths(conf, dirs.toArray(new Path[dirs.size()]));
+    Path[] finalDirs = processPathsForMmRead(dirs, conf, validMmWriteIdList);
+    if (finalDirs == null) {
+      return; // No valid inputs.
+    }
+    FileInputFormat.setInputPaths(conf, finalDirs);
     conf.setInputFormat(inputFormat.getClass());
 
     int headerCount = 0;
@@ -477,6 +535,79 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     InputSplit[] iss = inputFormat.getSplits(conf, splits);
     for (InputSplit is : iss) {
       result.add(new HiveInputSplit(is, inputFormatClass.getName()));
+    }
+    if (iss.length == 0 && finalDirs.length > 0 && conf.getBoolean(Utilities.ENSURE_OPERATORS_EXECUTED, false)) {
+      // If there are no inputs; the Execution engine skips the operator tree.
+      // To prevent it from happening; an opaque  ZeroRows input is added here - when needed.
+      result.add(new HiveInputSplit(new NullRowsInputFormat.DummyInputSplit(finalDirs[0].toString()),
+          ZeroRowsInputFormat.class.getName()));
+    }
+  }
+
+  public static Path[] processPathsForMmRead(List<Path> dirs, JobConf conf,
+      ValidWriteIdList validWriteIdList) throws IOException {
+    if (validWriteIdList == null) {
+      return dirs.toArray(new Path[dirs.size()]);
+    } else {
+      List<Path> finalPaths = new ArrayList<>(dirs.size());
+      for (Path dir : dirs) {
+        processForWriteIds(dir, conf, validWriteIdList, finalPaths);
+      }
+      if (finalPaths.isEmpty()) {
+        LOG.warn("No valid inputs found in " + dirs);
+        return null;
+      }
+      return finalPaths.toArray(new Path[finalPaths.size()]);
+    }
+  }
+
+  private static void processForWriteIds(Path dir, JobConf conf,
+      ValidWriteIdList validWriteIdList, List<Path> finalPaths) throws IOException {
+    FileSystem fs = dir.getFileSystem(conf);
+    if (Utilities.FILE_OP_LOGGER.isTraceEnabled()) {
+      Utilities.FILE_OP_LOGGER.trace("Checking " + dir + " (root) for inputs");
+    }
+    // Ignore nullscan-optimized paths.
+    if (fs instanceof NullScanFileSystem) {
+      finalPaths.add(dir);
+      return;
+    }
+
+    // Tez require the use of recursive input dirs for union processing, so we have to look into the
+    // directory to find out
+    LinkedList<Path> subdirs = new LinkedList<>();
+    subdirs.add(dir); // add itself as a starting point
+    while (!subdirs.isEmpty()) {
+      Path currDir = subdirs.poll();
+      FileStatus[] files = fs.listStatus(currDir);
+      boolean hadAcidState = false;   // whether getAcidState has been called for currDir
+      for (FileStatus file : files) {
+        Path path = file.getPath();
+        if (Utilities.FILE_OP_LOGGER.isTraceEnabled()) {
+          Utilities.FILE_OP_LOGGER.trace("Checking " + path + " for inputs");
+        }
+        if (!file.isDirectory()) {
+          Utilities.FILE_OP_LOGGER.warn("Ignoring a file not in MM directory " + path);
+        } else if (AcidUtils.extractWriteId(path) == null) {
+          subdirs.add(path);
+        } else if (!hadAcidState) {
+          AcidUtils.Directory dirInfo
+                  = AcidUtils.getAcidState(currDir, conf, validWriteIdList, Ref.from(false), true, null);
+          hadAcidState = true;
+
+          // Find the base, created for IOW.
+          Path base = dirInfo.getBaseDirectory();
+          if (base != null) {
+            finalPaths.add(base);
+          }
+
+          // Find the parsed delta files.
+          for (AcidUtils.ParsedDelta delta : dirInfo.getCurrentDirectories()) {
+            Utilities.FILE_OP_LOGGER.debug("Adding input " + delta.getPath());
+            finalPaths.add(delta.getPath());
+          }
+        }
+      }
     }
   }
 
@@ -504,6 +635,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     return dirs;
   }
 
+  @Override
   public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
     PerfLogger perfLogger = SessionState.getPerfLogger();
     perfLogger.PerfLogBegin(CLASS_NAME, PerfLogger.GET_SPLITS);
@@ -545,7 +677,7 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
             tableScan.getNeededColumnIDs(), tableScan.getNeededColumns());
           pushDownProjection = true;
           // push down filters
-          pushFilters(newjob, tableScan);
+          pushFilters(newjob, tableScan, this.mrwork);
         }
       } else {
         if (LOG.isDebugEnabled()) {
@@ -627,6 +759,10 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
       throws IOException {
     PartitionDesc partDesc = pathToPartitionInfo.get(dir);
     if (partDesc == null) {
+      // Note: we could call HiveFileFormatUtils.getPartitionDescFromPathRecursively for MM tables.
+      //       The recursive call is usually needed for non-MM tables, because the path management
+      //       is not strict and the code does whatever. That should not happen for MM tables.
+      //       Keep it like this for now; may need replacement if we find a valid use case.
       partDesc = pathToPartitionInfo.get(Path.getPathWithoutSchemeAndAuthority(dir));
     }
     if (partDesc == null) {
@@ -637,7 +773,8 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     return partDesc;
   }
 
-  public static void pushFilters(JobConf jobConf, TableScanOperator tableScan) {
+  public static void pushFilters(JobConf jobConf, TableScanOperator tableScan,
+    final MapWork mrwork) {
 
     // ensure filters are not set from previous pushFilters
     jobConf.unset(TableScanDesc.FILTER_TEXT_CONF_STR);
@@ -658,6 +795,13 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
     // push down filters
     ExprNodeGenericFuncDesc filterExpr = (ExprNodeGenericFuncDesc)scanDesc.getFilterExpr();
     if (filterExpr == null) {
+      return;
+    }
+
+    // disable filter pushdown for mapreduce when there are more than one table aliases,
+    // since we don't clone jobConf per alias
+    if (mrwork != null && mrwork.getAliases() != null && mrwork.getAliases().size() > 1 &&
+      jobConf.get(ConfVars.HIVE_EXECUTION_ENGINE.varname).equals("mr")) {
       return;
     }
 
@@ -757,10 +901,11 @@ public class HiveInputFormat<K extends WritableComparable, V extends Writable>
         ColumnProjectionUtils.appendReadColumns(
             jobConf, ts.getNeededColumnIDs(), ts.getNeededColumns(), ts.getNeededNestedColumnPaths());
         // push down filters
-        pushFilters(jobConf, ts);
+        pushFilters(jobConf, ts, this.mrwork);
 
-        AcidUtils.setTransactionalTableScan(job, ts.getConf().isAcidTable());
-        AcidUtils.setAcidOperationalProperties(job, ts.getConf().getAcidOperationalProperties());
+        AcidUtils.setAcidOperationalProperties(job, ts.getConf().isTranscationalTable(),
+            ts.getConf().getAcidOperationalProperties());
+        AcidUtils.setValidWriteIdList(job, ts.getConf());
       }
     }
   }

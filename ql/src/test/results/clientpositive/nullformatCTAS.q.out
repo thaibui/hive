@@ -57,19 +57,20 @@ STAGE PLANS:
       Map Operator Tree:
           TableScan
             alias: base_tab
-            Statistics: Num rows: 1 Data size: 130 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 1300 Basic stats: COMPLETE Column stats: NONE
             Select Operator
               expressions: a (type: string), b (type: string)
               outputColumnNames: _col0, _col1
-              Statistics: Num rows: 1 Data size: 130 Basic stats: COMPLETE Column stats: NONE
+              Statistics: Num rows: 1 Data size: 1300 Basic stats: COMPLETE Column stats: NONE
               File Output Operator
                 compressed: false
-                Statistics: Num rows: 1 Data size: 130 Basic stats: COMPLETE Column stats: NONE
+                Statistics: Num rows: 1 Data size: 1300 Basic stats: COMPLETE Column stats: NONE
                 table:
                     input format: org.apache.hadoop.mapred.TextInputFormat
                     output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                     serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                     name: default.null_tab3
+      Execution mode: vectorized
 
   Stage: Stage-7
     Conditional Operator
@@ -96,7 +97,8 @@ STAGE PLANS:
           name: default.null_tab3
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-3
     Map Reduce
@@ -172,6 +174,7 @@ OUTPUTFORMAT
 LOCATION
 #### A masked pattern was here ####
 TBLPROPERTIES (
+  'bucketing_version'='2', 
 #### A masked pattern was here ####
 1.01
 1.01

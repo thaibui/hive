@@ -20,8 +20,7 @@ STAGE DEPENDENCIES:
   Stage-7
   Stage-5 depends on stages: Stage-7
   Stage-0 depends on stages: Stage-5
-  Stage-2 depends on stages: Stage-0
-  Stage-8 depends on stages: Stage-2, Stage-3
+  Stage-2 depends on stages: Stage-0, Stage-3
   Stage-3 depends on stages: Stage-5
 
 STAGE PLANS:
@@ -166,10 +165,8 @@ STAGE PLANS:
               name: default.dest_j1
 
   Stage: Stage-2
-    Stats-Aggr Operator
-
-  Stage: Stage-8
-    Column Stats Work
+    Stats Work
+      Basic Stats Work:
       Column Stats Desc:
           Columns: key, value
           Column Types: int, string
@@ -183,6 +180,7 @@ STAGE PLANS:
               sort order: 
               Statistics: Num rows: 1 Data size: 864 Basic stats: COMPLETE Column stats: NONE
               value expressions: _col0 (type: struct<columntype:string,min:bigint,max:bigint,countnulls:bigint,bitvector:binary>), _col1 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           aggregations: compute_stats(VALUE._col0), compute_stats(VALUE._col1)
@@ -216,7 +214,6 @@ POSTHOOK: query: desc formatted dest_j1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@dest_j1
 # col_name            	data_type           	comment             
-	 	 
 key                 	int                 	                    
 value               	string              	                    
 	 	 
@@ -228,6 +225,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	137                 
 	numRows             	855                 
 	rawDataSize         	9143                
@@ -250,9 +248,18 @@ PREHOOK: Input: default@dest_j1
 POSTHOOK: query: desc formatted dest_j1 key
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@dest_j1
-# col_name            	data_type           	min                 	max                 	num_nulls           	distinct_count      	avg_col_len         	max_col_len         	num_trues           	num_falses          	comment             	bitVector           
-	 	 	 	 	 	 	 	 	 	 	 
-key                 	int                 	0                   	498                 	0                   	309                 	                    	                    	                    	                    	HL                  	from deserializer   
+col_name            	key                 	 	 	 	 	 	 	 	 	 	 
+data_type           	int                 	 	 	 	 	 	 	 	 	 	 
+min                 	0                   	 	 	 	 	 	 	 	 	 	 
+max                 	498                 	 	 	 	 	 	 	 	 	 	 
+num_nulls           	0                   	 	 	 	 	 	 	 	 	 	 
+distinct_count      	309                 	 	 	 	 	 	 	 	 	 	 
+avg_col_len         	                    	 	 	 	 	 	 	 	 	 	 
+max_col_len         	                    	 	 	 	 	 	 	 	 	 	 
+num_trues           	                    	 	 	 	 	 	 	 	 	 	 
+num_falses          	                    	 	 	 	 	 	 	 	 	 	 
+bitVector           	HL                  	 	 	 	 	 	 	 	 	 	 
+comment             	from deserializer   	 	 	 	 	 	 	 	 	 	 
 COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}	 	 	 	 	 	 	 	 	 	 
 PREHOOK: query: desc formatted dest_j1 value
 PREHOOK: type: DESCTABLE
@@ -260,7 +267,16 @@ PREHOOK: Input: default@dest_j1
 POSTHOOK: query: desc formatted dest_j1 value
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@dest_j1
-# col_name            	data_type           	min                 	max                 	num_nulls           	distinct_count      	avg_col_len         	max_col_len         	num_trues           	num_falses          	comment             	bitVector           
-	 	 	 	 	 	 	 	 	 	 	 
-value               	string              	                    	                    	0                   	309                 	6.834630350194552   	7                   	                    	                    	HL                  	from deserializer   
+col_name            	value               	 	 	 	 	 	 	 	 	 	 
+data_type           	string              	 	 	 	 	 	 	 	 	 	 
+min                 	                    	 	 	 	 	 	 	 	 	 	 
+max                 	                    	 	 	 	 	 	 	 	 	 	 
+num_nulls           	0                   	 	 	 	 	 	 	 	 	 	 
+distinct_count      	309                 	 	 	 	 	 	 	 	 	 	 
+avg_col_len         	6.834630350194552   	 	 	 	 	 	 	 	 	 	 
+max_col_len         	7                   	 	 	 	 	 	 	 	 	 	 
+num_trues           	                    	 	 	 	 	 	 	 	 	 	 
+num_falses          	                    	 	 	 	 	 	 	 	 	 	 
+bitVector           	HL                  	 	 	 	 	 	 	 	 	 	 
+comment             	from deserializer   	 	 	 	 	 	 	 	 	 	 
 COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}	 	 	 	 	 	 	 	 	 	 

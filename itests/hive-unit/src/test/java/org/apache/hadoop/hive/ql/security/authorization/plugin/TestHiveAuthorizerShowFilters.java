@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,7 +21,6 @@ package org.apache.hadoop.hive.ql.security.authorization.plugin;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,8 +29,8 @@ import java.util.List;
 import org.apache.hadoop.hive.UtilsForTest;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.security.HiveAuthenticationProvider;
 import org.apache.hadoop.hive.ql.security.SessionStateUserAuthenticator;
@@ -48,7 +47,7 @@ import org.mockito.Mockito;
  */
 public class TestHiveAuthorizerShowFilters {
   protected static HiveConf conf;
-  protected static Driver driver;
+  protected static IDriver driver;
   private static final String tableName1 = (TestHiveAuthorizerShowFilters.class.getSimpleName() + "table1")
       .toLowerCase();
   private static final String tableName2 = (TestHiveAuthorizerShowFilters.class.getSimpleName() + "table2")
@@ -89,7 +88,7 @@ public class TestHiveAuthorizerShowFilters {
         return filteredResults;
       }
     }
-    
+
     @Override
     public HiveAuthorizer createHiveAuthorizer(HiveMetastoreClientFactory metastoreClientFactory,
         HiveConf conf, HiveAuthenticationProvider authenticator, HiveAuthzSessionContext ctx) {
@@ -122,8 +121,9 @@ public class TestHiveAuthorizerShowFilters {
     conf.setBoolVar(ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
     UtilsForTest.setNewDerbyDbLocation(conf, TestHiveAuthorizerShowFilters.class.getSimpleName());
 
-    SessionState.start(conf);
-    driver = new Driver(conf);
+    SessionState ss = SessionState.start(conf);
+    ss.applyAuthorizationPolicy();
+    driver = DriverFactory.newDriver(conf);
     runCmd("create table " + tableName1
         + " (i int, j int, k string) partitioned by (city string, `date` string) ");
     runCmd("create table " + tableName2 + "(i int)");
@@ -152,46 +152,40 @@ public class TestHiveAuthorizerShowFilters {
   }
 
   @Test
-  public void testShowDatabasesAll() throws HiveAuthzPluginException, HiveAccessControlException,
-      CommandNeedRetryException, IOException {
+  public void testShowDatabasesAll() throws Exception {
     runShowDbTest(AllDbs);
   }
 
   @Test
-  public void testShowDatabasesSelected() throws HiveAuthzPluginException,
-      HiveAccessControlException, CommandNeedRetryException, IOException {
+  public void testShowDatabasesSelected() throws Exception {
     setFilteredResults(HivePrivilegeObjectType.DATABASE, dbName2);
     runShowDbTest(Arrays.asList(dbName2));
   }
 
-  private void runShowDbTest(List<String> expectedDbList) throws HiveAuthzPluginException,
-      HiveAccessControlException, CommandNeedRetryException, IOException {
+  private void runShowDbTest(List<String> expectedDbList) throws Exception {
     runCmd("show databases");
     verifyAllDb();
     assertEquals("filtered result check ", expectedDbList, getSortedResults());
   }
 
   @Test
-  public void testShowTablesAll() throws HiveAuthzPluginException, HiveAccessControlException,
-      CommandNeedRetryException, IOException {
+  public void testShowTablesAll() throws Exception {
     runShowTablesTest(AllTables);
   }
 
   @Test
-  public void testShowTablesSelected() throws HiveAuthzPluginException, HiveAccessControlException,
-      CommandNeedRetryException, IOException {
+  public void testShowTablesSelected() throws Exception {
     setFilteredResults(HivePrivilegeObjectType.TABLE_OR_VIEW, tableName2);
     runShowTablesTest(Arrays.asList(tableName2));
   }
 
-  private void runShowTablesTest(List<String> expectedTabs) throws IOException,
-      CommandNeedRetryException, HiveAuthzPluginException, HiveAccessControlException {
+  private void runShowTablesTest(List<String> expectedTabs) throws Exception {
     runCmd("show tables");
     verifyAllTables();
     assertEquals("filtered result check ", expectedTabs, getSortedResults());
   }
 
-  private List<String> getSortedResults() throws IOException, CommandNeedRetryException {
+  private List<String> getSortedResults() throws Exception {
     List<String> res = new ArrayList<String>();
     // set results to be returned
     driver.getResults(res);
@@ -261,7 +255,7 @@ public class TestHiveAuthorizerShowFilters {
     }
   }
 
-  private static void runCmd(String cmd) throws CommandNeedRetryException {
+  private static void runCmd(String cmd) throws Exception {
     CommandProcessorResponse resp = driver.run(cmd);
     assertEquals(0, resp.getResponseCode());
   }

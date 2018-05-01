@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,9 +21,12 @@ import org.apache.hadoop.hive.ql.parse.repl.load.message.AddNotNullConstraintHan
 import org.apache.hadoop.hive.ql.parse.repl.load.message.AddForeignKeyHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.AddPrimaryKeyHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.AddUniqueConstraintHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.AlterDatabaseHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.CreateDatabaseHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.CreateFunctionHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.DefaultHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.DropConstraintHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.DropDatabaseHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.DropFunctionHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.DropPartitionHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.DropTableHandler;
@@ -34,6 +37,10 @@ import org.apache.hadoop.hive.ql.parse.repl.load.message.RenameTableHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.TableHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.TruncatePartitionHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.TruncateTableHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.OpenTxnHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.CommitTxnHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.AbortTxnHandler;
+import org.apache.hadoop.hive.ql.parse.repl.load.message.AllocWriteIdHandler;
 
 public enum DumpType {
 
@@ -65,6 +72,12 @@ public enum DumpType {
     @Override
     public MessageHandler handler() {
       return new DropPartitionHandler();
+    }
+  },
+  EVENT_ALTER_DATABASE("EVENT_ALTER_DATABASE") {
+    @Override
+    public MessageHandler handler() {
+      return new AlterDatabaseHandler();
     }
   },
   EVENT_ALTER_TABLE("EVENT_ALTER_TABLE") {
@@ -161,6 +174,42 @@ public enum DumpType {
     @Override
     public MessageHandler handler() {
       return new DefaultHandler();
+    }
+  },
+  EVENT_CREATE_DATABASE("EVENT_CREATE_DATABASE") {
+    @Override
+    public MessageHandler handler() {
+      return new CreateDatabaseHandler();
+    }
+  },
+  EVENT_DROP_DATABASE("EVENT_DROP_DATABASE") {
+    @Override
+    public MessageHandler handler() {
+      return new DropDatabaseHandler();
+    }
+  },
+  EVENT_OPEN_TXN("EVENT_OPEN_TXN") {
+    @Override
+    public MessageHandler handler() {
+      return new OpenTxnHandler();
+    }
+  },
+  EVENT_COMMIT_TXN("EVENT_COMMIT_TXN") {
+    @Override
+    public MessageHandler handler() {
+      return new CommitTxnHandler();
+    }
+  },
+  EVENT_ABORT_TXN("EVENT_ABORT_TXN") {
+    @Override
+    public MessageHandler handler() {
+      return new AbortTxnHandler();
+    }
+  },
+  EVENT_ALLOC_WRITE_ID("EVENT_ALLOC_WRITE_ID") {
+    @Override
+    public MessageHandler handler() {
+      return new AllocWriteIdHandler();
     }
   };
 

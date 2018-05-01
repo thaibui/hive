@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,34 +21,45 @@ package org.apache.hadoop.hive.ql.exec.vector.expressions;
 import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.VectorExpressionDescriptor;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
+import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hive.common.util.DateParser;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.util.Arrays;
 
 
 public class VectorUDFDateAddScalarCol extends VectorExpression {
   private static final long serialVersionUID = 1L;
 
-  private int colNum;
-  private int outputColumn;
+  private final int colNum;
+
   private long longValue = 0;
   private Timestamp timestampValue = null;
   private byte[] stringValue = null;
+
   protected boolean isPositive = true;
+
   private transient final DateParser dateParser = new DateParser();
   private transient final Date baseDate = new Date(0);
 
+  // Transient members initialized by transientInit method.
+  private transient PrimitiveCategory primitiveCategory;
+
   public VectorUDFDateAddScalarCol() {
     super();
+
+    // Dummy final assignments.
+    colNum = -1;
   }
 
-  public VectorUDFDateAddScalarCol(Object object, int colNum, int outputColumn) {
-    this();
+  public VectorUDFDateAddScalarCol(Object object, int colNum, int outputColumnNum) {
+    super(outputColumnNum);
     this.colNum = colNum;
-    this.outputColumn = outputColumn;
 
     if (object instanceof Long) {
       this.longValue = (Long) object;
@@ -59,6 +70,14 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
     } else {
       throw new RuntimeException("Unexpected scalar object " + object.getClass().getName() + " " + object.toString());
     }
+  }
+
+  @Override
+  public void transientInit() throws HiveException {
+    super.transientInit();
+
+    primitiveCategory =
+        ((PrimitiveTypeInfo) inputTypeInfos[0]).getPrimitiveCategory();
   }
 
   @Override
@@ -73,9 +92,10 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
     final int n = inputCol.isRepeating ? 1 : batch.size;
     int[] sel = batch.selected;
     final boolean selectedInUse = (inputCol.isRepeating == false) && batch.selectedInUse;
-    LongColumnVector outV = (LongColumnVector) batch.cols[outputColumn];
+    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumnNum];
+    boolean[] outputIsNull = outputColVector.isNull;
 
-    switch (inputTypes[0]) {
+    switch (primitiveCategory) {
       case DATE:
         baseDate.setTime(DateWritable.daysToMillis((int) longValue));
         break;
@@ -89,22 +109,22 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
       case VARCHAR:
         boolean parsed = dateParser.parseDate(new String(stringValue, StandardCharsets.UTF_8), baseDate);
         if (!parsed) {
-          outV.noNulls = false;
+          outputColVector.noNulls = false;
           if (selectedInUse) {
             for(int j=0; j < n; j++) {
               int i = sel[j];
-              outV.isNull[i] = true;
+              outputColVector.isNull[i] = true;
             }
           } else {
             for(int i = 0; i < n; i++) {
-              outV.isNull[i] = true;
+              outputColVector.isNull[i] = true;
             }
           }
           return;
         }
         break;
       default:
-        throw new Error("Unsupported input type " + inputTypes[0].name());
+        throw new Error("Unsupported input type " + primitiveCategory.name());
     }
 
     if(batch.size == 0) {
@@ -112,39 +132,73 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
       return;
     }
 
-    /* true for all algebraic UDFs with no state */
-    outV.isRepeating = inputCol.isRepeating;
+    // We do not need to do a column reset since we are carefully changing the output.
+    outputColVector.isRepeating = false;
 
     long baseDateDays = DateWritable.millisToDays(baseDate.getTime());
+    if (inputCol.isRepeating) {
+      if (inputCol.noNulls || !inputCol.isNull[0]) {
+        outputColVector.isNull[0] = false;
+        evaluate(baseDateDays, inputCol.vector[0], outputColVector, 0);
+      } else {
+        outputColVector.isNull[0] = true;
+        outputColVector.noNulls = false;
+      }
+      outputColVector.isRepeating = true;
+      return;
+    }
+
     if (inputCol.noNulls) {
-      outV.noNulls = true;
-      if (selectedInUse) {
-        for(int j=0; j < n; j++) {
-          int i = sel[j];
-          evaluate(baseDateDays, inputCol.vector[i], outV, i);
+      if (batch.selectedInUse) {
+
+        // CONSIDER: For large n, fill n or all of isNull array and use the tighter ELSE loop.
+
+        if (!outputColVector.noNulls) {
+          for(int j = 0; j != n; j++) {
+           final int i = sel[j];
+           // Set isNull before call in case it changes it mind.
+           outputIsNull[i] = false;
+           evaluate(baseDateDays, inputCol.vector[i], outputColVector, i);
+         }
+        } else {
+          for(int j = 0; j != n; j++) {
+            final int i = sel[j];
+            evaluate(baseDateDays, inputCol.vector[i], outputColVector, i);
+          }
         }
       } else {
-        for(int i = 0; i < n; i++) {
-          evaluate(baseDateDays, inputCol.vector[i], outV, i);
+        if (!outputColVector.noNulls) {
+
+          // Assume it is almost always a performance win to fill all of isNull so we can
+          // safely reset noNulls.
+          Arrays.fill(outputIsNull, false);
+          outputColVector.noNulls = true;
+        }
+        for(int i = 0; i != n; i++) {
+          evaluate(baseDateDays, inputCol.vector[i], outputColVector, i);
         }
       }
-    } else {
+    } else /* there are nulls in the inputColVector */ {
+
+      // Carefully handle NULLs..
+
       // Handle case with nulls. Don't do function if the value is null, to save time,
       // because calling the function can be expensive.
-      outV.noNulls = false;
+      outputColVector.noNulls = false;
+
       if (selectedInUse) {
         for(int j = 0; j < n; j++) {
           int i = sel[j];
-          outV.isNull[i] = inputCol.isNull[i];
+          outputColVector.isNull[i] = inputCol.isNull[i];
           if (!inputCol.isNull[i]) {
-            evaluate(baseDateDays, inputCol.vector[i], outV, i);
+            evaluate(baseDateDays, inputCol.vector[i], outputColVector, i);
           }
         }
       } else {
         for(int i = 0; i < n; i++) {
-          outV.isNull[i] = inputCol.isNull[i];
+          outputColVector.isNull[i] = inputCol.isNull[i];
           if (!inputCol.isNull[i]) {
-            evaluate(baseDateDays, inputCol.vector[i], outV, i);
+            evaluate(baseDateDays, inputCol.vector[i], outputColVector, i);
           }
         }
       }
@@ -159,28 +213,6 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
       result -= numDays;
     }
     output.vector[i] = result;
-  }
-
-  @Override
-  public int getOutputColumn() {
-    return this.outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return "date";
-  }
-
-  public int getColNum() {
-    return colNum;
-  }
-
-  public void setColNum(int colNum) {
-    this.colNum = colNum;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
   }
 
   public long getLongValue() {
@@ -209,7 +241,7 @@ public class VectorUDFDateAddScalarCol extends VectorExpression {
 
   @Override
   public String vectorExpressionParameters() {
-    return "val " + stringValue + ", col " + colNum;
+    return "val " + stringValue + ", " + getColumnParamString(0, colNum);
   }
 
   public VectorExpressionDescriptor.Descriptor getDescriptor() {

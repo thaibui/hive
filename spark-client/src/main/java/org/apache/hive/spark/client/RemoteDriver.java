@@ -25,6 +25,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -88,31 +90,35 @@ public class RemoteDriver {
   private volatile JobContextImpl jc;
   private volatile boolean running;
 
+  public static final String REMOTE_DRIVER_HOST_CONF = "--remote-host";
+  public static final String REMOTE_DRIVER_PORT_CONF = "--remote-port";
+  public static final String REMOTE_DRIVER_CONF = "--remote-driver-conf";
+
   private RemoteDriver(String[] args) throws Exception {
     this.activeJobs = Maps.newConcurrentMap();
     this.jcLock = new Object();
     this.shutdownLock = new Object();
     localTmpDir = Files.createTempDir();
 
+    addShutdownHook();
+
     SparkConf conf = new SparkConf();
     String serverAddress = null;
     int serverPort = -1;
+    Map<String, String> mapConf = Maps.newHashMap();
     for (int idx = 0; idx < args.length; idx += 2) {
       String key = args[idx];
-      if (key.equals("--remote-host")) {
+      if (REMOTE_DRIVER_HOST_CONF.equals(key)) {
         serverAddress = getArg(args, idx);
-      } else if (key.equals("--remote-port")) {
+      } else if (REMOTE_DRIVER_PORT_CONF.equals(key)) {
         serverPort = Integer.parseInt(getArg(args, idx));
-      } else if (key.equals("--client-id")) {
-        conf.set(SparkClientFactory.CONF_CLIENT_ID, getArg(args, idx));
-      } else if (key.equals("--secret")) {
-        conf.set(SparkClientFactory.CONF_KEY_SECRET, getArg(args, idx));
-      } else if (key.equals("--conf")) {
+      } else if (REMOTE_DRIVER_CONF.equals(key)) {
         String[] val = getArg(args, idx).split("[=]", 2);
-        conf.set(val[0], val[1]);
+        //set these only in mapConf and not in SparkConf,
+        // as these are non-spark specific configs used by the remote driver
+        mapConf.put(val[0], val[1]);
       } else {
-        throw new IllegalArgumentException("Invalid command line: "
-          + Joiner.on(" ").join(args));
+        throw new IllegalArgumentException("Invalid command line: " + Joiner.on(" ").join(args));
       }
     }
 
@@ -120,7 +126,6 @@ public class RemoteDriver {
 
     LOG.info("Connecting to: {}:{}", serverAddress, serverPort);
 
-    Map<String, String> mapConf = Maps.newHashMap();
     for (Tuple2<String, String> e : conf.getAll()) {
       mapConf.put(e._1(), e._2());
       LOG.debug("Remote Driver configured with: " + e._1() + "=" + e._2());
@@ -174,6 +179,17 @@ public class RemoteDriver {
         it.next().submit();
       }
     }
+  }
+
+  private void addShutdownHook() {
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      if (running) {
+        LOG.info("Received signal SIGTERM, attempting safe shutdown of Remote Spark Context");
+        protocol.sendErrorMessage("Remote Spark Context was shutdown because it received a SIGTERM " +
+                "signal. Most likely due to a kill request via YARN.");
+        shutdown(null);
+      }
+    }));
   }
 
   private void run() throws InterruptedException {
@@ -247,7 +263,12 @@ public class RemoteDriver {
 
     void sendError(Throwable error) {
       LOG.debug("Send error to Client: {}", Throwables.getStackTraceAsString(error));
-      clientRpc.call(new Error(error));
+      clientRpc.call(new Error(Throwables.getStackTraceAsString(error)));
+    }
+
+    void sendErrorMessage(String cause) {
+      LOG.debug("Send error to Client: {}", cause);
+      clientRpc.call(new Error(cause));
     }
 
     <T extends Serializable> void jobFinished(String jobId, T result,
@@ -388,7 +409,7 @@ public class RemoteDriver {
         // Catch throwables in a best-effort to report job status back to the client. It's
         // re-thrown so that the executor can destroy the affected thread (or the JVM can
         // die or whatever would happen if the throwable bubbled up).
-        LOG.info("Failed to run job " + req.id, t);
+        LOG.error("Failed to run job " + req.id, t);
         protocol.jobFinished(req.id, null, t,
             sparkCounters != null ? sparkCounters.snapshot() : null);
         throw new ExecutionException(t);
@@ -476,7 +497,7 @@ public class RemoteDriver {
     public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
       if (taskEnd.reason() instanceof org.apache.spark.Success$
           && !taskEnd.taskInfo().speculative()) {
-        Metrics metrics = new Metrics(taskEnd.taskMetrics());
+        Metrics metrics = new Metrics(taskEnd.taskMetrics(), taskEnd.taskInfo());
         Integer jobId;
         synchronized (stageToJobId) {
           jobId = stageToJobId.get(taskEnd.stageId());
@@ -513,8 +534,18 @@ public class RemoteDriver {
   }
 
   public static void main(String[] args) throws Exception {
-    new RemoteDriver(args).run();
+    RemoteDriver rd = new RemoteDriver(args);
+    try {
+      rd.run();
+    } catch (Exception e) {
+      // If the main thread throws an exception for some reason, propagate the exception to the
+      // client and initiate a safe shutdown
+      if (rd.running) {
+        rd.protocol.sendError(e);
+        rd.shutdown(null);
+      }
+      throw e;
+    }
   }
-
 }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,18 +17,15 @@
  */
 package org.apache.hadoop.hive.druid.serde;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
-import org.apache.hadoop.hive.druid.DruidStorageHandlerUtils;
-import org.apache.hadoop.io.NullWritable;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import com.fasterxml.jackson.databind.JavaType;
 import io.druid.query.Result;
 import io.druid.query.timeseries.TimeseriesQuery;
 import io.druid.query.timeseries.TimeseriesResultValue;
+import org.apache.hadoop.hive.druid.DruidStorageHandlerUtils;
+import org.apache.hadoop.io.NullWritable;
+
+import java.io.IOException;
 
 /**
  * Record reader for results for Druid TimeseriesQuery.
@@ -36,26 +33,19 @@ import io.druid.query.timeseries.TimeseriesResultValue;
 public class DruidTimeseriesQueryRecordReader
         extends DruidQueryRecordReader<TimeseriesQuery, Result<TimeseriesResultValue>> {
 
+  private static final TypeReference TYPE_REFERENCE = new TypeReference<Result<TimeseriesResultValue>>() {
+  };
   private Result<TimeseriesResultValue> current;
 
   @Override
-  protected TimeseriesQuery createQuery(String content) throws IOException {
-    return DruidStorageHandlerUtils.JSON_MAPPER.readValue(content, TimeseriesQuery.class);
-  }
-
-  @Override
-  protected List<Result<TimeseriesResultValue>> createResultsList(InputStream content)
-          throws IOException {
-    return DruidStorageHandlerUtils.SMILE_MAPPER.readValue(content,
-            new TypeReference<List<Result<TimeseriesResultValue>>>() {
-            }
-    );
+  protected JavaType getResultTypeDef() {
+    return DruidStorageHandlerUtils.JSON_MAPPER.getTypeFactory().constructType(TYPE_REFERENCE);
   }
 
   @Override
   public boolean nextKeyValue() {
-    if (results.hasNext()) {
-      current = results.next();
+    if (queryResultsIterator.hasNext()) {
+      current = queryResultsIterator.next();
       return true;
     }
     return false;
@@ -70,7 +60,9 @@ public class DruidTimeseriesQueryRecordReader
   public DruidWritable getCurrentValue() throws IOException, InterruptedException {
     // Create new value
     DruidWritable value = new DruidWritable();
-    value.getValue().put(DruidStorageHandlerUtils.DEFAULT_TIMESTAMP_COLUMN, current.getTimestamp().getMillis());
+    value.getValue().put(DruidStorageHandlerUtils.EVENT_TIMESTAMP_COLUMN,
+        current.getTimestamp() == null ? null : current.getTimestamp().getMillis()
+    );
     value.getValue().putAll(current.getValue().getBaseObject());
     return value;
   }
@@ -80,7 +72,9 @@ public class DruidTimeseriesQueryRecordReader
     if (nextKeyValue()) {
       // Update value
       value.getValue().clear();
-      value.getValue().put(DruidStorageHandlerUtils.DEFAULT_TIMESTAMP_COLUMN, current.getTimestamp().getMillis());
+      value.getValue().put(DruidStorageHandlerUtils.EVENT_TIMESTAMP_COLUMN,
+          current.getTimestamp() == null ? null : current.getTimestamp().getMillis()
+      );
       value.getValue().putAll(current.getValue().getBaseObject());
       return true;
     }
@@ -89,7 +83,7 @@ public class DruidTimeseriesQueryRecordReader
 
   @Override
   public float getProgress() throws IOException {
-    return results.hasNext() ? 0 : 1;
+    return queryResultsIterator.hasNext() ? 0 : 1;
   }
 
 }

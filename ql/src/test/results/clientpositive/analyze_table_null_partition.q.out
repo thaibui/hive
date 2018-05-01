@@ -80,7 +80,6 @@ age                 	int
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 age                 	int                 	                    
 	 	 
 #### A masked pattern was here ####
@@ -102,7 +101,7 @@ STAGE PLANS:
             partition values:
               age 15
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"name":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns name
@@ -126,6 +125,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns name
                 columns.comments 
@@ -147,7 +147,7 @@ STAGE PLANS:
             partition values:
               age 30
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"name":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns name
@@ -171,6 +171,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns name
                 columns.comments 
@@ -192,7 +193,7 @@ STAGE PLANS:
             partition values:
               age 40
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"name":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns name
@@ -216,6 +217,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns name
                 columns.comments 
@@ -237,7 +239,7 @@ STAGE PLANS:
             partition values:
               age __HIVE_DEFAULT_PARTITION__
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"name":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns name
@@ -261,6 +263,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns name
                 columns.comments 
@@ -279,12 +282,12 @@ STAGE PLANS:
       Processor Tree:
         TableScan
           alias: test2
-          Statistics: Num rows: 5 Data size: 111 Basic stats: COMPLETE Column stats: NONE
+          Statistics: Num rows: 5 Data size: 299 Basic stats: COMPLETE Column stats: NONE
           GatherStats: false
           Select Operator
             expressions: name (type: string), age (type: int)
             outputColumnNames: _col0, _col1
-            Statistics: Num rows: 5 Data size: 111 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 5 Data size: 299 Basic stats: COMPLETE Column stats: NONE
             ListSink
 
 PREHOOK: query: DROP TABLE test1

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -57,7 +57,6 @@ public class VectorUDFAdaptor extends VectorExpression {
 
   private static final long serialVersionUID = 1L;
 
-  private int outputColumn;
   private String resultType;
   private VectorUDFArgDesc[] argDescs;
   private ExprNodeGenericFuncDesc expr;
@@ -75,13 +74,12 @@ public class VectorUDFAdaptor extends VectorExpression {
 
   public VectorUDFAdaptor (
       ExprNodeGenericFuncDesc expr,
-      int outputColumn,
+      int outputColumnNum,
       String resultType,
       VectorUDFArgDesc[] argDescs) throws HiveException {
 
-    this();
+    super(outputColumnNum);
     this.expr = expr;
-    this.outputColumn = outputColumn;
     this.resultType = resultType;
     this.argDescs = argDescs;
   }
@@ -101,7 +99,7 @@ public class VectorUDFAdaptor extends VectorExpression {
     }
     outputTypeInfo = expr.getTypeInfo();
     outputVectorAssignRow = new VectorAssignRow();
-    outputVectorAssignRow.init(outputTypeInfo, outputColumn);
+    outputVectorAssignRow.init(outputTypeInfo, outputColumnNum);
 
     genericUDF.initialize(childrenOIs);
 
@@ -130,7 +128,7 @@ public class VectorUDFAdaptor extends VectorExpression {
 
     int[] sel = batch.selected;
     int n = batch.size;
-    ColumnVector outV = batch.cols[outputColumn];
+    ColumnVector outV = batch.cols[outputColumnNum];
 
     // If the output column is of type string, initialize the buffer to receive data.
     if (outV instanceof BytesColumnVector) {
@@ -142,17 +140,19 @@ public class VectorUDFAdaptor extends VectorExpression {
       return;
     }
 
-    batch.cols[outputColumn].noNulls = true;
+    /*
+     * Do careful maintenance of the outputColVector.noNulls flag.
+     */
 
     /* If all input columns are repeating, just evaluate function
      * for row 0 in the batch and set output repeating.
      */
     if (allInputColsRepeating(batch)) {
       setResult(0, batch);
-      batch.cols[outputColumn].isRepeating = true;
+      batch.cols[outputColumnNum].isRepeating = true;
       return;
     } else {
-      batch.cols[outputColumn].isRepeating = false;
+      batch.cols[outputColumnNum].isRepeating = false;
     }
 
     if (batch.selectedInUse) {
@@ -215,44 +215,6 @@ public class VectorUDFAdaptor extends VectorExpression {
     // Set output column vector entry.  Since we have one output column, the logical index = 0.
     outputVectorAssignRow.assignRowColumn(
         b, /* batchIndex */ i, /* logicalColumnIndex */ 0, result);
-  }
-
-  @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return resultType;
-  }
-
-  public String getResultType() {
-    return resultType;
-  }
-
-  public void setResultType(String resultType) {
-    this.resultType = resultType;
-  }
-
-  public VectorUDFArgDesc[] getArgDescs() {
-    return argDescs;
-  }
-
-  public void setArgDescs(VectorUDFArgDesc[] argDescs) {
-    this.argDescs = argDescs;
-  }
-
-  public ExprNodeGenericFuncDesc getExpr() {
-    return expr;
-  }
-
-  public void setExpr(ExprNodeGenericFuncDesc expr) {
-    this.expr = expr;
   }
 
   @Override

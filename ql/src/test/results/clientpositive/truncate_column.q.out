@@ -25,7 +25,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -36,7 +35,8 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	10                  
 	rawDataSize         	94                  
@@ -86,7 +86,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -97,6 +96,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	10                  
 	rawDataSize         	94                  
@@ -156,7 +156,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -167,6 +166,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	10                  
 	rawDataSize         	94                  
@@ -216,7 +216,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -227,6 +226,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	10                  
 	rawDataSize         	94                  
@@ -286,7 +286,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -297,7 +296,8 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	1                   
 	numRows             	10                  
@@ -348,7 +348,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -359,6 +358,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	1                   
 	numRows             	10                  
@@ -409,7 +409,6 @@ POSTHOOK: query: DESC FORMATTED test_tab
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -420,6 +419,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	1                   
 	numRows             	10                  
@@ -480,13 +480,11 @@ POSTHOOK: query: DESC FORMATTED test_tab_part PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -495,7 +493,7 @@ Database:           	default
 Table:              	test_tab_part       	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	10                  
 	rawDataSize         	94                  
@@ -547,13 +545,11 @@ POSTHOOK: query: DESC FORMATTED test_tab_part PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_tab_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 

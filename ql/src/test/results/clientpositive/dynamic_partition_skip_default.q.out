@@ -61,7 +61,7 @@ STAGE PLANS:
               partcol1 1
               partcol2 1
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -85,6 +85,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 
@@ -130,7 +131,7 @@ STAGE PLANS:
               partcol1 1
               partcol2 1
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -154,6 +155,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 
@@ -199,7 +201,7 @@ STAGE PLANS:
               partcol1 1
               partcol2 1
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -223,6 +225,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 
@@ -245,7 +248,7 @@ STAGE PLANS:
               partcol1 1
               partcol2 __HIVE_DEFAULT_PARTITION__
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -269,6 +272,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 

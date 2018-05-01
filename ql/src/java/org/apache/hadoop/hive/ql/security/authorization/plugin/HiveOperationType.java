@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -80,6 +80,7 @@ public enum HiveOperationType {
   SHOWLOCKS,
   SHOWCONF,
   SHOWVIEWS,
+  SHOWMATERIALIZEDVIEWS,
   CREATEFUNCTION,
   DROPFUNCTION,
   RELOADFUNCTION,
@@ -127,10 +128,29 @@ public enum HiveOperationType {
   ALTERTBLPART_SKEWED_LOCATION,
   ALTERVIEW_RENAME,
   ALTERVIEW_AS,
+  ALTER_MATERIALIZED_VIEW_REWRITE,
   ALTERTABLE_COMPACT,
+  ALTERTABLE_UPDATECOLUMNS,
   SHOW_COMPACTIONS,
   SHOW_TRANSACTIONS,
   ABORT_TRANSACTIONS,
+  KILL_QUERY,
+  CREATE_RESOURCEPLAN,
+  SHOW_RESOURCEPLAN,
+  ALTER_RESOURCEPLAN,
+  DROP_RESOURCEPLAN,
+  CREATE_TRIGGER,
+  ALTER_TRIGGER,
+  DROP_TRIGGER,
+  CREATE_POOL,
+  ALTER_POOL,
+  DROP_POOL,
+  CREATE_MAPPING,
+  ALTER_MAPPING,
+  DROP_MAPPING,
+  LLAP_CLUSTER_INFO,
+  LLAP_CACHE_PURGE,
+
   // ==== Hive command operation types starts here ==== //
   SET,
   RESET,

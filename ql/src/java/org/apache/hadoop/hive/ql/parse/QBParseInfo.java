@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -64,6 +64,7 @@ public class QBParseInfo {
   private final Set<String> destCubes;
   private final Set<String> destGroupingSets;
   private final Map<String, ASTNode> destToHaving;
+  private final Map<String, Boolean> destToOpType;
   // insertIntoTables/insertOverwriteTables map a table's fullName to its ast;
   private final Map<String, ASTNode> insertIntoTables;
   private final Map<String, ASTNode> insertOverwriteTables;
@@ -71,8 +72,6 @@ public class QBParseInfo {
 
   private boolean isAnalyzeCommand; // used for the analyze command (statistics)
   private boolean isNoScanAnalyzeCommand; // used for the analyze command (statistics) (noscan)
-  private boolean isPartialScanAnalyzeCommand; // used for the analyze command (statistics)
-                                               // (partialscan)
 
   private final HashMap<String, TableSpec> tableSpecs; // used for statistics
 
@@ -137,6 +136,7 @@ public class QBParseInfo {
     destToSortby = new HashMap<String, ASTNode>();
     destToOrderby = new HashMap<String, ASTNode>();
     destToLimit = new HashMap<String, SimpleEntry<Integer, Integer>>();
+    destToOpType = new HashMap<>();
     insertIntoTables = new HashMap<String, ASTNode>();
     insertOverwriteTables = new HashMap<String, ASTNode>();
     destRollups = new HashSet<String>();
@@ -157,7 +157,7 @@ public class QBParseInfo {
 
   }
 
-  /*
+/*
    * If a QB is such that the aggregation expressions need to be handled by
    * the Windowing PTF; we invoke this function to clear the AggExprs on the dest.
    */
@@ -181,6 +181,18 @@ public class QBParseInfo {
 
   public void addInsertIntoTable(String fullName, ASTNode ast) {
     insertIntoTables.put(fullName.toLowerCase(), ast);
+  }
+  
+  public void setDestToOpType(String clause, boolean value) {
+	destToOpType.put(clause, value);
+  }
+  
+  public boolean isDestToOpTypeInsertOverwrite(String clause) {
+	if (destToOpType.containsKey(clause)) {
+		return destToOpType.get(clause);
+	} else {
+	  return false;
+	}
   }
 
   /**
@@ -657,26 +669,15 @@ public class QBParseInfo {
   }
 
   /**
-   * @return the isPartialScanAnalyzeCommand
-   */
-  public boolean isPartialScanAnalyzeCommand() {
-    return isPartialScanAnalyzeCommand;
-  }
-
-  /**
-   * @param isPartialScanAnalyzeCommand the isPartialScanAnalyzeCommand to set
-   */
-  public void setPartialScanAnalyzeCommand(boolean isPartialScanAnalyzeCommand) {
-    this.isPartialScanAnalyzeCommand = isPartialScanAnalyzeCommand;
-  }
-
-  /**
    * See also {@link #isInsertIntoTable(String)}
    */
   public Map<String, ASTNode> getInsertOverwriteTables() {
     return insertOverwriteTables;
   }
 
+  public boolean hasInsertTables() {
+    return this.insertIntoTables.size() > 0 || this.insertOverwriteTables.size() > 0;
+  }
 }
 
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -1162,5 +1162,18 @@ public class TestSQL11ReservedKeyWordsNegative {
           ex.getMessage());
     }
   }
+
+	@Test
+	public void testSQL11ReservedKeyWords_KILL() {
+		try {
+			parse("CREATE TABLE KILL QUERY (col STRING)");
+			Assert.fail("Expected ParseException");
+		} catch (ParseException ex) {
+			Assert.assertEquals(
+					"Failure didn't match.",
+					"line 1:18 cannot recognize input near 'QUERY' '(' 'col' in create table statement",
+					ex.getMessage());
+		}
+	}
 
 }

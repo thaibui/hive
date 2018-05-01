@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -112,7 +112,7 @@ public class GenMRFileSink1 implements NodeProcessor {
       LOG.info("using CombineHiveInputformat for the merge job");
       GenMapRedUtils.createMRWorkForMergingFiles(fsOp, finalName,
           ctx.getDependencyTaskForMultiInsert(), ctx.getMvTask(),
-          hconf, currTask);
+          hconf, currTask, parseCtx.getQueryState().getLineageState());
     }
 
     FileSinkDesc fileSinkDesc = fsOp.getConf();

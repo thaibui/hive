@@ -25,13 +25,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -76,13 +74,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -127,13 +123,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -178,13 +172,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -229,13 +221,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -246,9 +236,9 @@ Table:              	test_table
 Partition Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
 	numFiles            	16                  
-	numRows             	2654                
-	rawDataSize         	28466               
-	totalSize           	31120               
+	numRows             	257                 
+	rawDataSize         	2823                
+	totalSize           	3080                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -280,13 +270,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 

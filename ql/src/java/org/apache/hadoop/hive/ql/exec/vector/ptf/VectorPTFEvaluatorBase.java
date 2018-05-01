@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -61,7 +61,7 @@ public abstract class VectorPTFEvaluatorBase {
       inputColumnNum = -1;
       this.inputVecExpr = null;
     } else {
-      inputColumnNum = inputVecExpr.getOutputColumn();
+      inputColumnNum = inputVecExpr.getOutputColumnNum();
       if (inputVecExpr instanceof IdentityExpression) {
         this.inputVecExpr = null;
       } else {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,17 +26,21 @@ public class LongColLessLongColumn extends VectorExpression {
 
   private static final long serialVersionUID = 1L;
 
-  private int colNum1;
-  private int colNum2;
-  private int outputColumn;
+  private final int colNum1;
+  private final int colNum2;
 
-  public LongColLessLongColumn(int colNum1, int colNum2, int outputColumn) {
+  public LongColLessLongColumn(int colNum1, int colNum2, int outputColumnNum) {
+    super(outputColumnNum);
     this.colNum1 = colNum1;
     this.colNum2 = colNum2;
-    this.outputColumn = outputColumn;
   }
 
   public LongColLessLongColumn() {
+    super();
+
+    // Dummy final assignments.
+    colNum1 = -1;
+    colNum2 = -1;
   }
 
   @Override
@@ -48,7 +52,7 @@ public class LongColLessLongColumn extends VectorExpression {
 
     LongColumnVector inputColVector1 = (LongColumnVector) batch.cols[colNum1];
     LongColumnVector inputColVector2 = (LongColumnVector) batch.cols[colNum2];
-    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumn];
+    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumnNum];
     int[] sel = batch.selected;
     int n = batch.size;
     long[] vector1 = inputColVector1.vector;
@@ -62,12 +66,9 @@ public class LongColLessLongColumn extends VectorExpression {
       return;
     }
 
-    outputColVector.isRepeating =
-        inputColVector1.isRepeating && inputColVector2.isRepeating
-            || inputColVector1.isRepeating && !inputColVector1.noNulls && inputColVector1.isNull[0]
-            || inputColVector2.isRepeating && !inputColVector2.noNulls && inputColVector2.isNull[0];
-
-    // Handle nulls first
+    /*
+     * Propagate null values for a two-input operator and set isRepeating and noNulls appropriately.
+     */
     NullUtil.propagateNullsColCol(
         inputColVector1, inputColVector2, outputColVector, sel, n, batch.selectedInUse);
 
@@ -124,38 +125,8 @@ public class LongColLessLongColumn extends VectorExpression {
   }
 
   @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return "long";
-  }
-
-  public int getColNum1() {
-    return colNum1;
-  }
-
-  public void setColNum1(int colNum1) {
-    this.colNum1 = colNum1;
-  }
-
-  public int getColNum2() {
-    return colNum2;
-  }
-
-  public void setColNum2(int colNum2) {
-    this.colNum2 = colNum2;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
-  }
-
-  @Override
   public String vectorExpressionParameters() {
-    return "col " + colNum1 + ", col " + colNum2;
+    return getColumnParamString(0, colNum1) + ", " + getColumnParamString(1, colNum2);
   }
 
   @Override

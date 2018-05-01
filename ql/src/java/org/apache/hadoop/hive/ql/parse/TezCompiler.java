@@ -1,4 +1,4 @@
-/**
+/*
  *  Licensed to the Apache Software Foundation (ASF) under one
  *  or more contributor license agreements.  See the NOTICE file
  *  distributed with this work for additional information
@@ -80,7 +80,7 @@ import org.apache.hadoop.hive.ql.optimizer.SharedWorkOptimizer;
 import org.apache.hadoop.hive.ql.optimizer.correlation.ReduceSinkJoinDeDuplication;
 import org.apache.hadoop.hive.ql.optimizer.metainfo.annotation.AnnotateWithOpTraits;
 import org.apache.hadoop.hive.ql.optimizer.physical.AnnotateRunTimeStatsOptimizer;
-import org.apache.hadoop.hive.ql.optimizer.physical.CrossProductCheck;
+import org.apache.hadoop.hive.ql.optimizer.physical.CrossProductHandler;
 import org.apache.hadoop.hive.ql.optimizer.physical.LlapClusterStateForCompile;
 import org.apache.hadoop.hive.ql.optimizer.physical.LlapDecider;
 import org.apache.hadoop.hive.ql.optimizer.physical.LlapPreVectorizationPass;
@@ -144,6 +144,11 @@ public class TezCompiler extends TaskCompiler {
     // setup dynamic partition pruning where possible
     runDynamicPartitionPruning(procCtx, inputs, outputs);
     perfLogger.PerfLogEnd(this.getClass().getName(), PerfLogger.TEZ_COMPILER, "Setup dynamic partition pruning");
+
+    // need to run this; to get consistent filterop conditions(for operator tree matching)
+    if (procCtx.conf.getBoolVar(ConfVars.HIVEOPTCONSTANTPROPAGATION)) {
+      new ConstantPropagate(ConstantPropagateOption.SHORTCUT).transform(procCtx.parseContext);
+    }
 
     perfLogger.PerfLogBegin(this.getClass().getName(), PerfLogger.TEZ_COMPILER);
     // setup stats in the operator plan
@@ -266,7 +271,9 @@ public class TezCompiler extends TaskCompiler {
 
         SemiJoinBranchInfo sjInfo =
                 context.parseContext.getRsToSemiJoinBranchInfo().get(o);
-        if (sjInfo == null ) continue;
+        if (sjInfo == null ) {
+          continue;
+        }
         if (sjInfo.getIsHint()) {
           // Skipping because of hint. Mark this info,
           hasHint = true;
@@ -658,7 +665,7 @@ public class TezCompiler extends TaskCompiler {
     }
 
     if (conf.getBoolVar(HiveConf.ConfVars.HIVE_CHECK_CROSS_PRODUCT)) {
-      physicalCtx = new CrossProductCheck().resolve(physicalCtx);
+      physicalCtx = new CrossProductHandler().resolve(physicalCtx);
     } else {
       LOG.debug("Skipping cross product analysis");
     }
@@ -669,8 +676,7 @@ public class TezCompiler extends TaskCompiler {
       LOG.debug("Skipping llap pre-vectorization pass");
     }
 
-    if (conf.getBoolVar(HiveConf.ConfVars.HIVE_VECTORIZATION_ENABLED)
-        && ctx.getExplainAnalyze() == null) {
+    if (conf.getBoolVar(HiveConf.ConfVars.HIVE_VECTORIZATION_ENABLED)) {
       physicalCtx = new Vectorizer().resolve(physicalCtx);
     } else {
       LOG.debug("Skipping vectorization");
@@ -867,7 +873,9 @@ public class TezCompiler extends TaskCompiler {
 
         ReduceSinkOperator rs = ((ReduceSinkOperator) child);
         SemiJoinBranchInfo sjInfo = pCtx.getRsToSemiJoinBranchInfo().get(rs);
-        if (sjInfo == null) continue;
+        if (sjInfo == null) {
+          continue;
+        }
 
         TableScanOperator ts = sjInfo.getTsOp();
         // This is a semijoin branch. Find if this is creating a potential
@@ -926,7 +934,9 @@ public class TezCompiler extends TaskCompiler {
         GenericUDAFBloomFilterEvaluator udafBloomFilterEvaluator =
                 (GenericUDAFBloomFilterEvaluator) agg.getGenericUDAFEvaluator();
         if (udafBloomFilterEvaluator.hasHintEntries())
+         {
           return null; // Created using hint, skip it
+        }
 
         long expectedEntries = udafBloomFilterEvaluator.getExpectedEntries();
         if (expectedEntries == -1 || expectedEntries >
@@ -1053,7 +1063,9 @@ public class TezCompiler extends TaskCompiler {
 
           ReduceSinkOperator rs = (ReduceSinkOperator) child;
           SemiJoinBranchInfo sjInfo = parseContext.getRsToSemiJoinBranchInfo().get(rs);
-          if (sjInfo == null) continue;
+          if (sjInfo == null) {
+            continue;
+          }
 
           TableScanOperator ts = sjInfo.getTsOp();
           if (ts != bigTableTS) {
@@ -1414,7 +1426,13 @@ public class TezCompiler extends TaskCompiler {
               ExprNodeColumnDesc tsColExpr = ExprNodeDescUtils.getColumnExpr(tsExpr);
               long nDVsOfTS = filStats.getColumnStatisticsFromColName(
                       tsColExpr.getColumn()).getCountDistint();
-              if (nDVsOfTS >= nDVs) {
+              double nDVsOfTSFactored = nDVsOfTS * procCtx.conf.getFloatVar(
+                      ConfVars.TEZ_DYNAMIC_SEMIJOIN_REDUCTION_FOR_DPP_FACTOR);
+              if ((long)nDVsOfTSFactored > nDVs) {
+                if (LOG.isDebugEnabled()) {
+                  LOG.debug("nDVs = " + nDVs + ", nDVsOfTS = " + nDVsOfTS + " and nDVsOfTSFactored = " + nDVsOfTSFactored
+                  + "Adding semijoin branch from ReduceSink " + rs + " to TS " + sjInfo.getTsOp());
+                }
                 sjInfo.setShouldRemove(false);
               }
             }

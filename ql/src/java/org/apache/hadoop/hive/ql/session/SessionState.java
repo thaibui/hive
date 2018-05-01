@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,8 +17,9 @@
  */
 
 package org.apache.hadoop.hive.ql.session;
-import static org.apache.hadoop.hive.metastore.MetaStoreUtils.DEFAULT_DATABASE_NAME;
+import static org.apache.hadoop.hive.metastore.Warehouse.DEFAULT_DATABASE_NAME;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang.StringUtils;
@@ -54,10 +56,13 @@ import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.common.log.ProgressMonitor;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+import org.apache.hadoop.hive.conf.HiveConfUtil;
 import org.apache.hadoop.hive.metastore.ObjectStore;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
 import org.apache.hadoop.hive.metastore.cache.CachedStore;
+import org.apache.hadoop.hive.metastore.conf.MetastoreConf;
 import org.apache.hadoop.hive.ql.MapRedStats;
+import org.apache.hadoop.hive.ql.exec.FunctionInfo;
 import org.apache.hadoop.hive.ql.exec.Registry;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.spark.session.SparkSession;
@@ -74,6 +79,7 @@ import org.apache.hadoop.hive.ql.log.PerfLogger;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.HiveUtils;
+import org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.security.HiveAuthenticationProvider;
 import org.apache.hadoop.hive.ql.security.authorization.HiveAuthorizationProvider;
@@ -112,9 +118,14 @@ public class SessionState {
   static final String LOCK_FILE_NAME = "inuse.lck";
   static final String INFO_FILE_NAME = "inuse.info";
 
-  private final Map<String, Map<String, Table>> tempTables = new HashMap<String, Map<String, Table>>();
+  /**
+   * Concurrent since SessionState is often propagated to workers in thread pools
+   */
+  private final Map<String, Map<String, Table>> tempTables = new ConcurrentHashMap<>();
   private final Map<String, Map<String, ColumnStatisticsObj>> tempTableColStats =
-      new HashMap<String, Map<String, ColumnStatisticsObj>>();
+      new ConcurrentHashMap<>();
+  private final Map<String, SessionHiveMetaStoreClient.TempTable> tempPartitions =
+      new ConcurrentHashMap<>();
 
   protected ClassLoader parentLoader;
 
@@ -189,6 +200,10 @@ public class SessionState {
   private HiveAuthorizer authorizerV2;
   private volatile ProgressMonitor progressMonitor;
 
+  private String hiveServer2HostName;
+
+  private KillQuery killQuery;
+
   public enum AuthorizationMode{V1, V2};
 
   private HiveAuthenticationProvider authenticator;
@@ -225,11 +240,6 @@ public class SessionState {
    * Gets information about HDFS encryption
    */
   private Map<URI, HadoopShims.HdfsEncryptionShim> hdfsEncryptionShims = Maps.newHashMap();
-
-  /**
-   * Lineage state.
-   */
-  LineageState ls;
 
   private final String userName;
 
@@ -274,6 +284,12 @@ public class SessionState {
   private final Registry registry;
 
   /**
+   * Used to cache functions in use for a query, during query planning
+   * and is later used for function usage authorization.
+   */
+  private final Map<String, FunctionInfo> currentFunctionsInUse = new HashMap<>();
+
+  /**
    * CURRENT_TIMESTAMP value for query
    */
   private Timestamp queryCurrentTimestamp;
@@ -286,14 +302,7 @@ public class SessionState {
 
   private String atsDomainId;
 
-  /**
-   * Get the lineage state stored in this session.
-   *
-   * @return LineageState
-   */
-  public LineageState getLineageState() {
-    return ls;
-  }
+  private List<Closeable> cleanupItems = new LinkedList<Closeable>();
 
   public HiveConf getConf() {
     return sessionConf;
@@ -379,7 +388,6 @@ public class SessionState {
       LOG.debug("SessionState user: " + userName);
     }
     isSilent = conf.getBoolVar(HiveConf.ConfVars.HIVESESSIONSILENT);
-    ls = new LineageState();
     resourceMaps = new ResourceMaps();
     // Must be deterministic order map for consistent q-test output across Java versions
     overriddenConfigurations = new LinkedHashMap<String, String>();
@@ -387,6 +395,7 @@ public class SessionState {
     // if there isn't already a session name, go ahead and create it.
     if (StringUtils.isEmpty(conf.getVar(HiveConf.ConfVars.HIVESESSIONID))) {
       conf.setVar(HiveConf.ConfVars.HIVESESSIONID, makeSessionId());
+      getConsole().printInfo("Hive Session ID = " + getSessionId());
     }
     // Using system classloader as the parent. Using thread context
     // classloader as parent can pollute the session. See HIVE-11878
@@ -396,6 +405,7 @@ public class SessionState {
     this.sessionConf.setClassLoader(currentLoader);
     resourceDownloader = new ResourceDownloader(conf,
         HiveConf.getVar(conf, ConfVars.DOWNLOADED_RESOURCES_DIR));
+    killQuery = new NullKillQuery();
   }
 
   public Map<String, String> getHiveVariables() {
@@ -456,6 +466,13 @@ public class SessionState {
     return txnMgr;
   }
 
+  /**
+   * Get the transaction manager for the current SessionState.
+   * Note that the Driver can be initialized with a different txn manager than the SessionState's
+   * txn manager (HIVE-17482), and so it is preferable to use the txn manager propagated down from
+   * the Driver as opposed to calling this method.
+   * @return transaction manager for the current SessionState
+   */
   public HiveTxnManager getTxnMgr() {
     return txnMgr;
   }
@@ -567,7 +584,9 @@ public class SessionState {
 
   public static void endStart(SessionState startSs)
       throws CancellationException, InterruptedException {
-    if (startSs.tezSessionState == null) return;
+    if (startSs.tezSessionState == null) {
+      return;
+    }
     startSs.tezSessionState.endOpen();
   }
 
@@ -623,11 +642,17 @@ public class SessionState {
     }
 
     String engine = HiveConf.getVar(startSs.getConf(), HiveConf.ConfVars.HIVE_EXECUTION_ENGINE);
-    if (!engine.equals("tez") || startSs.isHiveServerQuery) return;
+    if (!engine.equals("tez") || startSs.isHiveServerQuery) {
+      return;
+    }
 
     try {
       if (startSs.tezSessionState == null) {
-        startSs.setTezSession(new TezSessionState(startSs.getSessionId()));
+        startSs.setTezSession(new TezSessionState(startSs.getSessionId(), startSs.sessionConf));
+      } else {
+        // Only TezTask sets this, and then removes when done, so we don't expect to see it.
+        LOG.warn("Tez session was already present in SessionState before start: "
+            + startSs.tezSessionState);
       }
       if (startSs.tezSessionState.isOpen()) {
         return;
@@ -640,9 +665,9 @@ public class SessionState {
       }
       // Neither open nor opening.
       if (!isAsync) {
-        startSs.tezSessionState.open(startSs.sessionConf); // should use conf on session start-up
+        startSs.tezSessionState.open();
       } else {
-        startSs.tezSessionState.beginOpen(startSs.sessionConf, null, console);
+        startSs.tezSessionState.beginOpen(null, console);
       }
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -705,6 +730,13 @@ public class SessionState {
     // Don't register with deleteOnExit
     createPath(conf, hdfsTmpTableSpace, scratchDirPermission, false, false);
     conf.set(TMP_TABLE_SPACE_KEY, hdfsTmpTableSpace.toUri().toString());
+
+    // _hive.tmp_table_space, _hive.hdfs.session.path, and _hive.local.session.path are respectively
+    // saved in hdfsTmpTableSpace, hdfsSessionPath and localSessionPath.  Saving them as conf
+    // variables is useful to expose them to end users.  But, end users shouldn't change them.
+    // Adding them to restricted list.
+    conf.addToRestrictList(
+        LOCAL_SESSION_PATH_KEY + "," + HDFS_SESSION_PATH_KEY + "," + TMP_TABLE_SPACE_KEY);
   }
 
   /**
@@ -715,27 +747,7 @@ public class SessionState {
    */
   private Path createRootHDFSDir(HiveConf conf) throws IOException {
     Path rootHDFSDirPath = new Path(HiveConf.getVar(conf, HiveConf.ConfVars.SCRATCHDIR));
-    FsPermission writableHDFSDirPermission = new FsPermission((short)00733);
-    FileSystem fs = rootHDFSDirPath.getFileSystem(conf);
-    if (!fs.exists(rootHDFSDirPath)) {
-      Utilities.createDirsWithPermission(conf, rootHDFSDirPath, writableHDFSDirPermission, true);
-    }
-    FsPermission currentHDFSDirPermission = fs.getFileStatus(rootHDFSDirPath).getPermission();
-    if (rootHDFSDirPath != null && rootHDFSDirPath.toUri() != null) {
-      String schema = rootHDFSDirPath.toUri().getScheme();
-      LOG.debug(
-        "HDFS root scratch dir: " + rootHDFSDirPath + " with schema " + schema + ", permission: " +
-          currentHDFSDirPermission);
-    } else {
-      LOG.debug(
-        "HDFS root scratch dir: " + rootHDFSDirPath + ", permission: " + currentHDFSDirPermission);
-    }
-    // If the root HDFS scratch dir already exists, make sure it is writeable.
-    if (!((currentHDFSDirPermission.toShort() & writableHDFSDirPermission
-        .toShort()) == writableHDFSDirPermission.toShort())) {
-      throw new RuntimeException("The root scratch dir: " + rootHDFSDirPath
-          + " on HDFS should be writable. Current permissions are: " + currentHDFSDirPermission);
-    }
+    Utilities.ensurePathIsWritable(rootHDFSDirPath, conf);
     return rootHDFSDirPath;
   }
 
@@ -750,7 +762,8 @@ public class SessionState {
    * @return
    * @throws IOException
    */
-  private static void createPath(HiveConf conf, Path path, String permission, boolean isLocal,
+  @VisibleForTesting
+  static void createPath(HiveConf conf, Path path, String permission, boolean isLocal,
       boolean isCleanUp) throws IOException {
     FsPermission fsPermission = new FsPermission(permission);
     FileSystem fs;
@@ -760,7 +773,9 @@ public class SessionState {
       fs = path.getFileSystem(conf);
     }
     if (!fs.exists(path)) {
-      fs.mkdirs(path, fsPermission);
+      if (!fs.mkdirs(path, fsPermission)) {
+        throw new IOException("Failed to create directory " + path + " on fs " + fs.getUri());
+      }
       String dirType = isLocal ? "local" : "HDFS";
       LOG.info("Created " + dirType + " directory: " + path.toString());
     }
@@ -852,7 +867,7 @@ public class SessionState {
       fs.cancelDeleteOnExit(path);
       fs.delete(path, true);
       LOG.info("Deleted directory: {} on fs with scheme {}", path, fs.getScheme());
-    } catch (IOException e) {
+    } catch (IllegalArgumentException | UnsupportedOperationException | IOException e) {
       LOG.error("Failed to delete path at {} on fs with scheme {}", path,
           (fs == null ? "Unknown-null" : fs.getScheme()), e);
     }
@@ -1270,7 +1285,9 @@ public class SessionState {
    */
   public void loadAuxJars() throws IOException {
     String[] jarPaths = StringUtils.split(sessionConf.getAuxJars(), ',');
-    if (ArrayUtils.isEmpty(jarPaths)) return;
+    if (ArrayUtils.isEmpty(jarPaths)) {
+      return;
+    }
 
     URLClassLoader currentCLoader =
         (URLClassLoader) SessionState.get().getConf().getClassLoader();
@@ -1436,7 +1453,7 @@ public class SessionState {
         String key;
 
         //get the local path of downloaded jars.
-        List<URI> downloadedURLs = resolveAndDownload(value, convertToUnix);
+        List<URI> downloadedURLs = resolveAndDownload(t, value, convertToUnix);
 
         if (ResourceDownloader.isIvyUri(value)) {
           // get the key to store in map
@@ -1482,9 +1499,14 @@ public class SessionState {
   }
 
   @VisibleForTesting
-  protected List<URI> resolveAndDownload(String value, boolean convertToUnix)
+  protected List<URI> resolveAndDownload(ResourceType resourceType, String value, boolean convertToUnix)
       throws URISyntaxException, IOException {
-    return resourceDownloader.resolveAndDownload(value, convertToUnix);
+    List<URI> uris = resourceDownloader.resolveAndDownload(value, convertToUnix);
+    if (ResourceDownloader.isHdfsUri(value)) {
+      assert uris.size() == 1 : "There should only be one URI localized-resource.";
+      resourceMaps.getLocalHdfsLocationMap(resourceType).put(uris.get(0).toString(), value);
+    }
+    return uris;
   }
 
   public void delete_resources(ResourceType t, List<String> values) {
@@ -1502,12 +1524,18 @@ public class SessionState {
         if (ResourceDownloader.isIvyUri(value)) {
           key = ResourceDownloader.createURI(value).getAuthority();
         }
+        else if (ResourceDownloader.isHdfsUri(value)) {
+          String removedKey = removeHdfsFilesFromMapping(t, value);
+          // remove local copy of HDFS location from resource map.
+          if (removedKey != null) {
+            key = removedKey;
+          }
+        }
       } catch (URISyntaxException e) {
         throw new RuntimeException("Invalid uri string " + value + ", " + e.getMessage());
       }
 
       // get all the dependencies to delete
-
       Set<String> resourcePaths = resourcePathMap.get(key);
       if (resourcePaths == null) {
         return;
@@ -1527,7 +1555,6 @@ public class SessionState {
     resources.removeAll(deleteList);
   }
 
-
   public Set<String> list_resource(ResourceType t, List<String> filter) {
     Set<String> orig = resourceMaps.getResourceSet(t);
     if (orig == null) {
@@ -1546,11 +1573,53 @@ public class SessionState {
     }
   }
 
+  private String removeHdfsFilesFromMapping(ResourceType t, String file){
+    String key = null;
+    if (resourceMaps.getLocalHdfsLocationMap(t).containsValue(file)){
+      for (Map.Entry<String, String> entry : resourceMaps.getLocalHdfsLocationMap(t).entrySet()){
+        if (entry.getValue().equals(file)){
+          key = entry.getKey();
+          resourceMaps.getLocalHdfsLocationMap(t).remove(key);
+        }
+      }
+    }
+    return key;
+  }
+
+  public Set<String> list_local_resource(ResourceType type) {
+    Set<String> resources = new HashSet<String>(list_resource(type, null));
+    Set<String> set = resourceMaps.getResourceSet(type);
+    for (String file : set){
+      if (resourceMaps.getLocalHdfsLocationMap(ResourceType.FILE).containsKey(file)){
+        resources.remove(file);
+      }
+      if (resourceMaps.getLocalHdfsLocationMap(ResourceType.JAR).containsKey(file)){
+        resources.remove(file);
+      }
+    }
+    return resources;
+  }
+
+  public Set<String> list_hdfs_resource(ResourceType type) {
+    Set<String> set = resourceMaps.getResourceSet(type);
+    Set<String> result = new HashSet<String>();
+    for (String file : set){
+      if (resourceMaps.getLocalHdfsLocationMap(ResourceType.FILE).containsKey(file)){
+        result.add(resourceMaps.getLocalHdfsLocationMap(ResourceType.FILE).get(file));
+      }
+      if (resourceMaps.getLocalHdfsLocationMap(ResourceType.JAR).containsKey(file)){
+        result.add(resourceMaps.getLocalHdfsLocationMap(ResourceType.JAR).get(file));
+      }
+    }
+    return result;
+  }
+
   public void delete_resources(ResourceType t) {
     Set<String> resources = resourceMaps.getResourceSet(t);
     if (resources != null && !resources.isEmpty()) {
       delete_resources(t, new ArrayList<String>(resources));
       resourceMaps.getResourceMap().remove(t);
+      resourceMaps.getAllLocalHdfsLocationMap().remove(t);
     }
   }
 
@@ -1642,8 +1711,18 @@ public class SessionState {
   }
 
   public void close() throws IOException {
+    for (Closeable cleanupItem : cleanupItems) {
+      try {
+        cleanupItem.close();
+      } catch (Exception err) {
+        LOG.error("Error processing SessionState cleanup item " + cleanupItem.toString(), err);
+      }
+    }
+
     registry.clear();
-    if (txnMgr != null) txnMgr.closeTxnManager();
+    if (txnMgr != null) {
+      txnMgr.closeTxnManager();
+    }
     JavaUtils.closeClassLoadersTo(sessionConf.getClassLoader(), parentLoader);
     File resourceDir =
         new File(getConf().getVar(HiveConf.ConfVars.DOWNLOADED_RESOURCES_DIR));
@@ -1682,12 +1761,21 @@ public class SessionState {
 
   private void unCacheDataNucleusClassLoaders() {
     try {
-      Hive threadLocalHive = Hive.get(sessionConf);
-      if ((threadLocalHive != null) && (threadLocalHive.getMSC() != null)
-          && (threadLocalHive.getMSC().isLocalMetaStore())) {
-        if (sessionConf.getVar(ConfVars.METASTORE_RAW_STORE_IMPL).equals(ObjectStore.class.getName())
-            || sessionConf.getVar(ConfVars.METASTORE_RAW_STORE_IMPL).equals(CachedStore.class.getName()) &&
-            sessionConf.getVar(ConfVars.METASTORE_CACHED_RAW_STORE_IMPL).equals(ObjectStore.class.getName())) {
+      boolean isLocalMetastore = HiveConfUtil.isEmbeddedMetaStore(
+          MetastoreConf.getVar(sessionConf, MetastoreConf.ConfVars.THRIFT_URIS));
+      if (isLocalMetastore) {
+
+        String rawStoreImpl =
+            MetastoreConf.getVar(sessionConf, MetastoreConf.ConfVars.RAW_STORE_IMPL);
+        String realStoreImpl;
+        if (rawStoreImpl.equals(CachedStore.class.getName())) {
+          realStoreImpl =
+              MetastoreConf.getVar(sessionConf, MetastoreConf.ConfVars.CACHED_RAW_STORE_IMPL);
+        } else {
+          realStoreImpl = rawStoreImpl;
+        }
+        Class<?> clazz = Class.forName(realStoreImpl);
+        if (ObjectStore.class.isAssignableFrom(clazz)) {
           ObjectStore.unCacheDataNucleusClassLoaders();
         }
       }
@@ -1755,15 +1843,19 @@ public class SessionState {
 
   /** Called from TezTask to attach a TezSession to use to the threadlocal. Ugly pattern... */
   public void setTezSession(TezSessionState session) {
-    if (tezSessionState == session) return; // The same object.
+    if (tezSessionState == session) {
+      return; // The same object.
+    }
     if (tezSessionState != null) {
       tezSessionState.markFree();
+      tezSessionState.setKillQuery(null);
       tezSessionState = null;
     }
+    tezSessionState = session;
     if (session != null) {
       session.markInUse();
+      tezSessionState.setKillQuery(getKillQuery());
     }
-    tezSessionState = session;
   }
 
   public String getUserName() {
@@ -1780,6 +1872,9 @@ public class SessionState {
 
   public Map<String, Map<String, Table>> getTempTables() {
     return tempTables;
+  }
+  public Map<String, SessionHiveMetaStoreClient.TempTable> getTempPartitions() {
+    return tempPartitions;
   }
 
   public Map<String, Map<String, ColumnStatisticsObj>> getTempTableColStats() {
@@ -1903,6 +1998,30 @@ public class SessionState {
     return progressMonitor;
   }
 
+  public void setHiveServer2Host(String hiveServer2HostName) {
+    this.hiveServer2HostName = hiveServer2HostName;
+  }
+
+  public String getHiveServer2Host() {
+    return hiveServer2HostName;
+  }
+
+  public void setKillQuery(KillQuery killQuery) {
+    this.killQuery = killQuery;
+  }
+
+  public KillQuery getKillQuery() {
+    return killQuery;
+  }
+
+  public void addCleanupItem(Closeable item) {
+    cleanupItems.add(item);
+  }
+
+  public Map<String, FunctionInfo> getCurrentFunctionsInUse() {
+    return currentFunctionsInUse;
+  }
+
 }
 
 class ResourceMaps {
@@ -1912,16 +2031,22 @@ class ResourceMaps {
   private final Map<SessionState.ResourceType, Map<String, Set<String>>> resource_path_map;
   // stores all the downloaded resources as key and the jars which depend on these resources as values in form of a list. Used for deleting transitive dependencies.
   private final Map<SessionState.ResourceType, Map<String, Set<String>>> reverse_resource_path_map;
+  // stores mappings from local to hdfs location for all resource types.
+  private final Map<SessionState.ResourceType, Map<String, String>> local_hdfs_resource_map;
 
   public ResourceMaps() {
     resource_map = new HashMap<SessionState.ResourceType, Set<String>>();
     resource_path_map = new HashMap<SessionState.ResourceType, Map<String, Set<String>>>();
     reverse_resource_path_map = new HashMap<SessionState.ResourceType, Map<String, Set<String>>>();
-
+    local_hdfs_resource_map = new HashMap<SessionState.ResourceType, Map<String, String>>();
   }
 
   public Map<SessionState.ResourceType, Set<String>> getResourceMap() {
     return resource_map;
+  }
+
+  public Map<SessionState.ResourceType, Map<String, String>> getAllLocalHdfsLocationMap() {
+    return local_hdfs_resource_map;
   }
 
   public Set<String> getResourceSet(SessionState.ResourceType t) {
@@ -1947,6 +2072,15 @@ class ResourceMaps {
     if (result == null) {
       result = new HashMap<String, Set<String>>();
       reverse_resource_path_map.put(t, result);
+    }
+    return result;
+  }
+
+  public Map<String, String> getLocalHdfsLocationMap(SessionState.ResourceType type){
+    Map<String, String> result = local_hdfs_resource_map.get(type);
+    if (result == null) {
+      result = new HashMap<String, String>();
+      local_hdfs_resource_map.put(type, result);
     }
     return result;
   }

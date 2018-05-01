@@ -1,3 +1,6 @@
+--! qt:dataset:src
+--! qt:dataset:part
+--! qt:dataset:lineitem
 set hive.mapred.mode=nonstrict;
 set hive.explain.user=false;
 
@@ -113,6 +116,10 @@ where b.key in
          where b.value <> a.key and a.key > '9'
         )
 ;
+
+-- Right side shouldn't have aggregate
+explain select * from src b where b.key in (select distinct key from src a where a.value > b.value);
+select * from src b where b.key in (select distinct key from src a where a.value > b.value);
 
 
 -- non agg, non corr, windowing

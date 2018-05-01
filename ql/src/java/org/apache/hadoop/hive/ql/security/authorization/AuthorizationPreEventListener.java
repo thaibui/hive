@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -23,6 +23,7 @@ import java.util.List;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -30,7 +31,6 @@ import org.apache.hadoop.hive.common.classification.InterfaceAudience.Private;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.MetaStorePreEventListener;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.InvalidOperationException;
@@ -441,8 +441,6 @@ public class AuthorizationPreEventListener extends MetaStorePreEventListener {
         // TableType specified was null, we need to figure out what type it was.
         if (MetaStoreUtils.isExternalTable(wrapperApiTable)){
           wrapperApiTable.setTableType(TableType.EXTERNAL_TABLE.toString());
-        } else if (MetaStoreUtils.isIndexTable(wrapperApiTable)) {
-          wrapperApiTable.setTableType(TableType.INDEX_TABLE.toString());
         } else if (MetaStoreUtils.isMaterializedViewTable(wrapperApiTable)) {
           wrapperApiTable.setTableType(TableType.MATERIALIZED_VIEW.toString());
         } else if ((wrapperApiTable.getSd() == null) || (wrapperApiTable.getSd().getLocation() == null)) {

@@ -31,13 +31,11 @@ POSTHOOK: query: describe formatted fact_daily PARTITION (ds = '1', hr='4')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@fact_daily
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -47,7 +45,7 @@ Database:           	default
 Table:              	fact_daily          	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	3                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -97,7 +95,7 @@ STAGE PLANS:
               ds 1
               hr 4
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -121,6 +119,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -181,7 +180,7 @@ STAGE PLANS:
               ds 1
               hr 4
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -205,6 +204,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -268,7 +268,7 @@ STAGE PLANS:
               ds 1
               hr 4
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -292,6 +292,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -314,7 +315,7 @@ STAGE PLANS:
           GatherStats: false
           Filter Operator
             isSamplingPred: false
-            predicate: (((key = '484') and (value = 'val_484')) or ((key = '238') and (value = 'val_238'))) (type: boolean)
+            predicate: (((key = '238') and (value = 'val_238')) or ((key = '484') and (value = 'val_484'))) (type: boolean)
             Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
             Select Operator
               expressions: key (type: string), value (type: string)

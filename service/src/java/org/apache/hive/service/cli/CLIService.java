@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -43,6 +43,7 @@ import org.apache.hive.service.ServiceUtils;
 import org.apache.hive.service.auth.HiveAuthFactory;
 import org.apache.hive.service.cli.operation.Operation;
 import org.apache.hive.service.cli.session.SessionManager;
+import org.apache.hive.service.rpc.thrift.TOperationHandle;
 import org.apache.hive.service.rpc.thrift.TProtocolVersion;
 import org.apache.hive.service.server.HiveServer2;
 import org.slf4j.Logger;
@@ -592,6 +593,11 @@ public class CLIService extends CompositeService implements ICLIService {
   }
 
   @Override
+  public void setApplicationName(SessionHandle sh, String value) throws HiveSQLException {
+    sessionManager.getSession(sh).setApplicationName(value);
+  }
+
+  @Override
   public void cancelDelegationToken(SessionHandle sessionHandle, HiveAuthFactory authFactory,
       String tokenStr) throws HiveSQLException {
     sessionManager.getSession(sessionHandle).
@@ -604,6 +610,15 @@ public class CLIService extends CompositeService implements ICLIService {
       String tokenStr) throws HiveSQLException {
     sessionManager.getSession(sessionHandle).renewDelegationToken(authFactory, tokenStr);
     LOG.info(sessionHandle  + ": renewDelegationToken()");
+  }
+
+  @Override
+  public String getQueryId(TOperationHandle opHandle) throws HiveSQLException {
+    Operation operation = sessionManager.getOperationManager().getOperation(
+        new OperationHandle(opHandle));
+    final String queryId = operation.getParentSession().getHiveConf().getVar(ConfVars.HIVEQUERYID);
+    LOG.debug(opHandle + ": getQueryId() " + queryId);
+    return queryId;
   }
 
   public SessionManager getSessionManager() {

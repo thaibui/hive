@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -46,6 +46,8 @@ public @interface Explain {
 
   boolean skipHeader() default false;
 
+  boolean jsonOnly() default false;
+
   // By default, many existing @Explain classes/methods are NON_VECTORIZED.
   //
   // Vectorized methods/classes have detail levels:
@@ -74,4 +76,7 @@ public @interface Explain {
     }
   };
   Vectorization vectorization() default Vectorization.NON_VECTORIZED;
+
+  boolean postProcess() default false;
+
 }

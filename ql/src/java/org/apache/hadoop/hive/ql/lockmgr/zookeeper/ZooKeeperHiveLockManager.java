@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,7 +24,6 @@ import org.apache.hadoop.hive.common.metrics.common.Metrics;
 import org.apache.hadoop.hive.common.metrics.common.MetricsConstant;
 import org.apache.hadoop.hive.common.metrics.common.MetricsFactory;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.ql.Driver.DriverState;
 import org.apache.hadoop.hive.ql.Driver.LockedDriverState;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.lockmgr.*;
@@ -198,7 +197,7 @@ public class ZooKeeperHiveLockManager implements HiveLockManager {
       boolean isInterrupted = false;
       if (lDrvState != null) {
         lDrvState.stateLock.lock();
-        if (lDrvState.driverState == DriverState.INTERRUPT) {
+        if (lDrvState.isAborted()) {
           isInterrupted = true;
         }
         lDrvState.stateLock.unlock();
@@ -492,8 +491,8 @@ public class ZooKeeperHiveLockManager implements HiveLockManager {
       } catch (Exception e) {
         if (tryNum >= numRetriesForUnLock) {
           String name = ((ZooKeeperHiveLock)hiveLock).getPath();
-          LOG.error("Node " + name + " can not be deleted after " + numRetriesForUnLock + " attempts.");
-          throw new LockException(e);
+          throw new LockException("Node " + name + " can not be deleted after " + numRetriesForUnLock + " attempts.",
+              e);
         }
       }
     } while (tryNum < numRetriesForUnLock);

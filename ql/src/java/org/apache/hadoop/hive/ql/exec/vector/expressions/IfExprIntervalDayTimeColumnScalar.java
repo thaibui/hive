@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,6 +18,8 @@
 
 package org.apache.hadoop.hive.ql.exec.vector.expressions;
 
+import java.util.Arrays;
+
 import org.apache.hadoop.hive.common.type.HiveIntervalDayTime;
 import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.IntervalDayTimeColumnVector;
@@ -34,20 +36,25 @@ public class IfExprIntervalDayTimeColumnScalar extends VectorExpression {
 
   private static final long serialVersionUID = 1L;
 
-  private int arg1Column, arg2Column;
-  private HiveIntervalDayTime arg3Scalar;
-  private int outputColumn;
+  private final int arg1Column;
+  private final int arg2Column;
+  private final HiveIntervalDayTime arg3Scalar;
 
   public IfExprIntervalDayTimeColumnScalar(int arg1Column, int arg2Column, HiveIntervalDayTime arg3Scalar,
-      int outputColumn) {
+      int outputColumnNum) {
+    super(outputColumnNum);
     this.arg1Column = arg1Column;
     this.arg2Column = arg2Column;
     this.arg3Scalar = arg3Scalar;
-    this.outputColumn = outputColumn;
   }
 
   public IfExprIntervalDayTimeColumnScalar() {
     super();
+
+    // Dummy final assignments.
+    arg1Column = -1;
+    arg2Column = -1;
+    arg3Scalar = null;
   }
 
   @Override
@@ -59,11 +66,13 @@ public class IfExprIntervalDayTimeColumnScalar extends VectorExpression {
 
     LongColumnVector arg1ColVector = (LongColumnVector) batch.cols[arg1Column];
     IntervalDayTimeColumnVector arg2ColVector = (IntervalDayTimeColumnVector) batch.cols[arg2Column];
-    IntervalDayTimeColumnVector outputColVector = (IntervalDayTimeColumnVector) batch.cols[outputColumn];
+    IntervalDayTimeColumnVector outputColVector = (IntervalDayTimeColumnVector) batch.cols[outputColumnNum];
     int[] sel = batch.selected;
     boolean[] outputIsNull = outputColVector.isNull;
-    outputColVector.noNulls = arg2ColVector.noNulls; // nulls can only come from arg2
-    outputColVector.isRepeating = false; // may override later
+
+    // We do not need to do a column reset since we are carefully changing the output.
+    outputColVector.isRepeating = false;
+
     int n = batch.size;
     long[] vector1 = arg1ColVector.vector;
 
@@ -73,7 +82,7 @@ public class IfExprIntervalDayTimeColumnScalar extends VectorExpression {
     }
 
     if (arg1ColVector.isRepeating) {
-      if (vector1[0] == 1) {
+      if ((arg1ColVector.noNulls || !arg1ColVector.isNull[0]) && vector1[0] == 1) {
         arg2ColVector.copySelected(batch.selectedInUse, sel, n, outputColVector);
       } else {
         outputColVector.fill(arg3Scalar);
@@ -89,14 +98,25 @@ public class IfExprIntervalDayTimeColumnScalar extends VectorExpression {
       if (batch.selectedInUse) {
         for(int j = 0; j != n; j++) {
           int i = sel[j];
+          outputIsNull[i] = false;
           outputColVector.set(i, vector1[i] == 1 ? arg2ColVector.asScratchIntervalDayTime(i) : arg3Scalar);
         }
       } else {
+        Arrays.fill(outputIsNull, 0, n, false);
         for(int i = 0; i != n; i++) {
           outputColVector.set(i, vector1[i] == 1 ? arg2ColVector.asScratchIntervalDayTime(i) : arg3Scalar);
         }
       }
     } else /* there are nulls */ {
+
+      // Carefully handle NULLs...
+
+      /*
+       * For better performance on LONG/DOUBLE we don't want the conditional
+       * statements inside the for loop.
+       */
+      outputColVector.noNulls = false;
+
       if (batch.selectedInUse) {
         for(int j = 0; j != n; j++) {
           int i = sel[j];
@@ -120,18 +140,9 @@ public class IfExprIntervalDayTimeColumnScalar extends VectorExpression {
   }
 
   @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return "interval_day_time";
-  }
-
-  @Override
   public String vectorExpressionParameters() {
-    return "col " + arg1Column + ", col "+ arg2Column + ", val "+ arg3Scalar.toString();
+    return getColumnParamString(0, arg1Column) + ", " + getColumnParamString(1, arg2Column) +
+        ", val "+ arg3Scalar.toString();
   }
 
   @Override

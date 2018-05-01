@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -125,6 +125,18 @@ public class SQLStdHiveAuthorizationValidatorForTest extends SQLStdHiveAuthoriza
         for (String columnName : privObj.getColumns()) {
           if (columnName.equals("value")) {
             cellValueTransformers.add("reverse(value)");
+          } else {
+            cellValueTransformers.add(columnName);
+          }
+        }
+        privObj.setCellValueTransformers(cellValueTransformers);
+        needRewritePrivObjs.add(privObj);
+      } else if (privObj.getObjectName().equals("masking_test_view")) {
+        privObj.setRowFilterExpression("key > 6");
+        List<String> cellValueTransformers = new ArrayList<>();
+        for (String columnName : privObj.getColumns()) {
+          if (columnName.equals("key")) {
+            cellValueTransformers.add("key / 2");
           } else {
             cellValueTransformers.add(columnName);
           }

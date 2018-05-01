@@ -21,13 +21,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -38,6 +36,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	0                   
 	numPartitions       	0                   
@@ -73,13 +72,11 @@ POSTHOOK: query: describe formatted tst1 partition (ds = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -88,7 +85,7 @@ Database:           	default
 Table:              	tst1                	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	8                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -130,13 +127,11 @@ POSTHOOK: query: describe formatted tst1 partition (ds = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -145,7 +140,7 @@ Database:           	default
 Table:              	tst1                	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	12                  
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -169,13 +164,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -186,6 +179,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -218,13 +212,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -235,6 +227,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -260,13 +253,11 @@ POSTHOOK: query: describe formatted tst1 partition (ds = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -275,7 +266,7 @@ Database:           	default
 Table:              	tst1                	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	12                  
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -307,13 +298,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -324,6 +313,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -349,13 +339,11 @@ POSTHOOK: query: describe formatted tst1 partition (ds = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -364,7 +352,7 @@ Database:           	default
 Table:              	tst1                	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numRows             	500                 
@@ -397,13 +385,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -414,6 +400,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -447,13 +434,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -464,6 +449,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -497,13 +483,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -514,6 +498,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   
@@ -547,13 +532,11 @@ POSTHOOK: query: describe formatted tst1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tst1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -564,6 +547,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	12                  
 	numPartitions       	1                   

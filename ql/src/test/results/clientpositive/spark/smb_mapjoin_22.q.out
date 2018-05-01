@@ -63,6 +63,7 @@ STAGE PLANS:
                           output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                           serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                           name: default.test_table2
+            Execution mode: vectorized
 
   Stage: Stage-0
     Move Operator
@@ -75,7 +76,8 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table2
 SELECT * FROM test_table1
@@ -106,7 +108,7 @@ POSTHOOK: query: select count(*) from test_table1 tablesample (bucket 2 out of 2
 POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table1
 #### A masked pattern was here ####
-253
+257
 PREHOOK: query: select count(*) from test_table2
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table2
@@ -124,7 +126,7 @@ POSTHOOK: query: select count(*) from test_table2 tablesample (bucket 2 out of 2
 POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 #### A masked pattern was here ####
-253
+257
 PREHOOK: query: drop table test_table1
 PREHOOK: type: DROPTABLE
 PREHOOK: Input: default@test_table1
@@ -206,6 +208,7 @@ STAGE PLANS:
                           output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                           serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                           name: default.test_table2
+            Execution mode: vectorized
 
   Stage: Stage-0
     Move Operator
@@ -218,7 +221,8 @@ STAGE PLANS:
               name: default.test_table2
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: INSERT OVERWRITE TABLE test_table2
 SELECT * FROM test_table1
@@ -249,7 +253,7 @@ POSTHOOK: query: select count(*) from test_table1 tablesample (bucket 2 out of 2
 POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table1
 #### A masked pattern was here ####
-253
+257
 PREHOOK: query: select count(*) from test_table2
 PREHOOK: type: QUERY
 PREHOOK: Input: default@test_table2
@@ -267,4 +271,4 @@ POSTHOOK: query: select count(*) from test_table2 tablesample (bucket 2 out of 2
 POSTHOOK: type: QUERY
 POSTHOOK: Input: default@test_table2
 #### A masked pattern was here ####
-253
+257

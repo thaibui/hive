@@ -29,7 +29,6 @@ ts                  	string
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 dt                  	string              	                    
 ts                  	string              	                    
 PREHOOK: query: select count(*) from alter_coltype where dt = '100'
@@ -232,7 +231,7 @@ STAGE PLANS:
               dt 100
               ts 3.0
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -256,6 +255,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -278,7 +278,7 @@ STAGE PLANS:
               dt 100
               ts 6.30
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -302,6 +302,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -359,7 +360,6 @@ ts                  	double
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 dt                  	string              	                    
 ts                  	double              	                    
 PREHOOK: query: desc alter_coltype partition (dt='100', ts='6.30')
@@ -375,7 +375,6 @@ ts                  	double
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 dt                  	string              	                    
 ts                  	double              	                    
 PREHOOK: query: desc alter_coltype partition (dt='100', ts=3.0)
@@ -391,7 +390,6 @@ ts                  	double
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 dt                  	string              	                    
 ts                  	double              	                    
 PREHOOK: query: drop table alter_coltype
@@ -469,7 +467,7 @@ STAGE PLANS:
               partcol1 1
               partcol2 1
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -493,6 +491,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 
@@ -538,7 +537,7 @@ STAGE PLANS:
               partcol1 2
               partcol2 1
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"intcol":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns intcol
@@ -562,6 +561,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns intcol
                 columns.comments 

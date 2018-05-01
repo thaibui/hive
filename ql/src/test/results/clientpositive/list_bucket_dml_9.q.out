@@ -52,6 +52,7 @@ STAGE PLANS:
                     output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
                     properties:
                       bucket_count -1
+                      bucketing_version 2
                       column.name.delimiter ,
                       columns key,value
                       columns.comments 
@@ -69,6 +70,25 @@ STAGE PLANS:
                 TotalFiles: 1
                 GatherStats: true
                 MultiFileSpray: false
+              Select Operator
+                expressions: _col0 (type: string), _col1 (type: string), '2008-04-08' (type: string), '11' (type: string)
+                outputColumnNames: key, value, ds, hr
+                Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                Group By Operator
+                  aggregations: compute_stats(key, 'hll'), compute_stats(value, 'hll')
+                  keys: ds (type: string), hr (type: string)
+                  mode: hash
+                  outputColumnNames: _col0, _col1, _col2, _col3
+                  Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                  Reduce Output Operator
+                    key expressions: _col0 (type: string), _col1 (type: string)
+                    null sort order: aa
+                    sort order: ++
+                    Map-reduce partition columns: _col0 (type: string), _col1 (type: string)
+                    Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                    tag: -1
+                    value expressions: _col2 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>), _col3 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>)
+                    auto parallelism: false
       Path -> Alias:
 #### A masked pattern was here ####
       Path -> Partition:
@@ -105,6 +125,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -153,6 +174,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -171,6 +193,40 @@ STAGE PLANS:
       Truncated Path -> Alias:
         /srcpart/ds=2008-04-08/hr=11 [srcpart]
         /srcpart/ds=2008-04-08/hr=12 [srcpart]
+      Needs Tagging: false
+      Reduce Operator Tree:
+        Group By Operator
+          aggregations: compute_stats(VALUE._col0), compute_stats(VALUE._col1)
+          keys: KEY._col0 (type: string), KEY._col1 (type: string)
+          mode: mergepartial
+          outputColumnNames: _col0, _col1, _col2, _col3
+          Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+          Select Operator
+            expressions: _col2 (type: struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col3 (type: struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col0 (type: string), _col1 (type: string)
+            outputColumnNames: _col0, _col1, _col2, _col3
+            Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+            File Output Operator
+              compressed: false
+              GlobalTableId: 0
+#### A masked pattern was here ####
+              NumFilesPerFileSink: 1
+              Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+#### A masked pattern was here ####
+              table:
+                  input format: org.apache.hadoop.mapred.SequenceFileInputFormat
+                  output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
+                  properties:
+                    columns _col0,_col1,_col2,_col3
+                    columns.types struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>:struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>:string:string
+                    escape.delim \
+                    hive.serialization.extend.additional.nesting.levels true
+                    serialization.escape.crlf true
+                    serialization.format 1
+                    serialization.lib org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+                  serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+              TotalFiles: 1
+              GatherStats: false
+              MultiFileSpray: false
 
   Stage: Stage-0
     Move Operator
@@ -185,6 +241,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -201,8 +258,14 @@ STAGE PLANS:
               name: default.list_bucketing_static_part
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 #### A masked pattern was here ####
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: string, string
+          Table: default.list_bucketing_static_part
+          Is Table Level Stats: false
 
 PREHOOK: query: insert overwrite table list_bucketing_static_part partition (ds = '2008-04-08', hr = '11')
 select key, value from srcpart where ds = '2008-04-08'
@@ -234,13 +297,11 @@ POSTHOOK: query: desc formatted list_bucketing_static_part partition (ds='2008-0
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@list_bucketing_static_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -250,7 +311,7 @@ Database:           	default
 Table:              	list_bucketing_static_part	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	6                   
 	numRows             	1000                
 	rawDataSize         	9624                
@@ -315,6 +376,7 @@ STAGE PLANS:
                     output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
                     properties:
                       bucket_count -1
+                      bucketing_version 2
                       column.name.delimiter ,
                       columns key,value
                       columns.comments 
@@ -331,6 +393,25 @@ STAGE PLANS:
                 TotalFiles: 1
                 GatherStats: true
                 MultiFileSpray: false
+              Select Operator
+                expressions: _col0 (type: string), _col1 (type: string), '2008-04-08' (type: string), '11' (type: string)
+                outputColumnNames: key, value, ds, hr
+                Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                Group By Operator
+                  aggregations: compute_stats(key, 'hll'), compute_stats(value, 'hll')
+                  keys: ds (type: string), hr (type: string)
+                  mode: hash
+                  outputColumnNames: _col0, _col1, _col2, _col3
+                  Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                  Reduce Output Operator
+                    key expressions: _col0 (type: string), _col1 (type: string)
+                    null sort order: aa
+                    sort order: ++
+                    Map-reduce partition columns: _col0 (type: string), _col1 (type: string)
+                    Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
+                    tag: -1
+                    value expressions: _col2 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>), _col3 (type: struct<columntype:string,maxlength:bigint,sumlength:bigint,count:bigint,countnulls:bigint,bitvector:binary>)
+                    auto parallelism: false
       Path -> Alias:
 #### A masked pattern was here ####
       Path -> Partition:
@@ -367,6 +448,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -415,6 +497,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -433,6 +516,40 @@ STAGE PLANS:
       Truncated Path -> Alias:
         /srcpart/ds=2008-04-08/hr=11 [srcpart]
         /srcpart/ds=2008-04-08/hr=12 [srcpart]
+      Needs Tagging: false
+      Reduce Operator Tree:
+        Group By Operator
+          aggregations: compute_stats(VALUE._col0), compute_stats(VALUE._col1)
+          keys: KEY._col0 (type: string), KEY._col1 (type: string)
+          mode: mergepartial
+          outputColumnNames: _col0, _col1, _col2, _col3
+          Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+          Select Operator
+            expressions: _col2 (type: struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col3 (type: struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>), _col0 (type: string), _col1 (type: string)
+            outputColumnNames: _col0, _col1, _col2, _col3
+            Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+            File Output Operator
+              compressed: false
+              GlobalTableId: 0
+#### A masked pattern was here ####
+              NumFilesPerFileSink: 1
+              Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+#### A masked pattern was here ####
+              table:
+                  input format: org.apache.hadoop.mapred.SequenceFileInputFormat
+                  output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
+                  properties:
+                    columns _col0,_col1,_col2,_col3
+                    columns.types struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>:struct<columntype:string,maxlength:bigint,avglength:double,countnulls:bigint,numdistinctvalues:bigint,ndvbitvector:binary>:string:string
+                    escape.delim \
+                    hive.serialization.extend.additional.nesting.levels true
+                    serialization.escape.crlf true
+                    serialization.format 1
+                    serialization.lib org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+                  serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+              TotalFiles: 1
+              GatherStats: false
+              MultiFileSpray: false
 
   Stage: Stage-7
     Conditional Operator
@@ -456,6 +573,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -471,8 +589,14 @@ STAGE PLANS:
               name: default.list_bucketing_static_part
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 #### A masked pattern was here ####
+      Column Stats Desc:
+          Columns: key, value
+          Column Types: string, string
+          Table: default.list_bucketing_static_part
+          Is Table Level Stats: false
 
   Stage: Stage-3
     Merge File Operator
@@ -488,6 +612,7 @@ STAGE PLANS:
             output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
             properties:
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns key,value
               columns.comments 
@@ -505,6 +630,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -537,6 +663,7 @@ STAGE PLANS:
             output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
             properties:
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns key,value
               columns.comments 
@@ -554,6 +681,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 
@@ -608,13 +736,11 @@ POSTHOOK: query: desc formatted list_bucketing_static_part partition (ds='2008-0
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@list_bucketing_static_part
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -624,7 +750,7 @@ Database:           	default
 Table:              	list_bucketing_static_part	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	4                   
 	numRows             	1000                
 	rawDataSize         	9624                
@@ -685,7 +811,7 @@ STAGE PLANS:
               ds 2008-04-08
               hr 11
             properties:
-              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true"}
+              COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
               column.name.delimiter ,
               columns key,value
@@ -709,6 +835,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.RCFileOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 

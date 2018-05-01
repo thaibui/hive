@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,8 +19,8 @@
 package org.apache.hive.hcatalog.streaming;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.metastore.api.DataOperationType;
-import org.apache.hadoop.hive.metastore.api.hive_metastoreConstants;
 import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +40,9 @@ import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.NoSuchTxnException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.api.TxnAbortedException;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.metastore.api.TxnToWriteId;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hive.hcatalog.common.HCatUtil;
 
@@ -54,7 +55,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Information about the hive end point (i.e. table or partition) to write to.
@@ -88,19 +88,20 @@ public class HiveEndPoint {
     if (database==null) {
       throw new IllegalArgumentException("Database cannot be null for HiveEndPoint");
     }
-    this.database = database;
-    this.table = table;
+    this.database = database.toLowerCase();
     if (table==null) {
       throw new IllegalArgumentException("Table cannot be null for HiveEndPoint");
     }
     this.partitionVals = partitionVals==null ? new ArrayList<String>()
                                              : new ArrayList<String>( partitionVals );
+    this.table = table.toLowerCase();
   }
 
 
   /**
    * @deprecated As of release 1.3/2.1.  Replaced by {@link #newConnection(boolean, String)}
    */
+  @Deprecated
   public StreamingConnection newConnection(final boolean createPartIfNotExists)
     throws ConnectionError, InvalidPartition, InvalidTable, PartitionCreationFailed
     , ImpersonationFailed , InterruptedException {
@@ -109,6 +110,7 @@ public class HiveEndPoint {
   /**
    * @deprecated As of release 1.3/2.1.  Replaced by {@link #newConnection(boolean, HiveConf, String)}
    */
+  @Deprecated
   public StreamingConnection newConnection(final boolean createPartIfNotExists, HiveConf conf)
     throws ConnectionError, InvalidPartition, InvalidTable, PartitionCreationFailed
     , ImpersonationFailed , InterruptedException {
@@ -117,6 +119,7 @@ public class HiveEndPoint {
   /**
    * @deprecated As of release 1.3/2.1.  Replaced by {@link #newConnection(boolean, HiveConf, UserGroupInformation, String)}
    */
+  @Deprecated
   public StreamingConnection newConnection(final boolean createPartIfNotExists, final HiveConf conf,
                                            final UserGroupInformation authenticatedUser)
     throws ConnectionError, InvalidPartition,
@@ -231,7 +234,9 @@ public class HiveEndPoint {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
+    if (this == o) {
+      return true;
+    }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
@@ -336,15 +341,10 @@ public class HiveEndPoint {
         LOG.warn("Unable to check the endPoint: " + endPoint, e);
         throw new InvalidTable(endPoint.database, endPoint.table, e);
       }
-
-      // 1 - check if TBLPROPERTIES ('transactional'='true') is set on table
-      Map<String, String> params = t.getParameters();
-      if (params != null) {
-        String transactionalProp = params.get(hive_metastoreConstants.TABLE_IS_TRANSACTIONAL);
-        if (transactionalProp == null || !transactionalProp.equalsIgnoreCase("true")) {
-          LOG.error("'transactional' property is not set on Table " + endPoint);
-          throw new InvalidTable(endPoint.database, endPoint.table, "\'transactional\' property" +
-              " is not set on Table");          }
+      // 1 - check that the table is Acid
+      if (!AcidUtils.isFullAcidTable(t)) {
+        LOG.error("HiveEndPoint " + endPoint + " must use an acid table");
+        throw new InvalidTable(endPoint.database, endPoint.table, "is not an Acid table");
       }
 
       // 2 - check if partitionvals are legitimate
@@ -416,6 +416,7 @@ public class HiveEndPoint {
      * @throws ImpersonationFailed failed to run command as proxyUser
      * @throws InterruptedException
      */
+    @Override
     public TransactionBatch fetchTransactionBatch(final int numTransactions,
                                                       final RecordWriter recordWriter)
             throws StreamingException, TransactionBatchUnAvailable, ImpersonationFailed
@@ -456,7 +457,7 @@ public class HiveEndPoint {
       if(SessionState.get() == null) {
         localSession = SessionState.start(new CliSessionState(conf));
       }
-      Driver driver = new Driver(conf);
+      IDriver driver = DriverFactory.newDriver(conf);
 
       try {
         if (LOG.isDebugEnabled()) {
@@ -493,23 +494,12 @@ public class HiveEndPoint {
       }
     }
 
-    private static boolean runDDL(Driver driver, String sql) throws QueryFailedException {
-      int retryCount = 1; // # of times to retry if first attempt fails
-      for (int attempt=0; attempt<=retryCount; ++attempt) {
-        try {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Running Hive Query: "+ sql);
-          }
-          driver.run(sql);
-          return true;
-        } catch (CommandNeedRetryException e) {
-          if (attempt==retryCount) {
-            throw new QueryFailedException(sql, e);
-          }
-          continue;
-        }
-      } // for
-      return false;
+    private static boolean runDDL(IDriver driver, String sql) throws QueryFailedException {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Running Hive Query: " + sql);
+      }
+      driver.run(sql);
+      return true;
     }
 
     private static String partSpecStr(List<FieldSchema> partKeys, ArrayList<String> partVals) {
@@ -562,7 +552,7 @@ public class HiveEndPoint {
     private final IMetaStoreClient msClient;
     private final IMetaStoreClient heartbeaterMSClient;
     private final RecordWriter recordWriter;
-    private final List<Long> txnIds;
+    private final List<TxnToWriteId> txnToWriteIds;
 
     //volatile because heartbeat() may be in a "different" thread; updates of this are "piggybacking"
     private volatile int currentTxnIndex = -1;
@@ -577,6 +567,14 @@ public class HiveEndPoint {
      */
     private volatile boolean isClosed = false;
     private final String agentInfo;
+    /**
+     * Tracks the state of each transaction
+     */
+    private final TxnState[] txnStatus;
+    /**
+     * ID of the last txn used by {@link #beginNextTransactionImpl()}
+     */
+    private long lastTxnUsed;
 
     /**
      * Represents a batch of transactions acquired from MetaStore
@@ -605,10 +603,19 @@ public class HiveEndPoint {
         this.recordWriter = recordWriter;
         this.agentInfo = agentInfo;
 
-        txnIds = openTxnImpl(msClient, user, numTxns, ugi);
+        List<Long> txnIds = openTxnImpl(msClient, user, numTxns, ugi);
+        txnToWriteIds = allocateWriteIdsImpl(msClient, txnIds, ugi);
+        assert(txnToWriteIds.size() == numTxns);
 
+        txnStatus = new TxnState[numTxns];
+        for(int i = 0; i < txnStatus.length; i++) {
+          assert(txnToWriteIds.get(i).getTxnId() == txnIds.get(i));
+          txnStatus[i] = TxnState.OPEN;//Open matches Metastore state
+        }
         this.state = TxnState.INACTIVE;
-        recordWriter.newBatch(txnIds.get(0), txnIds.get(txnIds.size()-1));
+
+        // The Write Ids returned for the transaction batch is also sequential
+        recordWriter.newBatch(txnToWriteIds.get(0).getWriteId(), txnToWriteIds.get(numTxns-1).getWriteId());
         success = true;
       } catch (TException e) {
         throw new TransactionBatchUnAvailable(endPt, e);
@@ -631,16 +638,40 @@ public class HiveEndPoint {
         public Object run() throws Exception {
           return msClient.openTxns(user, numTxns).getTxn_ids();
         }
-      }) ;
+      });
+    }
+
+    private List<TxnToWriteId> allocateWriteIdsImpl(final IMetaStoreClient msClient,
+                                                    final List<Long> txnIds, UserGroupInformation ugi)
+            throws IOException, TException,  InterruptedException {
+      if(ugi==null) {
+        return  msClient.allocateTableWriteIdsBatch(txnIds, endPt.database, endPt.table);
+      }
+      return (List<TxnToWriteId>) ugi.doAs(new PrivilegedExceptionAction<Object>() {
+        @Override
+        public Object run() throws Exception {
+          return msClient.allocateTableWriteIdsBatch(txnIds, endPt.database, endPt.table);
+        }
+      });
     }
 
     @Override
     public String toString() {
-      if (txnIds==null || txnIds.isEmpty()) {
+      if (txnToWriteIds==null || txnToWriteIds.isEmpty()) {
         return "{}";
       }
-      return "TxnIds=[" + txnIds.get(0) + "..." + txnIds.get(txnIds.size()-1)
-              + "] on endPoint = " + endPt;
+      StringBuilder sb = new StringBuilder(" TxnStatus[");
+      for(TxnState state : txnStatus) {
+        //'state' should not be null - future proofing
+        sb.append(state == null ? "N" : state);
+      }
+      sb.append("] LastUsed ").append(JavaUtils.txnIdToString(lastTxnUsed));
+      return "TxnId/WriteIds=[" + txnToWriteIds.get(0).getTxnId()
+              + "/" + txnToWriteIds.get(0).getWriteId()
+              + "..."
+              + txnToWriteIds.get(txnToWriteIds.size()-1).getTxnId()
+              + "/" + txnToWriteIds.get(txnToWriteIds.size()-1).getWriteId()
+              + "] on endPoint = " + endPt + "; " + sb;
     }
 
     /**
@@ -673,11 +704,14 @@ public class HiveEndPoint {
 
     private void beginNextTransactionImpl() throws TransactionError {
       state = TxnState.INACTIVE;//clear state from previous txn
-      if ( currentTxnIndex + 1 >= txnIds.size() )
+
+      if ((currentTxnIndex + 1) >= txnToWriteIds.size()) {
         throw new InvalidTrasactionState("No more transactions available in" +
                 " current batch for end point : " + endPt);
+      }
       ++currentTxnIndex;
       state = TxnState.OPEN;
+      lastTxnUsed = getCurrentTxnId();
       lockRequest = createLockRequest(endPt, partNameForLock, username, getCurrentTxnId(), agentInfo);
       try {
         LockResponse res = msClient.lock(lockRequest);
@@ -690,13 +724,25 @@ public class HiveEndPoint {
     }
 
     /**
-     * Get Id of currently open transaction
+     * Get Id of currently open transaction.
      * @return -1 if there is no open TX
      */
     @Override
     public Long getCurrentTxnId() {
-      if(currentTxnIndex >= 0) {
-        return txnIds.get(currentTxnIndex);
+      if (currentTxnIndex >= 0) {
+        return txnToWriteIds.get(currentTxnIndex).getTxnId();
+      }
+      return -1L;
+    }
+
+    /**
+     * Get Id of currently open transaction.
+     * @return -1 if there is no open TX
+     */
+    @Override
+    public Long getCurrentWriteId() {
+      if (currentTxnIndex >= 0) {
+        return txnToWriteIds.get(currentTxnIndex).getWriteId();
       }
       return -1L;
     }
@@ -718,9 +764,9 @@ public class HiveEndPoint {
     @Override
     public int remainingTransactions() {
       if (currentTxnIndex>=0) {
-        return txnIds.size() - currentTxnIndex -1;
+        return txnToWriteIds.size() - currentTxnIndex -1;
       }
-      return txnIds.size();
+      return txnToWriteIds.size();
     }
 
 
@@ -815,7 +861,7 @@ public class HiveEndPoint {
     private void writeImpl(Collection<byte[]> records)
             throws StreamingException {
       for (byte[] record : records) {
-        recordWriter.write(getCurrentTxnId(), record);
+        recordWriter.write(getCurrentWriteId(), record);
       }
     }
 
@@ -860,8 +906,9 @@ public class HiveEndPoint {
     private void commitImpl() throws TransactionError, StreamingException {
       try {
         recordWriter.flush();
-        msClient.commitTxn(txnIds.get(currentTxnIndex));
+        msClient.commitTxn(txnToWriteIds.get(currentTxnIndex).getTxnId());
         state = TxnState.COMMITTED;
+        txnStatus[currentTxnIndex] = TxnState.COMMITTED;
       } catch (NoSuchTxnException e) {
         throw new TransactionError("Invalid transaction id : "
                 + getCurrentTxnId(), e);
@@ -922,14 +969,16 @@ public class HiveEndPoint {
           int minOpenTxnIndex = Math.max(currentTxnIndex +
             (state == TxnState.ABORTED || state == TxnState.COMMITTED ? 1 : 0), 0);
           for(currentTxnIndex = minOpenTxnIndex;
-              currentTxnIndex < txnIds.size(); currentTxnIndex++) {
-            msClient.rollbackTxn(txnIds.get(currentTxnIndex));
+              currentTxnIndex < txnToWriteIds.size(); currentTxnIndex++) {
+            msClient.rollbackTxn(txnToWriteIds.get(currentTxnIndex).getTxnId());
+            txnStatus[currentTxnIndex] = TxnState.ABORTED;
           }
-          currentTxnIndex--;//since the loop left it == txnId.size()
+          currentTxnIndex--;//since the loop left it == txnToWriteIds.size()
         }
         else {
           if (getCurrentTxnId() > 0) {
             msClient.rollbackTxn(getCurrentTxnId());
+            txnStatus[currentTxnIndex] = TxnState.ABORTED;
           }
         }
         state = TxnState.ABORTED;
@@ -948,15 +997,15 @@ public class HiveEndPoint {
       if(isClosed) {
         return;
       }
-      if(state != TxnState.OPEN && currentTxnIndex >= txnIds.size() - 1) {
+      if(state != TxnState.OPEN && currentTxnIndex >= txnToWriteIds.size() - 1) {
         //here means last txn in the batch is resolved but the close() hasn't been called yet so
         //there is nothing to heartbeat
         return;
       }
       //if here after commit()/abort() but before next beginNextTransaction(), currentTxnIndex still
       //points at the last txn which we don't want to heartbeat
-      Long first = txnIds.get(state == TxnState.OPEN ? currentTxnIndex : currentTxnIndex + 1);
-      Long last = txnIds.get(txnIds.size()-1);
+      Long first = txnToWriteIds.get(state == TxnState.OPEN ? currentTxnIndex : currentTxnIndex + 1).getTxnId();
+      Long last = txnToWriteIds.get(txnToWriteIds.size()-1).getTxnId();
       try {
         HeartbeatTxnRangeResponse resp = heartbeaterMSClient.heartbeatTxnRange(first, last);
         if (!resp.getAborted().isEmpty() || !resp.getNosuch().isEmpty()) {

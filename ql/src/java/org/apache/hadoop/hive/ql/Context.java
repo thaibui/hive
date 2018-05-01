@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,9 +25,11 @@ import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,8 +40,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.common.BlobStorageUtils;
+import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.TaskRunner;
 import org.apache.hadoop.hive.ql.exec.Utilities;
@@ -54,12 +56,18 @@ import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration.AnalyzeState;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
+import org.apache.hadoop.hive.ql.parse.QB;
 import org.apache.hadoop.hive.ql.plan.LoadTableDesc;
+import org.apache.hadoop.hive.ql.plan.mapper.EmptyStatsSource;
+import org.apache.hadoop.hive.ql.plan.mapper.PlanMapper;
+import org.apache.hadoop.hive.ql.plan.mapper.StatsSource;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hadoop.hive.ql.wm.WmContext;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Context for Semantic Analyzers. Usage: not reusable - construct a new one for
@@ -90,17 +98,23 @@ public class Context {
   // Keeps track of scratch directories created for different scheme/authority
   private final Map<String, Path> fsScratchDirs = new HashMap<String, Path>();
 
-  private final Configuration conf;
+  private Configuration conf;
   protected int pathid = 10000;
   protected ExplainConfiguration explainConfig = null;
   protected String cboInfo;
   protected boolean cboSucceeded;
   protected String cmd = "";
-  // number of previous attempts
-  protected int tryCount = 0;
   private TokenRewriteStream tokenRewriteStream;
+  // Holds the qualified name to tokenRewriteStream for the views
+  // referenced by the query. This is used to rewrite the view AST
+  // with column masking and row filtering policies.
+  private final Map<String, TokenRewriteStream> viewsTokenRewriteStreams;
 
   private final String executionId;
+  // Some statements, e.g., UPDATE, DELETE, or MERGE, get rewritten into different
+  // subqueries that create new contexts. We keep them here so we can clean them
+  // up when we are done.
+  private final Set<Context> rewrittenStatementContexts;
 
   // List of Locks for this query
   protected List<HiveLock> hiveLocks;
@@ -129,6 +143,9 @@ public class Context {
   // Identify whether the query involves an UPDATE, DELETE or MERGE
   private boolean isUpdateDeleteMerge;
 
+  // Whether the analyzer has been instantiated to read and load materialized view plans
+  private boolean isLoadingMaterializedView;
+
   /**
    * This determines the prefix of the
    * {@link org.apache.hadoop.hive.ql.parse.SemanticAnalyzer.Phase1Ctx#dest}
@@ -138,8 +155,23 @@ public class Context {
    */
   private Map<Integer, DestClausePrefix> insertBranchToNamePrefix = new HashMap<>();
   private Operation operation = Operation.OTHER;
+  private WmContext wmContext;
+
+  private boolean isExplainPlan = false;
+  private PlanMapper planMapper = new PlanMapper();
+  private StatsSource statsSource;
+  private int executionIndex;
+
   public void setOperation(Operation operation) {
     this.operation = operation;
+  }
+
+  public WmContext getWmContext() {
+    return wmContext;
+  }
+
+  public void setWmContext(final WmContext wmContext) {
+    this.wmContext = wmContext;
   }
 
   /**
@@ -153,6 +185,7 @@ public class Context {
     DestClausePrefix(String prefix) {
       this.prefix = prefix;
     }
+    @Override
     public String toString() {
       return prefix;
     }
@@ -163,8 +196,17 @@ public class Context {
   /**
    * The suffix is always relative to a given ASTNode
    */
-  public DestClausePrefix getDestNamePrefix(ASTNode curNode) {
+  public DestClausePrefix getDestNamePrefix(ASTNode curNode, QB queryBlock) {
     assert curNode != null : "must supply curNode";
+    if(queryBlock.isInsideView() || queryBlock.getParseInfo().getIsSubQ()) {
+      /**
+       * Views get inlined in the logical plan but not in the AST
+       * {@link org.apache.hadoop.hive.ql.parse.SemanticAnalyzer#replaceViewReferenceWithDefinition(QB, Table, String, String)}
+       * Since here we only care to identify clauses representing Update/Delete which are not
+       * possible inside a view/subquery, we can immediately return the default {@link DestClausePrefix.INSERT}
+       */
+      return DestClausePrefix.INSERT;
+    }
     if(curNode.getType() != HiveParser.TOK_INSERT_INTO) {
       //select statement
       assert curNode.getType() == HiveParser.TOK_DESTINATION;
@@ -196,7 +238,7 @@ public class Context {
       }
       if(!thisIsInASubquery) {
         throw new IllegalStateException("Expected '" + getMatchedText(curNode) + "' to be in sub-query or set operation.");
-      } 
+      }
       return DestClausePrefix.INSERT;
     }
     switch (operation) {
@@ -219,7 +261,7 @@ public class Context {
         assert insert != null && insert.getType() == HiveParser.TOK_INSERT;
         ASTNode query = (ASTNode) insert.getParent();
         assert query != null && query.getType() == HiveParser.TOK_QUERY;
-        
+
         for(int childIdx = 1; childIdx < query.getChildCount(); childIdx++) {//1st child is TOK_FROM
           assert query.getChild(childIdx).getType() == HiveParser.TOK_INSERT;
           if(insert == query.getChild(childIdx)) {
@@ -254,9 +296,10 @@ public class Context {
    * Create a Context with a given executionId.  ExecutionId, together with
    * user name and conf, will determine the temporary directory locations.
    */
-  public Context(Configuration conf, String executionId)  {
+  private Context(Configuration conf, String executionId)  {
     this.conf = conf;
     this.executionId = executionId;
+    this.rewrittenStatementContexts = new HashSet<>();
 
     // local & non-local tmp location is configurable. however it is the same across
     // all external file systems
@@ -265,8 +308,13 @@ public class Context {
     scratchDirPermission = HiveConf.getVar(conf, HiveConf.ConfVars.SCRATCHDIRPERMISSION);
     stagingDir = HiveConf.getVar(conf, HiveConf.ConfVars.STAGINGDIR);
     opContext = new CompilationOpContext();
+
+    viewsTokenRewriteStreams = new HashMap<>();
   }
 
+  public Map<String, Path> getFsScratchDirs() {
+    return fsScratchDirs;
+  }
 
   public Map<LoadTableDesc, WriteEntity> getLoadTableOutputMap() {
     return loadTableOutputMap;
@@ -349,7 +397,8 @@ public class Context {
       // Append task specific info to stagingPathName, instead of creating a sub-directory.
       // This way we don't have to worry about deleting the stagingPathName separately at
       // end of query execution.
-      dir = fs.makeQualified(new Path(stagingPathName + "_" + this.executionId + "-" + TaskRunner.getTaskRunnerID()));
+      dir = fs.makeQualified(new Path(
+          stagingPathName + "_" + this.executionId + "-" + TaskRunner.getTaskRunnerID()));
 
       LOG.debug("Created staging dir = " + dir + " for path = " + inputPath);
 
@@ -471,19 +520,18 @@ public class Context {
    *
    * @return A path to the new temporary directory
    */
-  public Path getTempDirForPath(Path path, boolean isFinalJob) {
-    if (((BlobStorageUtils.isBlobStoragePath(conf, path) && !BlobStorageUtils.isBlobStorageAsScratchDir(
-            conf)) || isPathLocal(path))) {
-      if (!(isFinalJob && BlobStorageUtils.areOptimizationsEnabled(conf))) {
-        // For better write performance, we use HDFS for temporary data when object store is used.
-        // Note that the scratch directory configuration variable must use HDFS or any other non-blobstorage system
-        // to take advantage of this performance.
-        return getMRTmpPath();
-      }
+  public Path getTempDirForInterimJobPath(Path path) {
+    // For better write performance, we use HDFS for temporary data when object store is used.
+    // Note that the scratch directory configuration variable must use HDFS or any other
+    // non-blobstorage system to take advantage of this performance.
+    boolean isBlobstorageOptimized = BlobStorageUtils.isBlobStoragePath(conf, path)
+        && !BlobStorageUtils.isBlobStorageAsScratchDir(conf) && BlobStorageUtils.areOptimizationsEnabled(conf);
+
+    if (isPathLocal(path) || isBlobstorageOptimized) {
+      return getMRTmpPath();
     }
     return getExtTmpPathRelTo(path);
   }
-
 
   /**
    * Create a temporary directory depending of the path specified.
@@ -493,8 +541,8 @@ public class Context {
    * @param path Path used to verify the Filesystem to use for temporary directory
    * @return A path to the new temporary directory
    */
-  public Path getTempDirForPath(Path path) {
-    return getTempDirForPath(path, false);
+  public Path getTempDirForFinalJobPath(Path path) {
+    return getExtTmpPathRelTo(path);
   }
 
   /*
@@ -662,6 +710,11 @@ public class Context {
   }
 
   public void clear() throws IOException {
+    // First clear the other contexts created by this query
+    for (Context subContext : rewrittenStatementContexts) {
+      subContext.clear();
+    }
+    // Then clear this context
     if (resDir != null) {
       try {
         FileSystem fs = resDir.getFileSystem(conf);
@@ -782,6 +835,15 @@ public class Context {
     return tokenRewriteStream;
   }
 
+  public void addViewTokenRewriteStream(String viewFullyQualifiedName,
+      TokenRewriteStream tokenRewriteStream) {
+    viewsTokenRewriteStreams.put(viewFullyQualifiedName, tokenRewriteStream);
+  }
+
+  public TokenRewriteStream getViewTokenRewriteStream(String viewFullyQualifiedName) {
+    return viewsTokenRewriteStreams.get(viewFullyQualifiedName);
+  }
+
   /**
    * Generate a unique executionId.  An executionId, together with user name and
    * the configuration, will determine the temporary locations of all intermediate
@@ -841,6 +903,10 @@ public class Context {
     }
   }
 
+  public void addRewrittenStatementContext(Context context) {
+    rewrittenStatementContexts.add(context);
+  }
+
   public void addCS(String path, ContentSummary cs) {
     pathToCS.put(path, cs);
   }
@@ -881,14 +947,6 @@ public class Context {
 
   public void setNeedLockMgr(boolean needLockMgr) {
     this.needLockMgr = needLockMgr;
-  }
-
-  public int getTryCount() {
-    return tryCount;
-  }
-
-  public void setTryCount(int tryCount) {
-    this.tryCount = tryCount;
   }
 
   public String getCboInfo() {
@@ -948,7 +1006,7 @@ public class Context {
   public ExplainConfiguration getExplainConfig() {
     return explainConfig;
   }
-  private boolean isExplainPlan = false;
+
   public boolean isExplainPlan() {
     return isExplainPlan;
   }
@@ -960,7 +1018,7 @@ public class Context {
     this.explainConfig = explainConfig;
   }
 
-  public void resetOpContext(){
+  public void resetOpContext() {
     opContext = new CompilationOpContext();
     sequencer = new AtomicInteger();
   }
@@ -971,5 +1029,46 @@ public class Context {
 
   public void setIsUpdateDeleteMerge(boolean isUpdate) {
     this.isUpdateDeleteMerge = isUpdate;
+  }
+
+  public boolean isLoadingMaterializedView() {
+    return isLoadingMaterializedView;
+  }
+
+  public void setIsLoadingMaterializedView(boolean isLoadingMaterializedView) {
+    this.isLoadingMaterializedView = isLoadingMaterializedView;
+  }
+
+  public String getExecutionId() {
+    return executionId;
+  }
+
+  public PlanMapper getPlanMapper() {
+    return planMapper;
+  }
+
+  public void setStatsSource(StatsSource statsSource) {
+    this.statsSource = statsSource;
+  }
+
+  public StatsSource getStatsSource() {
+    if (statsSource != null) {
+      return statsSource;
+    } else {
+      // hierarchical; add def stats also here
+      return EmptyStatsSource.INSTANCE;
+    }
+  }
+
+  public int getExecutionIndex() {
+    return executionIndex;
+  }
+
+  public void setExecutionIndex(int executionIndex) {
+    this.executionIndex = executionIndex;
+  }
+
+  public void setConf(HiveConf conf) {
+    this.conf = conf;
   }
 }

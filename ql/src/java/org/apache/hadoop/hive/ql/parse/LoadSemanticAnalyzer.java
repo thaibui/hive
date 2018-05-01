@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,13 +19,11 @@
 package org.apache.hadoop.hive.ql.parse;
 
 import org.apache.hadoop.hive.conf.HiveConf.StrictChecks;
-
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,16 +46,20 @@ import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.io.AcidUtils;
 import org.apache.hadoop.hive.ql.io.HiveFileFormatUtils;
+import org.apache.hadoop.hive.ql.lockmgr.LockException;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
-import org.apache.hadoop.hive.ql.plan.LoadTableDesc;
-import org.apache.hadoop.hive.ql.plan.MoveWork;
 import org.apache.hadoop.hive.ql.plan.StatsWork;
+import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.plan.LoadTableDesc;
+import org.apache.hadoop.hive.ql.plan.LoadTableDesc.LoadFileType;
+import org.apache.hadoop.hive.ql.plan.MoveWork;
+import org.apache.hadoop.hive.ql.plan.BasicStatsWork;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.mapred.InputFormat;
 
 import com.google.common.collect.Lists;
-import org.apache.orc.impl.OrcAcidUtils;
 
 /**
  * LoadSemanticAnalyzer.
@@ -136,7 +138,7 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
   }
 
   private List<FileStatus> applyConstraintsAndGetFiles(URI fromURI, Tree ast,
-      boolean isLocal) throws SemanticException {
+      boolean isLocal, Table table) throws SemanticException {
 
     FileStatus[] srcs = null;
 
@@ -148,7 +150,8 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
     }
 
     try {
-      srcs = matchFilesOrDir(FileSystem.get(fromURI, conf), new Path(fromURI));
+      FileSystem fileSystem = FileSystem.get(fromURI, conf);
+      srcs = matchFilesOrDir(fileSystem, new Path(fromURI));
       if (srcs == null || srcs.length == 0) {
         throw new SemanticException(ErrorMsg.INVALID_PATH.getMsg(ast,
             "No files matching path " + fromURI));
@@ -160,6 +163,61 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
               "source contains directory: " + oneSrc.getPath().toString()));
         }
       }
+      validateAcidFiles(table, srcs, fileSystem);
+      // Do another loop if table is bucketed
+      List<String> bucketCols = table.getBucketCols();
+      if (bucketCols != null && !bucketCols.isEmpty()) {
+        // Hive assumes that user names the files as per the corresponding
+        // bucket. For e.g, file names should follow the format 000000_0, 000000_1 etc.
+        // Here the 1st file will belong to bucket 0 and 2nd to bucket 1 and so on.
+        boolean[] bucketArray = new boolean[table.getNumBuckets()];
+        // initialize the array
+        Arrays.fill(bucketArray, false);
+        int numBuckets = table.getNumBuckets();
+
+        for (FileStatus oneSrc : srcs) {
+          String bucketName = oneSrc.getPath().getName();
+
+          //get the bucket id
+          String bucketIdStr =
+                  Utilities.getBucketFileNameFromPathSubString(bucketName);
+          int bucketId = Utilities.getBucketIdFromFile(bucketIdStr);
+          LOG.debug("bucket ID for file " + oneSrc.getPath() + " = " + bucketId
+          + " for table " + table.getFullyQualifiedName());
+          if (bucketId == -1) {
+            throw new SemanticException(ErrorMsg.INVALID_PATH.getMsg(
+                    "The file name is invalid : "
+                            + oneSrc.getPath().toString() + " for table "
+            + table.getFullyQualifiedName()));
+          }
+          if (bucketId >= numBuckets) {
+            throw new SemanticException(ErrorMsg.INVALID_PATH.getMsg(
+                    "The file name corresponds to invalid bucketId : "
+                            + oneSrc.getPath().toString())
+                    + ". Maximum number of buckets can be " + numBuckets
+            + " for table " + table.getFullyQualifiedName());
+          }
+          if (bucketArray[bucketId]) {
+            throw new SemanticException(ErrorMsg.INVALID_PATH.getMsg(
+                    "Multiple files for same bucket : " + bucketId
+                            + ". Only 1 file per bucket allowed in single load command. To load " +
+                        "multiple files for same bucket, use multiple statements for table "
+            + table.getFullyQualifiedName()));
+          }
+          bucketArray[bucketId] = true;
+        }
+      }
+      else {
+        /**
+         * for loading into un-bucketed acid table, files can be named arbitrarily but they will
+         * be renamed during load.
+         * {@link Hive#mvFile(HiveConf, FileSystem, Path, FileSystem, Path, boolean, boolean,
+         * boolean, int)}
+         * and
+         * {@link Hive#copyFiles(HiveConf, FileSystem, FileStatus[], FileSystem, Path, boolean,
+         * boolean, List, boolean)}
+         */
+      }
     } catch (IOException e) {
       // Has to use full name to make sure it does not conflict with
       // org.apache.commons.lang.StringUtils
@@ -167,6 +225,28 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
     }
 
     return Lists.newArrayList(srcs);
+  }
+
+  /**
+   * Safety check to make sure a file take from one acid table is not added into another acid table
+   * since the ROW__IDs embedded as part a write to one table won't make sense in different
+   * table/cluster.
+   */
+  private static void validateAcidFiles(Table table, FileStatus[] srcs, FileSystem fs)
+      throws SemanticException {
+    if(!AcidUtils.isFullAcidTable(table)) {
+      return;
+    }
+    try {
+      for (FileStatus oneSrc : srcs) {
+        if (!AcidUtils.MetaDataFile.isRawFormatFile(oneSrc.getPath(), fs)) {
+          throw new SemanticException(ErrorMsg.LOAD_DATA_ACID_FILE, oneSrc.getPath().toString());
+        }
+      }
+    }
+    catch(IOException ex) {
+      throw new SemanticException(ex);
+    }
   }
 
   @Override
@@ -215,24 +295,23 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
     if(ts.tableHandle.isStoredAsSubDirectories()) {
       throw new SemanticException(ErrorMsg.LOAD_INTO_STORED_AS_DIR.getMsg());
     }
-
     List<FieldSchema> parts = ts.tableHandle.getPartitionKeys();
     if ((parts != null && parts.size() > 0)
         && (ts.partSpec == null || ts.partSpec.size() == 0)) {
       throw new SemanticException(ErrorMsg.NEED_PARTITION_ERROR.getMsg());
     }
+
     List<String> bucketCols = ts.tableHandle.getBucketCols();
     if (bucketCols != null && !bucketCols.isEmpty()) {
       String error = StrictChecks.checkBucketing(conf);
-      if (error != null) throw new SemanticException("Please load into an intermediate table"
-          + " and use 'insert... select' to allow Hive to enforce bucketing. " + error);
+      if (error != null) {
+        throw new SemanticException("Please load into an intermediate table"
+            + " and use 'insert... select' to allow Hive to enforce bucketing. " + error);
+      }
     }
 
-    if(AcidUtils.isAcidTable(ts.tableHandle)) {
-      throw new SemanticException(ErrorMsg.LOAD_DATA_ON_ACID_TABLE, ts.tableHandle.getCompleteName());
-    }
     // make sure the arguments make sense
-    List<FileStatus> files = applyConstraintsAndGetFiles(fromURI, fromTree, isLocal);
+    List<FileStatus> files = applyConstraintsAndGetFiles(fromURI, fromTree, isLocal, ts.tableHandle);
 
     // for managed tables, make sure the file formats match
     if (TableType.MANAGED_TABLE.equals(ts.tableHandle.getTableType())
@@ -240,7 +319,6 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
       ensureFileFormatsMatch(ts, files, fromURI);
     }
     inputs.add(toReadEntity(new Path(fromURI)));
-    Task<? extends Serializable> rTask = null;
 
     // create final load/move work
 
@@ -274,26 +352,39 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
       }
     }
 
+    Long writeId = null;
+    int stmtId = -1;
+    boolean isTxnTable = AcidUtils.isTransactionalTable(ts.tableHandle);
+    if (isTxnTable) {
+      try {
+        writeId = getTxnMgr().getTableWriteId(ts.tableHandle.getDbName(),
+                ts.tableHandle.getTableName());
+      } catch (LockException ex) {
+        throw new SemanticException("Failed to allocate the write id", ex);
+      }
+      stmtId = getTxnMgr().getStmtIdAndIncrement();
+    }
 
-    LoadTableDesc loadTableWork;
-    loadTableWork = new LoadTableDesc(new Path(fromURI),
-      Utilities.getTableDesc(ts.tableHandle), partSpec, isOverWrite);
-    if (preservePartitionSpecs){
+    // Note: this sets LoadFileType incorrectly for ACID; is that relevant for load?
+    //       See setLoadFileType and setIsAcidIow calls elsewhere for an example.
+    LoadTableDesc loadTableWork = new LoadTableDesc(new Path(fromURI),
+      Utilities.getTableDesc(ts.tableHandle), partSpec, isOverWrite
+        ? LoadFileType.REPLACE_ALL : LoadFileType.KEEP_EXISTING, writeId);
+    loadTableWork.setStmtId(stmtId);
+    loadTableWork.setInsertOverwrite(isOverWrite);
+    if (preservePartitionSpecs) {
       // Note : preservePartitionSpecs=true implies inheritTableSpecs=false but
       // but preservePartitionSpecs=false(default) here is not sufficient enough
       // info to set inheritTableSpecs=true
       loadTableWork.setInheritTableSpecs(false);
     }
 
-    Task<? extends Serializable> childTask = TaskFactory.get(new MoveWork(getInputs(),
-        getOutputs(), loadTableWork, null, true, isLocal), conf);
-    if (rTask != null) {
-      rTask.addDependentTask(childTask);
-    } else {
-      rTask = childTask;
-    }
+    Task<? extends Serializable> childTask = TaskFactory.get(
+        new MoveWork(getInputs(), getOutputs(), loadTableWork, null, true,
+            isLocal)
+    );
 
-    rootTasks.add(rTask);
+    rootTasks.add(childTask);
 
     // The user asked for stats to be collected.
     // Some stats like number of rows require a scan of the data
@@ -301,32 +392,14 @@ public class LoadSemanticAnalyzer extends BaseSemanticAnalyzer {
     // Update the stats which do not require a complete scan.
     Task<? extends Serializable> statTask = null;
     if (conf.getBoolVar(HiveConf.ConfVars.HIVESTATSAUTOGATHER)) {
-      StatsWork statDesc = new StatsWork(loadTableWork);
-      statDesc.setNoStatsAggregator(true);
-      statDesc.setClearAggregatorStats(true);
-      statDesc.setStatsReliable(conf.getBoolVar(HiveConf.ConfVars.HIVE_STATS_RELIABLE));
-      statTask = TaskFactory.get(statDesc, conf);
+      BasicStatsWork basicStatsWork = new BasicStatsWork(loadTableWork);
+      basicStatsWork.setNoStatsAggregator(true);
+      basicStatsWork.setClearAggregatorStats(true);
+      StatsWork columnStatsWork = new StatsWork(ts.tableHandle, basicStatsWork, conf);
+      statTask = TaskFactory.get(columnStatsWork);
     }
 
-    // HIVE-3334 has been filed for load file with index auto update
-    if (HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVEINDEXAUTOUPDATE)) {
-      IndexUpdater indexUpdater = new IndexUpdater(loadTableWork, getInputs(), conf);
-      try {
-        List<Task<? extends Serializable>> indexUpdateTasks = indexUpdater.generateUpdateTasks();
-
-        for (Task<? extends Serializable> updateTask : indexUpdateTasks) {
-          //LOAD DATA will either have a copy & move or just a move,
-          // we always want the update to be dependent on the move
-          childTask.addDependentTask(updateTask);
-          if (statTask != null) {
-            updateTask.addDependentTask(statTask);
-          }
-        }
-      } catch (HiveException e) {
-        console.printInfo("WARNING: could not auto-update stale indexes, indexes are not out of sync");
-      }
-    }
-    else if (statTask != null) {
+    if (statTask != null) {
       childTask.addDependentTask(statTask);
     }
   }

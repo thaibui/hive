@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,6 +20,7 @@ package org.apache.hadoop.hive.ql.plan;
 
 import java.util.List;
 
+import org.apache.hadoop.hive.ql.exec.vector.expressions.VectorExpression;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 
@@ -97,6 +98,9 @@ public class VectorMapJoinDesc extends AbstractVectorDesc  {
   private VectorMapJoinVariation vectorMapJoinVariation;
   private boolean minMaxEnabled;
 
+  private VectorExpression[] allBigTableKeyExpressions;
+  private VectorExpression[] allBigTableValueExpressions;
+
   private VectorMapJoinInfo vectorMapJoinInfo;
 
   public VectorMapJoinDesc() {
@@ -105,6 +109,10 @@ public class VectorMapJoinDesc extends AbstractVectorDesc  {
     hashTableKeyType = HashTableKeyType.NONE;
     vectorMapJoinVariation = VectorMapJoinVariation.NONE;
     minMaxEnabled = false;
+
+    allBigTableKeyExpressions = null;
+    allBigTableValueExpressions = null;
+
     vectorMapJoinInfo = null;
   }
 
@@ -162,6 +170,22 @@ public class VectorMapJoinDesc extends AbstractVectorDesc  {
     this.minMaxEnabled = minMaxEnabled;
   }
 
+  public VectorExpression[] getAllBigTableKeyExpressions() {
+    return allBigTableKeyExpressions;
+  }
+
+  public void setAllBigTableKeyExpressions(VectorExpression[] allBigTableKeyExpressions) {
+    this.allBigTableKeyExpressions = allBigTableKeyExpressions;
+  }
+
+  public VectorExpression[] getAllBigTableValueExpressions() {
+    return allBigTableValueExpressions;
+  }
+
+  public void setAllBigTableValueExpressions(VectorExpression[] allBigTableValueExpressions) {
+    this.allBigTableValueExpressions = allBigTableValueExpressions;
+  }
+
   public void setVectorMapJoinInfo(VectorMapJoinInfo vectorMapJoinInfo) {
     Preconditions.checkState(vectorMapJoinInfo != null);
     this.vectorMapJoinInfo = vectorMapJoinInfo;
@@ -181,6 +205,7 @@ public class VectorMapJoinDesc extends AbstractVectorDesc  {
   private boolean supportsKeyTypes;
   private List<String> notSupportedKeyTypes;
   private boolean smallTableExprVectorizes;
+  private boolean outerJoinHasNoKeys;
 
   public void setUseOptimizedTable(boolean useOptimizedTable) {
     this.useOptimizedTable = useOptimizedTable;
@@ -229,6 +254,12 @@ public class VectorMapJoinDesc extends AbstractVectorDesc  {
   }
   public boolean getSmallTableExprVectorizes() {
     return smallTableExprVectorizes;
+  }
+  public void setOuterJoinHasNoKeys(boolean outerJoinHasNoKeys) {
+    this.outerJoinHasNoKeys = outerJoinHasNoKeys;
+  }
+  public boolean getOuterJoinHasNoKeys() {
+    return outerJoinHasNoKeys;
   }
 
   public void setIsFastHashTableEnabled(boolean isFastHashTableEnabled) {

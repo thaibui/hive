@@ -34,7 +34,7 @@ STAGE PLANS:
                   alias: src
                   Statistics: Num rows: 500 Data size: 89000 Basic stats: COMPLETE Column stats: COMPLETE
                   Filter Operator
-                    predicate: ((value = 'val_105') and (key = '105')) (type: boolean)
+                    predicate: ((key = '105') and (value = 'val_105')) (type: boolean)
                     Statistics: Num rows: 1 Data size: 178 Basic stats: COMPLETE Column stats: COMPLETE
                     Select Operator
                       Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
@@ -43,7 +43,7 @@ STAGE PLANS:
                         sort order: +
                         Map-reduce partition columns: '105' (type: string)
                         Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
-            Execution mode: llap
+            Execution mode: vectorized, llap
             LLAP IO: no inputs
         Map 2 
             Map Operator Tree:
@@ -75,7 +75,7 @@ STAGE PLANS:
                                 input format: org.apache.hadoop.mapred.SequenceFileInputFormat
                                 output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
                                 serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
-            Execution mode: llap
+            Execution mode: vectorized, llap
             LLAP IO: no inputs
 
   Stage: Stage-0

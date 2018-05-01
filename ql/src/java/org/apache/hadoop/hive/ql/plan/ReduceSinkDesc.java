@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -27,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.io.AcidUtils;
+import org.apache.hadoop.hive.ql.optimizer.signature.Signature;
 import org.apache.hadoop.hive.ql.plan.Explain.Level;
 import org.apache.hadoop.hive.ql.plan.Explain.Vectorization;
 import org.apache.hadoop.hive.ql.plan.VectorReduceSinkDesc.ReduceSinkKeyType;
@@ -97,7 +99,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
   private float topNMemoryUsage = -1;
   private boolean mapGroupBy;  // for group-by, values with same key on top-K should be forwarded
   //flag used to control how TopN handled for PTF/Windowing partitions.
-  private boolean isPTFReduceSink = false; 
+  private boolean isPTFReduceSink = false;
   private boolean skipTag; // Skip writing tags when feeding into mapjoin hashtable
   private boolean forwarding; // Whether this RS can forward records directly instead of shuffling/sorting
 
@@ -126,6 +128,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
 
   private static transient Logger LOG = LoggerFactory.getLogger(ReduceSinkDesc.class);
 
+  private AcidUtils.Operation writeType;
+
   public ReduceSinkDesc() {
   }
 
@@ -136,7 +140,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
       List<List<Integer>> distinctColumnIndices,
       ArrayList<String> outputValueColumnNames, int tag,
       ArrayList<ExprNodeDesc> partitionCols, int numReducers,
-      final TableDesc keySerializeInfo, final TableDesc valueSerializeInfo) {
+      final TableDesc keySerializeInfo, final TableDesc valueSerializeInfo,
+      AcidUtils.Operation writeType) {
     this.keyCols = keyCols;
     this.numDistributionKeys = numDistributionKeys;
     this.valueCols = valueCols;
@@ -150,7 +155,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
     this.distinctColumnIndices = distinctColumnIndices;
     this.setNumBuckets(-1);
     this.setBucketCols(null);
-    this.vectorDesc = null;
+    this.writeType = writeType;
   }
 
   @Override
@@ -180,10 +185,6 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
     desc.reduceTraits = reduceTraits.clone();
     desc.setDeduplicated(isDeduplicated);
     desc.setHasOrderBy(hasOrderBy);
-    if (vectorDesc != null) {
-      throw new RuntimeException("Clone with vectorization desc not supported");
-    }
-    desc.vectorDesc = null;
     desc.outputName = outputName;
     return desc;
   }
@@ -207,6 +208,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
   }
 
   @Explain(displayName = "key expressions")
+  @Signature
   public String getKeyColString() {
     return PlanUtils.getExprListString(keyCols);
   }
@@ -228,6 +230,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
   }
 
   @Explain(displayName = "value expressions")
+  @Signature
   public String getValueColsString() {
     return PlanUtils.getExprListString(valueCols);
   }
@@ -246,6 +249,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
   }
 
   @Explain(displayName = "PartitionCols", explainLevels = { Level.USER })
+  @Signature
   public String getUserLevelExplainParitionColsString() {
     return PlanUtils.getExprListString(partitionCols, true);
   }
@@ -266,6 +270,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
     return false;
   }
 
+  @Signature
   @Explain(displayName = "tag", explainLevels = { Level.EXTENDED })
   public int getTag() {
     return tag;
@@ -275,6 +280,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
     this.tag = tag;
   }
 
+  @Signature
   public int getTopN() {
     return topN;
   }
@@ -354,6 +360,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
    *         of the same length as key columns, that consists of only "+"
    *         (ascending order) and "-" (descending order).
    */
+  @Signature
   @Explain(displayName = "sort order")
   public String getOrder() {
     return keySerializeInfo.getProperties().getProperty(
@@ -467,7 +474,7 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
     // reducers or hash function.
 
     boolean wasUnset = this.reduceTraits.remove(ReducerTraits.UNSET);
-    
+
     if (this.reduceTraits.contains(ReducerTraits.FIXED)) {
       return;
     } else if (traits.contains(ReducerTraits.FIXED)) {
@@ -504,15 +511,16 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
 
     private final ReduceSinkDesc reduceSinkDesc;
     private final VectorReduceSinkDesc vectorReduceSinkDesc;
-    private final VectorReduceSinkInfo vectorReduceSinkInfo; 
+    private final VectorReduceSinkInfo vectorReduceSinkInfo;
 
     private VectorizationCondition[] nativeConditions;
 
-    public ReduceSinkOperatorExplainVectorization(ReduceSinkDesc reduceSinkDesc, VectorDesc vectorDesc) {
+    public ReduceSinkOperatorExplainVectorization(ReduceSinkDesc reduceSinkDesc,
+        VectorReduceSinkDesc vectorReduceSinkDesc) {
       // VectorReduceSinkOperator is not native vectorized.
-      super(vectorDesc, ((VectorReduceSinkDesc) vectorDesc).reduceSinkKeyType()!= ReduceSinkKeyType.NONE);
+      super(vectorReduceSinkDesc, vectorReduceSinkDesc.reduceSinkKeyType()!= ReduceSinkKeyType.NONE);
       this.reduceSinkDesc = reduceSinkDesc;
-      vectorReduceSinkDesc = (VectorReduceSinkDesc) vectorDesc;
+      this.vectorReduceSinkDesc = vectorReduceSinkDesc;
       vectorReduceSinkInfo = vectorReduceSinkDesc.getVectorReduceSinkInfo();
     }
 
@@ -532,8 +540,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
       return vectorExpressionsToStringList(vectorReduceSinkInfo.getReduceSinkValueExpressions());
     }
 
-    @Explain(vectorization = Vectorization.DETAIL, displayName = "keyColumns", explainLevels = { Level.DEFAULT, Level.EXTENDED })
-    public String getKeyColumns() {
+    @Explain(vectorization = Vectorization.DETAIL, displayName = "keyColumnNums", explainLevels = { Level.DEFAULT, Level.EXTENDED })
+    public String getKeyColumnNums() {
       if (!isNative) {
         return null;
       }
@@ -545,8 +553,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
       return Arrays.toString(keyColumnMap);
     }
 
-    @Explain(vectorization = Vectorization.DETAIL, displayName = "valueColumns", explainLevels = { Level.DEFAULT, Level.EXTENDED })
-    public String getValueColumns() {
+    @Explain(vectorization = Vectorization.DETAIL, displayName = "valueColumnNums", explainLevels = { Level.DEFAULT, Level.EXTENDED })
+    public String getValueColumnNums() {
       if (!isNative) {
         return null;
       }
@@ -558,8 +566,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
       return Arrays.toString(valueColumnMap);
     }
 
-    @Explain(vectorization = Vectorization.DETAIL, displayName = "bucketColumns", explainLevels = { Level.DEFAULT, Level.EXTENDED })
-    public String getBucketColumns() {
+    @Explain(vectorization = Vectorization.DETAIL, displayName = "bucketColumnNums", explainLevels = { Level.DEFAULT, Level.EXTENDED })
+    public String getBucketColumnNums() {
       if (!isNative) {
         return null;
       }
@@ -571,8 +579,8 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
       return Arrays.toString(bucketColumnMap);
     }
 
-    @Explain(vectorization = Vectorization.DETAIL, displayName = "partitionColumns", explainLevels = { Level.DEFAULT, Level.EXTENDED })
-    public String getPartitionColumns() {
+    @Explain(vectorization = Vectorization.DETAIL, displayName = "partitionColumnNums", explainLevels = { Level.DEFAULT, Level.EXTENDED })
+    public String getPartitionColumnNums() {
       if (!isNative) {
         return null;
       }
@@ -644,10 +652,11 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
 
   @Explain(vectorization = Vectorization.OPERATOR, displayName = "Reduce Sink Vectorization", explainLevels = { Level.DEFAULT, Level.EXTENDED })
   public ReduceSinkOperatorExplainVectorization getReduceSinkVectorization() {
-    if (vectorDesc == null) {
+    VectorReduceSinkDesc vectorReduceSinkDesc = (VectorReduceSinkDesc) getVectorDesc();
+    if (vectorReduceSinkDesc == null) {
       return null;
     }
-    return new ReduceSinkOperatorExplainVectorization(this, vectorDesc);
+    return new ReduceSinkOperatorExplainVectorization(this, vectorReduceSinkDesc);
   }
 
   @Override
@@ -663,5 +672,9 @@ public class ReduceSinkDesc extends AbstractOperatorDesc {
           isAutoParallel() == otherDesc.isAutoParallel();
     }
     return false;
+  }
+
+  public AcidUtils.Operation getWriteType() {
+    return writeType;
   }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,20 +24,29 @@ import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.VectorExpressionDescriptor;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 
+/*
+ * ELT(index, string, ....) returns the string column/expression value at the specified
+ * index expression.
+ *
+ * The first argument expression indicates the index of the string to be retrieved from
+ * remaining arguments.  We return NULL when the index number is less than 1 or
+ * index number is greater than the number of the string arguments.
+ */
 public class VectorElt extends VectorExpression {
-
   private static final long serialVersionUID = 1L;
-  private int [] inputColumns;
-  private int outputColumn;
 
-  public VectorElt(int [] inputColumns, int outputColumn) {
-    this();
+  private final int[] inputColumns;
+
+  public VectorElt(int [] inputColumns, int outputColumnNum) {
+    super(outputColumnNum);
     this.inputColumns = inputColumns;
-    this.outputColumn = outputColumn;
   }
 
   public VectorElt() {
     super();
+
+    // Dummy final assignments.
+    inputColumns = null;
   }
 
   @Override
@@ -49,7 +58,7 @@ public class VectorElt extends VectorExpression {
 
     int[] sel = batch.selected;
     int n = batch.size;
-    BytesColumnVector outputVector = (BytesColumnVector) batch.cols[outputColumn];
+    BytesColumnVector outputVector = (BytesColumnVector) batch.cols[outputColumnNum];
     if (n <= 0) {
       return;
     }
@@ -106,28 +115,6 @@ public class VectorElt extends VectorExpression {
         }
       }
     }
-  }
-
-  @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return outputType;
-  }
-
-  public int [] getInputColumns() {
-    return inputColumns;
-  }
-
-  public void setInputColumns(int [] inputColumns) {
-    this.inputColumns = inputColumns;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
   }
 
   @Override

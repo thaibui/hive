@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -43,10 +43,13 @@ import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.ql.exec.vector.expressions.gen.*;
 import org.apache.hadoop.hive.ql.exec.vector.expressions.*;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.util.TimestampUtils;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.hive.serde2.typeinfo.HiveDecimalUtils;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.junit.Test;
 
 /**
@@ -125,6 +128,23 @@ public class TestVectorTypeCasts {
   }
 
   @Test
+  public void testCastStringToBoolean() {
+    VectorizedRowBatch b = TestVectorMathFunctions.getVectorizedRowBatchStringInLongOut();
+    LongColumnVector resultV = (LongColumnVector) b.cols[1];
+    b.cols[0].noNulls = true;
+    VectorExpression expr = new CastStringToBoolean(0, 1);
+    expr.evaluate(b);
+    Assert.assertEquals(1, resultV.vector[0]); // true
+    Assert.assertEquals(1, resultV.vector[1]); // true
+    Assert.assertEquals(1, resultV.vector[2]); // true
+    Assert.assertEquals(0, resultV.vector[3]); // false
+    Assert.assertEquals(0, resultV.vector[4]); // false
+    Assert.assertEquals(0, resultV.vector[5]); // false
+    Assert.assertEquals(0, resultV.vector[6]); // false
+    Assert.assertEquals(1, resultV.vector[7]); // true
+  }
+
+  @Test
   public void testCastLongToTimestamp() {
     long[] longValues = new long[500];
     VectorizedRowBatch b = TestVectorMathFunctions.getVectorizedRowBatchLongInTimestampOut(longValues);
@@ -184,11 +204,13 @@ public class TestVectorTypeCasts {
   }
 
   @Test
-  public void testCastLongToString() {
+  public void testCastLongToString() throws HiveException {
     VectorizedRowBatch b = TestVectorMathFunctions.getBatchForStringMath();
     BytesColumnVector resultV = (BytesColumnVector) b.cols[2];
     b.cols[1].noNulls = true;
     VectorExpression expr = new CastLongToString(1, 2);
+    expr.setInputTypeInfos(new TypeInfo[] {TypeInfoFactory.longTypeInfo});
+    expr.transientInit();
     expr.evaluate(b);
     byte[] num255 = toBytes("255");
     Assert.assertEquals(0,
@@ -215,15 +237,15 @@ public class TestVectorTypeCasts {
   }
 
   @Test
-  public void testCastDecimalToLong() {
+  public void testCastDecimalToLong() throws HiveException {
 
     // test basic case
     VectorizedRowBatch b = getBatchDecimalLong();
     VectorExpression expr = new CastDecimalToLong(0, 1);
 
     // With the integer type range checking, we need to know the Hive data type.
-    expr.setOutputType("bigint");
-
+    expr.setOutputTypeInfo(TypeInfoFactory.longTypeInfo);
+    expr.transientInit();
     expr.evaluate(b);
     LongColumnVector r = (LongColumnVector) b.cols[1];
     assertEquals(1, r.vector[0]);
@@ -261,12 +283,16 @@ public class TestVectorTypeCasts {
   }
 
   @Test
-  /* Just spot check the basic case because code path is the same as
+  /**
+   * Just spot check the basic case because code path is the same as
    * for cast of decimal to long due to inheritance.
    */
-  public void testCastDecimalToBoolean() {
+  public void testCastDecimalToBoolean() throws HiveException {
     VectorizedRowBatch b = getBatchDecimalLong();
     VectorExpression expr = new CastDecimalToBoolean(0, 1);
+    expr.setInputTypeInfos(new TypeInfo[] {TypeInfoFactory.decimalTypeInfo});
+    expr.setOutputTypeInfo(TypeInfoFactory.booleanTypeInfo);
+    expr.transientInit();
     DecimalColumnVector in = (DecimalColumnVector) b.cols[0];
     in.vector[1].set(HiveDecimal.create(0));
     expr.evaluate(b);
@@ -353,9 +379,11 @@ public class TestVectorTypeCasts {
   }
 
   @Test
-  public void testCastDecimalToString() {
+  public void testCastDecimalToString() throws HiveException {
     VectorizedRowBatch b = getBatchDecimalString();
     VectorExpression expr = new CastDecimalToString(0, 1);
+    expr.setInputTypeInfos(new TypeInfo[] {TypeInfoFactory.decimalTypeInfo});
+    expr.transientInit();
     expr.evaluate(b);
     BytesColumnVector r = (BytesColumnVector) b.cols[1];
 
@@ -616,7 +644,8 @@ public class TestVectorTypeCasts {
     }
   }
 
-  /* This batch has output decimal column precision 5 and scale 2.
+  /**
+   * This batch has output decimal column precision 5 and scale 2.
    * The goal is to allow testing of input long values that, when
    * converted to decimal, will not fit in the given precision.
    * Then it will be possible to check that the results are NULL.

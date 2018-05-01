@@ -22,27 +22,27 @@ POSTHOOK: query: create table smb_bucket_3(key int, value string) CLUSTERED BY (
 POSTHOOK: type: CREATETABLE
 POSTHOOK: Output: database:default
 POSTHOOK: Output: default@smb_bucket_3
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_1.rc' overwrite into table smb_bucket_1
+PREHOOK: query: load data local inpath '../../data/files/smb_rc1/000000_0' overwrite into table smb_bucket_1
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_1
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_1.rc' overwrite into table smb_bucket_1
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc1/000000_0' overwrite into table smb_bucket_1
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_1
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_2.rc' overwrite into table smb_bucket_2
+PREHOOK: query: load data local inpath '../../data/files/smb_rc2/000000_0' overwrite into table smb_bucket_2
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_2
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_2.rc' overwrite into table smb_bucket_2
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc2/000000_0' overwrite into table smb_bucket_2
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_2
-PREHOOK: query: load data local inpath '../../data/files/smbbucket_3.rc' overwrite into table smb_bucket_3
+PREHOOK: query: load data local inpath '../../data/files/smb_rc3/000000_0' overwrite into table smb_bucket_3
 PREHOOK: type: LOAD
 #### A masked pattern was here ####
 PREHOOK: Output: default@smb_bucket_3
-POSTHOOK: query: load data local inpath '../../data/files/smbbucket_3.rc' overwrite into table smb_bucket_3
+POSTHOOK: query: load data local inpath '../../data/files/smb_rc3/000000_0' overwrite into table smb_bucket_3
 POSTHOOK: type: LOAD
 #### A masked pattern was here ####
 POSTHOOK: Output: default@smb_bucket_3
@@ -72,54 +72,58 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: a
-                  Statistics: Num rows: 52 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
                     predicate: (key = 5) (type: boolean)
-                    Statistics: Num rows: 26 Data size: 104 Basic stats: COMPLETE Column stats: NONE
+                    Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 26 Data size: 104 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
                         sort order: 
-                        Statistics: Num rows: 26 Data size: 104 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: b
-                  Statistics: Num rows: 51 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (5 = key) (type: boolean)
-                    Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                    predicate: (key = 5) (type: boolean)
+                    Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
                         sort order: 
-                        Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Map 5 
             Map Operator Tree:
                 TableScan
                   alias: c
-                  Statistics: Num rows: 51 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
                     predicate: (key = 5) (type: boolean)
-                    Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                    Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
                         sort order: 
-                        Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Map 7 
             Map Operator Tree:
                 TableScan
                   alias: d
-                  Statistics: Num rows: 55 Data size: 222 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (5 = key) (type: boolean)
-                    Statistics: Num rows: 27 Data size: 108 Basic stats: COMPLETE Column stats: NONE
+                    predicate: (key = 5) (type: boolean)
+                    Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 27 Data size: 108 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
                         sort order: 
-                        Statistics: Num rows: 27 Data size: 108 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Reducer 2 
             Reduce Operator Tree:
               Join Operator
@@ -128,10 +132,10 @@ STAGE PLANS:
                 keys:
                   0 
                   1 
-                Statistics: Num rows: 650 Data size: 5850 Basic stats: COMPLETE Column stats: NONE
+                Statistics: Num rows: 1 Data size: 4141 Basic stats: COMPLETE Column stats: NONE
                 Reduce Output Operator
                   sort order: 
-                  Statistics: Num rows: 650 Data size: 5850 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 4141 Basic stats: COMPLETE Column stats: NONE
         Reducer 3 
             Reduce Operator Tree:
               Join Operator
@@ -140,14 +144,14 @@ STAGE PLANS:
                 keys:
                   0 
                   1 
-                Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                 Select Operator
                   expressions: 5 (type: int), 5 (type: int)
                   outputColumnNames: _col0, _col1
-                  Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                   File Output Operator
                     compressed: false
-                    Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                    Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                     table:
                         input format: org.apache.hadoop.mapred.SequenceFileInputFormat
                         output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
@@ -160,10 +164,10 @@ STAGE PLANS:
                 keys:
                   0 
                   1 
-                Statistics: Num rows: 675 Data size: 6075 Basic stats: COMPLETE Column stats: NONE
+                Statistics: Num rows: 1 Data size: 4281 Basic stats: COMPLETE Column stats: NONE
                 Reduce Output Operator
                   sort order: 
-                  Statistics: Num rows: 675 Data size: 6075 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 4281 Basic stats: COMPLETE Column stats: NONE
 
   Stage: Stage-0
     Fetch Operator
@@ -195,16 +199,17 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: b
-                  Statistics: Num rows: 51 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (5 = key) (type: boolean)
-                    Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                    predicate: (key = 5) (type: boolean)
+                    Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                       Spark HashTable Sink Operator
                         keys:
                           0 
                           1 
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
 
@@ -216,12 +221,12 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: a
-                  Statistics: Num rows: 52 Data size: 208 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
                     predicate: (key = 5) (type: boolean)
-                    Statistics: Num rows: 26 Data size: 104 Basic stats: COMPLETE Column stats: NONE
+                    Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 26 Data size: 104 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2080 Basic stats: COMPLETE Column stats: NONE
                       Map Join Operator
                         condition map:
                              Inner Join 0 to 1
@@ -230,27 +235,29 @@ STAGE PLANS:
                           1 
                         input vertices:
                           1 Map 2
-                        Statistics: Num rows: 650 Data size: 5850 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 4141 Basic stats: COMPLETE Column stats: NONE
                         Spark HashTable Sink Operator
                           keys:
                             0 
                             1 
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
         Map 3 
             Map Operator Tree:
                 TableScan
                   alias: c
-                  Statistics: Num rows: 51 Data size: 206 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
                     predicate: (key = 5) (type: boolean)
-                    Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                    Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 25 Data size: 100 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2060 Basic stats: COMPLETE Column stats: NONE
                       Spark HashTable Sink Operator
                         keys:
                           0 
                           1 
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
 
@@ -262,12 +269,12 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: d
-                  Statistics: Num rows: 55 Data size: 222 Basic stats: COMPLETE Column stats: NONE
+                  Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (5 = key) (type: boolean)
-                    Statistics: Num rows: 27 Data size: 108 Basic stats: COMPLETE Column stats: NONE
+                    predicate: (key = 5) (type: boolean)
+                    Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
-                      Statistics: Num rows: 27 Data size: 108 Basic stats: COMPLETE Column stats: NONE
+                      Statistics: Num rows: 1 Data size: 2220 Basic stats: COMPLETE Column stats: NONE
                       Map Join Operator
                         condition map:
                              Inner Join 0 to 1
@@ -276,7 +283,7 @@ STAGE PLANS:
                           1 
                         input vertices:
                           0 Map 3
-                        Statistics: Num rows: 675 Data size: 6075 Basic stats: COMPLETE Column stats: NONE
+                        Statistics: Num rows: 1 Data size: 4281 Basic stats: COMPLETE Column stats: NONE
                         Map Join Operator
                           condition map:
                                Inner Join 0 to 1
@@ -285,18 +292,19 @@ STAGE PLANS:
                             1 
                           input vertices:
                             0 Map 1
-                          Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                          Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                           Select Operator
                             expressions: 5 (type: int), 5 (type: int)
                             outputColumnNames: _col0, _col1
-                            Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                            Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                             File Output Operator
                               compressed: false
-                              Statistics: Num rows: 438750 Data size: 8336250 Basic stats: COMPLETE Column stats: NONE
+                              Statistics: Num rows: 1 Data size: 8423 Basic stats: COMPLETE Column stats: NONE
                               table:
                                   input format: org.apache.hadoop.mapred.SequenceFileInputFormat
                                   output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
                                   serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+            Execution mode: vectorized
             Local Work:
               Map Reduce Local Work
 

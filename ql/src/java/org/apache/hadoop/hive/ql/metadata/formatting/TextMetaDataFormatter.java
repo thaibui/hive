@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,12 +21,14 @@ package org.apache.hadoop.hive.ql.metadata.formatting;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hive.common.util.HiveStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +39,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.api.ColumnStatisticsObj;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.hadoop.hive.metastore.api.WMFullResourcePlan;
+import org.apache.hadoop.hive.metastore.api.WMResourcePlan;
+import org.apache.hadoop.hive.metastore.api.WMValidateResourcePlanResponse;
 import org.apache.hadoop.hive.ql.exec.Utilities;
+import org.apache.hadoop.hive.ql.metadata.CheckConstraint;
+import org.apache.hadoop.hive.ql.metadata.DefaultConstraint;
 import org.apache.hadoop.hive.ql.metadata.ForeignKeyInfo;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -123,21 +129,44 @@ class TextMetaDataFormatter implements MetaDataFormatter {
   @Override
   public void describeTable(DataOutputStream outStream,  String colPath,
       String tableName, Table tbl, Partition part, List<FieldSchema> cols,
-      boolean isFormatted, boolean isExt, boolean isPretty,
+      boolean isFormatted, boolean isExt,
       boolean isOutputPadded, List<ColumnStatisticsObj> colStats,
       PrimaryKeyInfo pkInfo, ForeignKeyInfo fkInfo,
-      UniqueConstraint ukInfo, NotNullConstraint nnInfo) throws HiveException {
+      UniqueConstraint ukInfo, NotNullConstraint nnInfo, DefaultConstraint dInfo, CheckConstraint cInfo)
+        throws HiveException {
     try {
-      String output;
+      List<FieldSchema> partCols = tbl.isPartitioned() ? tbl.getPartCols() : null;
+      String output = "";
+
+      boolean isColStatsAvailable = colStats != null;
+
+      TextMetaDataTable mdt = new TextMetaDataTable();
+      if (isFormatted && !isColStatsAvailable) {
+        output = "# ";
+      }
+      if (isFormatted) {
+        mdt.addRow(MetaDataFormatUtils.getColumnsHeader(colStats));
+      }
+      for (FieldSchema col : cols) {
+        mdt.addRow(MetaDataFormatUtils.extractColumnValues(col, isColStatsAvailable,
+            MetaDataFormatUtils.getColumnStatisticsObject(col.getName(), col.getType(), colStats)));
+      }
+      if (isColStatsAvailable) {
+        mdt.transpose();
+      }
+      output += mdt.renderTable(isOutputPadded);
+
       if (colPath.equals(tableName)) {
-        List<FieldSchema> partCols = tbl.isPartitioned() ? tbl.getPartCols() : null;
-        output = isPretty ?
-            MetaDataPrettyFormatUtils.getAllColumnsInformation(
-                cols, partCols, prettyOutputNumCols)
-                :
-                  MetaDataFormatUtils.getAllColumnsInformation(cols, partCols, isFormatted, isOutputPadded, showPartColsSeparately);
+        if ((partCols != null) && !partCols.isEmpty() && showPartColsSeparately) {
+          mdt = new TextMetaDataTable();
+          output += MetaDataFormatUtils.LINE_DELIM + "# Partition Information" + MetaDataFormatUtils.LINE_DELIM + "# ";
+          mdt.addRow(MetaDataFormatUtils.getColumnsHeader(null));
+          for (FieldSchema col : partCols) {
+            mdt.addRow(MetaDataFormatUtils.extractColumnValues(col));
+          }
+          output += mdt.renderTable(isOutputPadded);
+        }
       } else {
-        output = MetaDataFormatUtils.getAllColumnsInformation(cols, isFormatted, isOutputPadded, colStats);
         String statsState;
         if (tbl.getParameters() != null && (statsState = tbl.getParameters().get(StatsSetupConst.COLUMN_STATS_ACCURATE)) != null) {
           StringBuilder str = new StringBuilder();
@@ -161,8 +190,10 @@ class TextMetaDataFormatter implements MetaDataFormatter {
           if ((pkInfo != null && !pkInfo.getColNames().isEmpty()) ||
               (fkInfo != null && !fkInfo.getForeignKeys().isEmpty()) ||
               (ukInfo != null && !ukInfo.getUniqueConstraints().isEmpty()) ||
-              (nnInfo != null && !nnInfo.getNotNullConstraints().isEmpty())) {
-            output = MetaDataFormatUtils.getConstraintsInformation(pkInfo, fkInfo, ukInfo, nnInfo);
+              (nnInfo != null && !nnInfo.getNotNullConstraints().isEmpty()) ||
+              cInfo != null && !cInfo.getCheckConstraints().isEmpty() ||
+              dInfo != null && !dInfo.getDefaultConstraints().isEmpty()) {
+            output = MetaDataFormatUtils.getConstraintsInformation(pkInfo, fkInfo, ukInfo, nnInfo, dInfo, cInfo);
             outStream.write(output.getBytes("UTF-8"));
           }
         }
@@ -183,13 +214,16 @@ class TextMetaDataFormatter implements MetaDataFormatter {
             // show table information
             outStream.write(("Detailed Table Information").getBytes("UTF-8"));
             outStream.write(separator);
-            outStream.write(tbl.getTTable().toString().getBytes("UTF-8"));
+            String tableDesc = HiveStringUtils.escapeJava(tbl.getTTable().toString());
+            outStream.write(tableDesc.getBytes("UTF-8"));
             outStream.write(separator);
             outStream.write(terminator);
           }
           if ((pkInfo != null && !pkInfo.getColNames().isEmpty()) ||
               (fkInfo != null && !fkInfo.getForeignKeys().isEmpty()) ||
               (ukInfo != null && !ukInfo.getUniqueConstraints().isEmpty()) ||
+              (dInfo!= null && !dInfo.getDefaultConstraints().isEmpty()) ||
+              (cInfo != null && !cInfo.getCheckConstraints().isEmpty()) ||
               (nnInfo != null && !nnInfo.getNotNullConstraints().isEmpty())) {
             outStream.write(("Constraints").getBytes("UTF-8"));
             outStream.write(separator);
@@ -207,6 +241,14 @@ class TextMetaDataFormatter implements MetaDataFormatter {
             }
             if (nnInfo != null && !nnInfo.getNotNullConstraints().isEmpty()) {
               outStream.write(nnInfo.toString().getBytes("UTF-8"));
+              outStream.write(terminator);
+            }
+            if (dInfo != null && !dInfo.getDefaultConstraints().isEmpty()) {
+              outStream.write(dInfo.toString().getBytes("UTF-8"));
+              outStream.write(terminator);
+            }
+            if (cInfo != null && !cInfo.getCheckConstraints().isEmpty()) {
+              outStream.write(cInfo.toString().getBytes("UTF-8"));
               outStream.write(terminator);
             }
           }
@@ -306,28 +348,31 @@ class TextMetaDataFormatter implements MetaDataFormatter {
     } catch (IOException e) {
       throw new HiveException(e);
     }
-          }
+  }
 
+  private static class FileData {
+    public long totalFileSize = 0;
+    public long maxFileSize = 0;
+    public long minFileSize = Long.MAX_VALUE;
+    public long lastAccessTime = 0;
+    public long lastUpdateTime = 0;
+    public int numOfFiles = 0;
+  }
+
+  // TODO: why is this in text formatter?!!
+  //       This computes stats and should be in stats (de-duplicated too).
   private void writeFileSystemStats(DataOutputStream outStream,
       HiveConf conf,
       List<Path> locations,
-      Path tblPath, boolean partSpecified, int indent)
-          throws IOException
-          {
-    long totalFileSize = 0;
-    long maxFileSize = 0;
-    long minFileSize = Long.MAX_VALUE;
-    long lastAccessTime = 0;
-    long lastUpdateTime = 0;
-    int numOfFiles = 0;
-
+      Path tblPath, boolean partSpecified, int indent) throws IOException {
+    FileData fd = new FileData();
     boolean unknown = false;
     FileSystem fs = tblPath.getFileSystem(conf);
     // in case all files in locations do not exist
     try {
       FileStatus tmpStatus = fs.getFileStatus(tblPath);
-      lastAccessTime = tmpStatus.getAccessTime();
-      lastUpdateTime = tmpStatus.getModificationTime();
+      fd.lastAccessTime = tmpStatus.getAccessTime();
+      fd.lastUpdateTime = tmpStatus.getModificationTime();
       if (partSpecified) {
         // check whether the part exists or not in fs
         tmpStatus = fs.getFileStatus(locations.get(0));
@@ -341,43 +386,13 @@ class TextMetaDataFormatter implements MetaDataFormatter {
     if (!unknown) {
       for (Path loc : locations) {
         try {
-          FileStatus status = fs.getFileStatus(tblPath);
-          FileStatus[] files = fs.listStatus(loc);
-          long accessTime = status.getAccessTime();
-          long updateTime = status.getModificationTime();
+          FileStatus status = fs.getFileStatus(loc);
           // no matter loc is the table location or part location, it must be a
           // directory.
-          if (!status.isDir()) {
+          if (!status.isDirectory()) {
             continue;
           }
-          if (accessTime > lastAccessTime) {
-            lastAccessTime = accessTime;
-          }
-          if (updateTime > lastUpdateTime) {
-            lastUpdateTime = updateTime;
-          }
-          for (FileStatus currentStatus : files) {
-            if (currentStatus.isDir()) {
-              continue;
-            }
-            numOfFiles++;
-            long fileLen = currentStatus.getLen();
-            totalFileSize += fileLen;
-            if (fileLen > maxFileSize) {
-              maxFileSize = fileLen;
-            }
-            if (fileLen < minFileSize) {
-              minFileSize = fileLen;
-            }
-            accessTime = currentStatus.getAccessTime();
-            updateTime = currentStatus.getModificationTime();
-            if (accessTime > lastAccessTime) {
-              lastAccessTime = accessTime;
-            }
-            if (updateTime > lastUpdateTime) {
-              lastUpdateTime = updateTime;
-            }
-          }
+          processDir(status, fs, fd);
         } catch (IOException e) {
           // ignore
         }
@@ -389,29 +404,29 @@ class TextMetaDataFormatter implements MetaDataFormatter {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("totalNumberFiles:".getBytes("UTF-8"));
-    outStream.write((unknown ? unknownString : "" + numOfFiles).getBytes("UTF-8"));
+    outStream.write((unknown ? unknownString : "" + fd.numOfFiles).getBytes("UTF-8"));
     outStream.write(terminator);
 
     for (int k = 0; k < indent; k++) {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("totalFileSize:".getBytes("UTF-8"));
-    outStream.write((unknown ? unknownString : "" + totalFileSize).getBytes("UTF-8"));
+    outStream.write((unknown ? unknownString : "" + fd.totalFileSize).getBytes("UTF-8"));
     outStream.write(terminator);
 
     for (int k = 0; k < indent; k++) {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("maxFileSize:".getBytes("UTF-8"));
-    outStream.write((unknown ? unknownString : "" + maxFileSize).getBytes("UTF-8"));
+    outStream.write((unknown ? unknownString : "" + fd.maxFileSize).getBytes("UTF-8"));
     outStream.write(terminator);
 
     for (int k = 0; k < indent; k++) {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("minFileSize:".getBytes("UTF-8"));
-    if (numOfFiles > 0) {
-      outStream.write((unknown ? unknownString : "" + minFileSize).getBytes("UTF-8"));
+    if (fd.numOfFiles > 0) {
+      outStream.write((unknown ? unknownString : "" + fd.minFileSize).getBytes("UTF-8"));
     } else {
       outStream.write((unknown ? unknownString : "" + 0).getBytes("UTF-8"));
     }
@@ -421,17 +436,52 @@ class TextMetaDataFormatter implements MetaDataFormatter {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("lastAccessTime:".getBytes("UTF-8"));
-    outStream.writeBytes((unknown || lastAccessTime < 0) ? unknownString : ""
-        + lastAccessTime);
+    outStream.writeBytes((unknown || fd.lastAccessTime < 0) ? unknownString : ""
+        + fd.lastAccessTime);
     outStream.write(terminator);
 
     for (int k = 0; k < indent; k++) {
       outStream.write(Utilities.INDENT.getBytes("UTF-8"));
     }
     outStream.write("lastUpdateTime:".getBytes("UTF-8"));
-    outStream.write((unknown ? unknownString : "" + lastUpdateTime).getBytes("UTF-8"));
+    outStream.write((unknown ? unknownString : "" + fd.lastUpdateTime).getBytes("UTF-8"));
     outStream.write(terminator);
-          }
+  }
+
+  private void processDir(FileStatus status, FileSystem fs, FileData fd) throws IOException {
+    long accessTime = status.getAccessTime();
+    long updateTime = status.getModificationTime();
+    if (accessTime > fd.lastAccessTime) {
+      fd.lastAccessTime = accessTime;
+    }
+    if (updateTime > fd.lastUpdateTime) {
+      fd.lastUpdateTime = updateTime;
+    }
+    FileStatus[] files = fs.listStatus(status.getPath());
+    for (FileStatus currentStatus : files) {
+      if (currentStatus.isDirectory()) {
+        processDir(currentStatus, fs, fd);
+        continue;
+      }
+      fd.numOfFiles++;
+      long fileLen = currentStatus.getLen();
+      fd.totalFileSize += fileLen;
+      if (fileLen > fd.maxFileSize) {
+        fd.maxFileSize = fileLen;
+      }
+      if (fileLen < fd.minFileSize) {
+        fd.minFileSize = fileLen;
+      }
+      accessTime = currentStatus.getAccessTime();
+      updateTime = currentStatus.getModificationTime();
+      if (accessTime > fd.lastAccessTime) {
+        fd.lastAccessTime = accessTime;
+      }
+      if (updateTime > fd.lastUpdateTime) {
+        fd.lastUpdateTime = updateTime;
+      }
+    }
+  }
 
   /**
    * Show the table partitions.
@@ -506,6 +556,203 @@ class TextMetaDataFormatter implements MetaDataFormatter {
         outStream.write(params.toString().getBytes("UTF-8"));
       }
       outStream.write(terminator);
+    } catch (IOException e) {
+      throw new HiveException(e);
+    }
+  }
+
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
+
+  public void showResourcePlans(DataOutputStream out, List<WMResourcePlan> resourcePlans)
+      throws HiveException {
+    try {
+      for (WMResourcePlan plan : resourcePlans) {
+        out.write(plan.getName().getBytes(UTF_8));
+        out.write(separator);
+        out.write(plan.getStatus().name().getBytes(UTF_8));
+        out.write(separator);
+        if (plan.isSetQueryParallelism()) {
+          out.write(Integer.toString(plan.getQueryParallelism()).getBytes(UTF_8));
+        } else {
+          write(out, "null");
+        }
+        out.write(separator);
+        if (plan.isSetDefaultPoolPath()) {
+          out.write(plan.getDefaultPoolPath().getBytes(UTF_8));
+        } else {
+          write(out, "null");
+        }
+        out.write(terminator);
+      }
+    } catch (IOException e) {
+      throw new HiveException(e);
+    }
+  }
+
+  /**
+   * Class to print text records for resource plans in the following format:
+   * 
+   * <rp_name>[status=<STATUS>,parallelism=<parallelism>,defaultPool=<defaultPool>]
+   *     <queue_name>[allocFraction=<fraction>,schedulingPolicy=<policy>,parallelism=<parallelism>]
+   *       > <trigger_name>: if(<triggerExpression>){<actionExpression>}
+   */
+  private static class TextRPFormatter implements MetaDataFormatUtils.RPFormatter {
+    private static final byte[] INDENT = str("    ");
+    private static final byte[] INDENT2 = str(" |  ");
+    private static final byte[] INDENT_BRANCH = str(" +  ");
+
+    private final DataOutputStream out;
+    private int indentLevel = 0;
+
+    TextRPFormatter(DataOutputStream out) {
+      this.out = out;
+    }
+
+    @Override
+    public void startRP(String rpName, Object ... kvPairs) throws IOException {
+      write(out, rpName);
+      writeFields(kvPairs);
+      out.write(terminator);
+    }
+
+    @Override
+    public void endRP() throws IOException {
+    }
+
+    @Override
+    public void startPools() throws IOException {
+    }
+
+    @Override
+    public void endPools() throws IOException {
+    }
+
+    @Override
+    public void startPool(String poolName, Object ... kvPairs) throws IOException {
+      ++indentLevel;
+      writeIndent(true);
+      write(out, poolName);
+      writeFields(kvPairs);
+      out.write(terminator);
+    }
+
+    @Override
+    public void endPool() throws IOException {
+      --indentLevel;
+    }
+
+    @Override
+    public void startTriggers() throws IOException {
+    }
+
+    @Override
+    public void startMappings() throws IOException {
+    }
+
+    @Override
+    public void endTriggers() throws IOException {
+    }
+
+    @Override
+    public void endMappings() throws IOException {
+    }
+
+    private void writeFields(Object ... kvPairs)
+        throws IOException {
+      if (kvPairs.length % 2 != 0) {
+        throw new IllegalArgumentException("Expected pairs, got: " + kvPairs.length);
+      }
+      if (kvPairs.length < 2) {
+        return;
+      }
+      out.write('[');
+      out.write(kvPairs[0].toString().getBytes(UTF_8));
+      out.write('=');
+      out.write((kvPairs[1] == null ? "null" : kvPairs[1].toString()).getBytes(UTF_8));
+      for (int i = 2; i < kvPairs.length; i += 2) {
+        out.write(',');
+        out.write(kvPairs[i].toString().getBytes(UTF_8));
+        out.write('=');
+        out.write((kvPairs[i + 1] == null ? "null" : kvPairs[i + 1].toString()).getBytes(UTF_8));
+      }
+      out.write(']');
+    }
+
+    @Override
+    public void formatTrigger(
+        String triggerName, String actionExpression, String triggerExpression) throws IOException {
+      writeIndent(false);
+      write(out, "trigger ");
+      write(out, triggerName);
+      write(out, ": if (");
+      write(out, triggerExpression);
+      write(out, ") { ");
+      write(out, actionExpression);
+      write(out, " }");
+      out.write(terminator);
+    }
+
+    @Override
+    public void formatMappingType(String type, List<String> names) throws IOException {
+      final int maxList = 5;
+      writeIndent(false);
+      write(out, "mapped for ");
+      out.write(type.toLowerCase().getBytes(UTF_8));
+      if (!names.isEmpty()) {
+        write(out, "s: ");
+        int count = Math.min(maxList, names.size());
+        for (int i = 0; i < count; ++i) {
+          if (i != 0) {
+            write(out, ", ");
+          }
+          out.write(names.get(i).getBytes(UTF_8));
+        }
+        int remaining = names.size() - count;
+        if (remaining > 0) {
+          out.write((" and " + remaining + " others").getBytes(UTF_8));
+        }
+      }
+      out.write(terminator);
+    }
+
+    private void writeIndent(boolean isPool) throws IOException {
+      for (int i = 0; i < indentLevel - 1; ++i) {
+        out.write(INDENT);
+      }
+      if (isPool) {
+        out.write(INDENT_BRANCH);
+      } else {
+        out.write(INDENT);
+        out.write(INDENT2);
+      }
+    }
+  }
+
+  public void showFullResourcePlan(DataOutputStream out, WMFullResourcePlan fullResourcePlan)
+      throws HiveException {
+    MetaDataFormatUtils.formatFullRP(new TextRPFormatter(out), fullResourcePlan);
+  }
+
+  private static byte[] str(String str) {
+    return str.getBytes(UTF_8);
+  }
+
+  private static void write(DataOutputStream out, String val) throws IOException {
+    out.write(str(val));
+  }
+
+  public void showErrors(DataOutputStream out, WMValidateResourcePlanResponse response)
+      throws HiveException {
+    try {
+      for (String error : response.getErrors()) {
+        write(out, error);
+        out.write(terminator);
+      }
+      for (String warning : response.getWarnings()) {
+        write(out, "warn: ");
+        write(out, warning);
+        out.write(terminator);
+      }
     } catch (IOException e) {
       throw new HiveException(e);
     }

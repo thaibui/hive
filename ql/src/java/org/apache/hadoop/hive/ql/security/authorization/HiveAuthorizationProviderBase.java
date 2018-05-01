@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,11 +20,13 @@ package org.apache.hadoop.hive.ql.security.authorization;
 
 import java.util.List;
 
+import org.apache.hadoop.hive.metastore.IHMSHandler;
+import org.apache.hadoop.hive.metastore.Warehouse;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.HiveMetaStore.HMSHandler;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.HiveObjectRef;
 import org.apache.hadoop.hive.metastore.api.HiveObjectType;
@@ -43,7 +45,7 @@ public abstract class HiveAuthorizationProviderBase implements
 
     private final boolean hasHiveClient;
     private final HiveConf conf;
-    private HMSHandler handler;
+    private IHMSHandler handler;
 
     public HiveProxy(Hive hive) {
       this.hasHiveClient = hive != null;
@@ -57,7 +59,7 @@ public abstract class HiveAuthorizationProviderBase implements
       this.handler = null;
     }
 
-    public void setHandler(HMSHandler handler){
+    public void setHandler(IHMSHandler handler){
       this.handler = handler;
     }
 
@@ -89,7 +91,7 @@ public abstract class HiveAuthorizationProviderBase implements
         return Hive.getWithFastCheck(conf).getDatabase(dbName);
       } else {
         try {
-          return handler.get_database_core(dbName);
+          return handler.get_database_core(MetaStoreUtils.getDefaultCatalog(conf), dbName);
         } catch (NoSuchObjectException e) {
           throw new HiveException(e);
         } catch (MetaException e) {

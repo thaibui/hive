@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.common.ObjectPair;
+import org.apache.hadoop.hive.common.type.DataTypePhysicalVariation;
 import org.apache.hadoop.hive.common.type.HiveChar;
 import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.common.type.HiveIntervalDayTime;
@@ -96,19 +97,6 @@ public class VectorizedBatchUtil {
   }
 
   /**
-   * Iterates thru all the column vectors and sets noNull to
-   * specified value.
-   *
-   * @param batch
-   *          Batch on which noNull is set
-   */
-  public static void setNoNullFields(VectorizedRowBatch batch) {
-    for (int i = 0; i < batch.numCols; i++) {
-      batch.cols[i].noNulls = true;
-    }
-  }
-
-  /**
    * Iterates thru all the column vectors and sets repeating to
    * specified column.
    *
@@ -127,6 +115,12 @@ public class VectorizedBatchUtil {
   }
 
   public static ColumnVector createColumnVector(String typeName) {
+    return createColumnVector(typeName, DataTypePhysicalVariation.NONE);
+  }
+
+  public static ColumnVector createColumnVector(String typeName,
+      DataTypePhysicalVariation dataTypePhysicalVariation) {
+
     typeName = typeName.toLowerCase();
 
     // Allow undecorated CHAR and VARCHAR to support scratch column type names.
@@ -135,42 +129,54 @@ public class VectorizedBatchUtil {
     }
 
     TypeInfo typeInfo = (TypeInfo) TypeInfoUtils.getTypeInfoFromTypeString(typeName);
-    return createColumnVector(typeInfo);
+    return createColumnVector(typeInfo, dataTypePhysicalVariation);
   }
 
   public static ColumnVector createColumnVector(TypeInfo typeInfo) {
+    return createColumnVector(typeInfo, DataTypePhysicalVariation.NONE);
+  }
+
+  public static ColumnVector createColumnVector(TypeInfo typeInfo,
+      DataTypePhysicalVariation dataTypePhysicalVariation) {
     switch(typeInfo.getCategory()) {
     case PRIMITIVE:
       {
         PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) typeInfo;
         switch(primitiveTypeInfo.getPrimitiveCategory()) {
-          case BOOLEAN:
-          case BYTE:
-          case SHORT:
-          case INT:
-          case LONG:
-          case DATE:
-          case INTERVAL_YEAR_MONTH:
-            return new LongColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
-          case TIMESTAMP:
-            return new TimestampColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
-          case INTERVAL_DAY_TIME:
-            return new IntervalDayTimeColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
-          case FLOAT:
-          case DOUBLE:
-            return new DoubleColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
-          case BINARY:
-          case STRING:
-          case CHAR:
-          case VARCHAR:
-            return new BytesColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
-          case DECIMAL:
-            DecimalTypeInfo tInfo = (DecimalTypeInfo) primitiveTypeInfo;
+        case BOOLEAN:
+        case BYTE:
+        case SHORT:
+        case INT:
+        case LONG:
+        case DATE:
+        case INTERVAL_YEAR_MONTH:
+          return new LongColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        case TIMESTAMP:
+          return new TimestampColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        case INTERVAL_DAY_TIME:
+          return new IntervalDayTimeColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        case FLOAT:
+        case DOUBLE:
+          return new DoubleColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        case BINARY:
+        case STRING:
+        case CHAR:
+        case VARCHAR:
+          return new BytesColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        case DECIMAL:
+          DecimalTypeInfo tInfo = (DecimalTypeInfo) primitiveTypeInfo;
+          if (dataTypePhysicalVariation == DataTypePhysicalVariation.DECIMAL_64) {
+            return new Decimal64ColumnVector(VectorizedRowBatch.DEFAULT_SIZE,
+                tInfo.precision(), tInfo.scale());
+          } else {
             return new DecimalColumnVector(VectorizedRowBatch.DEFAULT_SIZE,
                 tInfo.precision(), tInfo.scale());
-          default:
-            throw new RuntimeException("Vectorizaton is not supported for datatype:"
-                + primitiveTypeInfo.getPrimitiveCategory());
+          }
+        case VOID:
+          return new VoidColumnVector(VectorizedRowBatch.DEFAULT_SIZE);
+        default:
+          throw new RuntimeException("Vectorizaton is not supported for datatype:"
+              + primitiveTypeInfo.getPrimitiveCategory());
         }
       }
     case STRUCT:
@@ -592,6 +598,11 @@ public class VectorizedBatchUtil {
       return new DecimalColumnVector(decColVector.vector.length,
           decColVector.precision,
           decColVector.scale);
+    } else if (source instanceof Decimal64ColumnVector) {
+        Decimal64ColumnVector dec64ColVector = (Decimal64ColumnVector) source;
+        return new DecimalColumnVector(dec64ColVector.vector.length,
+            dec64ColVector.precision,
+            dec64ColVector.scale);
     } else if (source instanceof TimestampColumnVector) {
       return new TimestampColumnVector(((TimestampColumnVector) source).getLength());
     } else if (source instanceof IntervalDayTimeColumnVector) {
@@ -625,12 +636,170 @@ public class VectorizedBatchUtil {
           " is not supported!");
   }
 
-  public static void swapColumnVector(
-      VectorizedRowBatch batch1, int batch1ColumnNum,
-      VectorizedRowBatch batch2, int batch2ColumnNum) {
-    ColumnVector colVector1 = batch1.cols[batch1ColumnNum];
-    batch1.cols[batch1ColumnNum] = batch2.cols[batch2ColumnNum];
-    batch2.cols[batch2ColumnNum] = colVector1;
+  private static final byte[] EMPTY_BYTES = new byte[0];
+  private static final HiveIntervalDayTime emptyIntervalDayTime = new HiveIntervalDayTime(0, 0);
+
+  public static void copyNonSelectedColumnVector(
+      VectorizedRowBatch sourceBatch, int sourceColumnNum,
+      VectorizedRowBatch targetBatch, int targetColumnNum,
+      int size) {
+
+    ColumnVector sourceColVector = sourceBatch.cols[sourceColumnNum];
+    ColumnVector targetColVector = targetBatch.cols[targetColumnNum];
+    if (sourceColVector.noNulls && targetColVector.noNulls) {
+      // No isNull copying necessary.
+    } else if (sourceColVector.noNulls) {
+
+      // Clear out isNull array.
+      targetColVector.reset();
+    } else {
+      System.arraycopy(sourceColVector.isNull, 0, targetColVector.isNull, 0, size);
+      targetColVector.noNulls = false;
+    }
+    if (sourceColVector.isRepeating) {
+      size = 1;
+      targetColVector.isRepeating = true;
+    } else {
+      targetColVector.isRepeating = false;
+    }
+
+    // Primitive column types ignore nulls and just copy all values.
+    switch (sourceColVector.type) {
+    case LONG:
+      {
+        long[] sourceVector = ((LongColumnVector) sourceColVector).vector;
+        long[] targetVector = ((LongColumnVector) targetColVector).vector;
+        System.arraycopy(sourceVector, 0, targetVector, 0, size);
+      }
+      break;
+    case DOUBLE:
+      {
+        double[] sourceVector = ((DoubleColumnVector) sourceColVector).vector;
+        double[] targetVector = ((DoubleColumnVector) targetColVector).vector;
+        System.arraycopy(sourceVector, 0, targetVector, 0, size);
+      }
+      break;
+    case BYTES:
+      {
+        BytesColumnVector sourceBytesColVector = ((BytesColumnVector) sourceColVector);
+        byte[][] sourceVector = sourceBytesColVector.vector;
+        int[] sourceStart = sourceBytesColVector.start;
+        int[] sourceLength = sourceBytesColVector.length;
+  
+        BytesColumnVector targetBytesColVector = ((BytesColumnVector) targetColVector);
+  
+        if (sourceColVector.noNulls) {
+          for (int i = 0; i < size; i++) {
+            targetBytesColVector.setVal(i, sourceVector[i], sourceStart[i], sourceLength[i]);
+          }
+        } else {
+          boolean[] sourceIsNull = sourceColVector.isNull;
+  
+          // Target isNull was copied at beginning of method.
+          for (int i = 0; i < size; i++) {
+            if (!sourceIsNull[i]) {
+              targetBytesColVector.setVal(i, sourceVector[i], sourceStart[i], sourceLength[i]);
+            } else {
+              targetBytesColVector.setRef(i, EMPTY_BYTES, 0, 0);
+            }
+          }
+        }
+      }
+      break;
+    case DECIMAL:
+      {
+        DecimalColumnVector sourceDecimalColVector = ((DecimalColumnVector) sourceColVector);
+        HiveDecimalWritable[] sourceVector = sourceDecimalColVector.vector;
+
+        DecimalColumnVector targetDecimalColVector = ((DecimalColumnVector) targetColVector);
+
+        if (sourceColVector.noNulls) {
+          for (int i = 0; i < size; i++) {
+            targetDecimalColVector.set(i, sourceVector[i]);
+          }
+        } else {
+          boolean[] sourceIsNull = sourceColVector.isNull;
+
+          // Target isNull was copied at beginning of method.
+          for (int i = 0; i < size; i++) {
+            if (!sourceIsNull[i]) {
+              targetDecimalColVector.set(i, sourceVector[i]);
+            } else {
+              targetDecimalColVector.vector[i].setFromLong(0);
+            }
+          }
+        }
+      }
+      break;
+    case TIMESTAMP:
+      {
+        TimestampColumnVector sourceTimestampColVector = ((TimestampColumnVector) sourceColVector);
+        long[] sourceTime = sourceTimestampColVector.time;
+        int[] sourceNanos = sourceTimestampColVector.nanos;
+
+        TimestampColumnVector targetTimestampColVector = ((TimestampColumnVector) targetColVector);
+        long[] targetTime = targetTimestampColVector.time;
+        int[] targetNanos = targetTimestampColVector.nanos;
+
+        if (sourceColVector.noNulls) {
+          for (int i = 0; i < size; i++) {
+            targetTime[i] = sourceTime[i];
+            targetNanos[i] = targetNanos[i];
+          }
+        } else {
+          boolean[] sourceIsNull = sourceColVector.isNull;
+  
+          // Target isNull was copied at beginning of method.
+          for (int i = 0; i < size; i++) {
+            if (!sourceIsNull[i]) {
+              targetTime[i] = sourceTime[i];
+              targetNanos[i] = targetNanos[i];
+            } else {
+              targetTime[i] = 0;
+              targetNanos[i] = 0;
+            }
+          }
+        }
+      }
+      break;
+    case INTERVAL_DAY_TIME:
+      {
+        IntervalDayTimeColumnVector sourceIntervalDayTimeColVector = ((IntervalDayTimeColumnVector) sourceColVector);
+
+        IntervalDayTimeColumnVector targetIntervalDayTimeColVector = ((IntervalDayTimeColumnVector) targetColVector);
+
+        if (sourceColVector.noNulls) {
+          for (int i = 0; i < size; i++) {
+            targetIntervalDayTimeColVector.set(
+                i, targetIntervalDayTimeColVector.asScratchIntervalDayTime(i));
+          }
+        } else {
+          boolean[] sourceIsNull = sourceColVector.isNull;
+
+          // Target isNull was copied at beginning of method.
+          for (int i = 0; i < size; i++) {
+            if (!sourceIsNull[i]) {
+              targetIntervalDayTimeColVector.set(
+                  i, targetIntervalDayTimeColVector.asScratchIntervalDayTime(i));
+            } else {
+              targetIntervalDayTimeColVector.set(
+                  i, emptyIntervalDayTime);
+            }
+          }
+        }
+      }
+      break;
+    case STRUCT:
+    case LIST:
+    case MAP:
+    case UNION:
+      throw new RuntimeException("No complex type support: " + sourceColVector.type);
+    case VOID:
+      break;
+    default:
+      throw new RuntimeException("Unexpected column vector type " + sourceColVector.type);
+    }
+ 
   }
 
   public static void copyRepeatingColumn(VectorizedRowBatch sourceBatch, int sourceColumnNum,
@@ -646,29 +815,47 @@ public class VectorizedBatchUtil {
       return;
     }
 
-    if (sourceColVector instanceof LongColumnVector) {
-      ((LongColumnVector) targetColVector).vector[0] = ((LongColumnVector) sourceColVector).vector[0];
-    } else if (sourceColVector instanceof DoubleColumnVector) {
-      ((DoubleColumnVector) targetColVector).vector[0] = ((DoubleColumnVector) sourceColVector).vector[0];
-    } else if (sourceColVector instanceof BytesColumnVector) {
-      BytesColumnVector bytesColVector = (BytesColumnVector) sourceColVector;
-      byte[] bytes = bytesColVector.vector[0];
-      final int start = bytesColVector.start[0];
-      final int length = bytesColVector.length[0];
-      if (setByValue) {
-        ((BytesColumnVector) targetColVector).setVal(0, bytes, start, length);
-      } else {
-        ((BytesColumnVector) targetColVector).setRef(0, bytes, start, length);
+    switch (sourceColVector.type) {
+    case LONG:
+      ((LongColumnVector) targetColVector).vector[0] =
+          ((LongColumnVector) sourceColVector).vector[0];
+      break;
+    case DOUBLE:
+      ((DoubleColumnVector) targetColVector).vector[0] =
+          ((DoubleColumnVector) sourceColVector).vector[0];
+      break;
+    case BYTES:
+      {
+        BytesColumnVector bytesColVector = (BytesColumnVector) sourceColVector;
+        byte[] bytes = bytesColVector.vector[0];
+        final int start = bytesColVector.start[0];
+        final int length = bytesColVector.length[0];
+        if (setByValue) {
+          ((BytesColumnVector) targetColVector).setVal(0, bytes, start, length);
+        } else {
+          ((BytesColumnVector) targetColVector).setRef(0, bytes, start, length);
+        }
       }
-    } else if (sourceColVector instanceof DecimalColumnVector) {
-      ((DecimalColumnVector) targetColVector).set(0, ((DecimalColumnVector) sourceColVector).vector[0]);
-    } else if (sourceColVector instanceof TimestampColumnVector) {
-      ((TimestampColumnVector) targetColVector).set(0, ((TimestampColumnVector) sourceColVector).asScratchTimestamp(0));
-    } else if (sourceColVector instanceof IntervalDayTimeColumnVector) {
-      ((IntervalDayTimeColumnVector) targetColVector).set(0, ((IntervalDayTimeColumnVector) sourceColVector).asScratchIntervalDayTime(0));
-    } else {
-      throw new RuntimeException("Column vector class " + sourceColVector.getClass().getName() +
-          " is not supported!");
+      break;
+    case DECIMAL:
+      ((DecimalColumnVector) targetColVector).set(
+          0, ((DecimalColumnVector) sourceColVector).vector[0]);
+      break;
+    case TIMESTAMP:
+      ((TimestampColumnVector) targetColVector).set(
+          0, ((TimestampColumnVector) sourceColVector).asScratchTimestamp(0));
+      break;
+    case INTERVAL_DAY_TIME:
+      ((IntervalDayTimeColumnVector) targetColVector).set(
+          0, ((IntervalDayTimeColumnVector) sourceColVector).asScratchIntervalDayTime(0));
+      break;
+    case STRUCT:
+    case LIST:
+    case MAP:
+    case UNION:
+      // No complex type support for now.
+    default:
+      throw new RuntimeException("Unexpected column vector type " + sourceColVector.type);
     }
   }
 

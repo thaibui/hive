@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -58,7 +58,10 @@ public class SetProcessor implements CommandProcessor {
   private static final Set<String> removedConfigs =
       Sets.newHashSet("hive.mapred.supports.subdirectories",
           "hive.enforce.sorting","hive.enforce.bucketing",
-          "hive.outerjoin.supports.filters");
+          "hive.outerjoin.supports.filters",
+          "hive.llap.zk.sm.principal",
+          "hive.llap.zk.sm.keytab.file"
+          );
   // Allow the user to set the ORC properties without getting an error.
   static {
     for(OrcConf var: OrcConf.values()) {
@@ -143,16 +146,17 @@ public class SetProcessor implements CommandProcessor {
     if (ss.getConf().isHiddenConfig(s)) {
       ss.out.println(s + " is a hidden config");
     } else if (ss.getConf().get(s) != null) {
-      ss.out.println(s + "=" + ss.getConf().get(s));
+      if (ss.getConf().isEncodedPar(s)) {
+        ss.out.println(s + "=" + HiveConf.EncoderDecoderFactory.URL_ENCODER_DECODER
+            .decode(ss.getConf().get(s)));
+      } else {
+        ss.out.println(s + "=" + ss.getConf().get(s));
+      }
     } else if (ss.getHiveVariables().containsKey(s)) {
       ss.out.println(s + "=" + ss.getHiveVariables().get(s));
     } else {
       ss.out.println(s + " is undefined");
     }
-  }
-
-  @Override
-  public void init() {
   }
 
   public CommandProcessorResponse executeSetVariable(String varname, String varvalue) {
@@ -432,4 +436,7 @@ public class SetProcessor implements CommandProcessor {
     return sch;
   }
 
+  @Override
+  public void close() throws Exception {
+  }
 }

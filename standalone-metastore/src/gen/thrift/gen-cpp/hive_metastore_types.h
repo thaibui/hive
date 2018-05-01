@@ -132,6 +132,59 @@ struct EventRequestType {
 
 extern const std::map<int, const char*> _EventRequestType_VALUES_TO_NAMES;
 
+struct SerdeType {
+  enum type {
+    HIVE = 1,
+    SCHEMA_REGISTRY = 2
+  };
+};
+
+extern const std::map<int, const char*> _SerdeType_VALUES_TO_NAMES;
+
+struct SchemaType {
+  enum type {
+    HIVE = 1,
+    AVRO = 2
+  };
+};
+
+extern const std::map<int, const char*> _SchemaType_VALUES_TO_NAMES;
+
+struct SchemaCompatibility {
+  enum type {
+    NONE = 1,
+    BACKWARD = 2,
+    FORWARD = 3,
+    BOTH = 4
+  };
+};
+
+extern const std::map<int, const char*> _SchemaCompatibility_VALUES_TO_NAMES;
+
+struct SchemaValidation {
+  enum type {
+    LATEST = 1,
+    ALL = 2
+  };
+};
+
+extern const std::map<int, const char*> _SchemaValidation_VALUES_TO_NAMES;
+
+struct SchemaVersionState {
+  enum type {
+    INITIATED = 1,
+    START_REVIEW = 2,
+    CHANGES_REQUIRED = 3,
+    REVIEWED = 4,
+    ENABLED = 5,
+    DISABLED = 6,
+    ARCHIVED = 7,
+    DELETED = 8
+  };
+};
+
+extern const std::map<int, const char*> _SchemaVersionState_VALUES_TO_NAMES;
+
 struct FunctionType {
   enum type {
     JAVA = 1
@@ -160,11 +213,31 @@ extern const std::map<int, const char*> _FileMetadataExprType_VALUES_TO_NAMES;
 
 struct ClientCapability {
   enum type {
-    TEST_CAPABILITY = 1
+    TEST_CAPABILITY = 1,
+    INSERT_ONLY_TABLES = 2
   };
 };
 
 extern const std::map<int, const char*> _ClientCapability_VALUES_TO_NAMES;
+
+struct WMResourcePlanStatus {
+  enum type {
+    ACTIVE = 1,
+    ENABLED = 2,
+    DISABLED = 3
+  };
+};
+
+extern const std::map<int, const char*> _WMResourcePlanStatus_VALUES_TO_NAMES;
+
+struct WMPoolSchedulingPolicy {
+  enum type {
+    FAIR = 1,
+    FIFO = 2
+  };
+};
+
+extern const std::map<int, const char*> _WMPoolSchedulingPolicy_VALUES_TO_NAMES;
 
 class Version;
 
@@ -177,6 +250,10 @@ class SQLForeignKey;
 class SQLUniqueConstraint;
 
 class SQLNotNullConstraint;
+
+class SQLDefaultConstraint;
+
+class SQLCheckConstraint;
 
 class Type;
 
@@ -210,6 +287,18 @@ class GrantRevokeRoleRequest;
 
 class GrantRevokeRoleResponse;
 
+class Catalog;
+
+class CreateCatalogRequest;
+
+class GetCatalogRequest;
+
+class GetCatalogResponse;
+
+class GetCatalogsResponse;
+
+class DropCatalogRequest;
+
 class Database;
 
 class SerDeInfo;
@@ -231,8 +320,6 @@ class PartitionSpecWithSharedSD;
 class PartitionListComposingSpec;
 
 class PartitionSpec;
-
-class Index;
 
 class BooleanColumnStatsData;
 
@@ -284,6 +371,14 @@ class NotNullConstraintsRequest;
 
 class NotNullConstraintsResponse;
 
+class DefaultConstraintsRequest;
+
+class DefaultConstraintsResponse;
+
+class CheckConstraintsRequest;
+
+class CheckConstraintsResponse;
+
 class DropConstraintRequest;
 
 class AddPrimaryKeyRequest;
@@ -293,6 +388,10 @@ class AddForeignKeyRequest;
 class AddUniqueConstraintRequest;
 
 class AddNotNullConstraintRequest;
+
+class AddDefaultConstraintRequest;
+
+class AddCheckConstraintRequest;
 
 class PartitionsByExprResult;
 
@@ -318,6 +417,12 @@ class RequestPartsSpec;
 
 class DropPartitionsRequest;
 
+class PartitionValuesRequest;
+
+class PartitionValuesRow;
+
+class PartitionValuesResponse;
+
 class ResourceUri;
 
 class Function;
@@ -337,6 +442,18 @@ class AbortTxnRequest;
 class AbortTxnsRequest;
 
 class CommitTxnRequest;
+
+class GetValidWriteIdsRequest;
+
+class TableValidWriteIds;
+
+class GetValidWriteIdsResponse;
+
+class AllocateTableWriteIdsRequest;
+
+class TxnToWriteId;
+
+class AllocateTableWriteIdsResponse;
 
 class LockComponent;
 
@@ -371,6 +488,10 @@ class ShowCompactResponseElement;
 class ShowCompactResponse;
 
 class AddDynamicPartitions;
+
+class BasicTxnInfo;
+
+class CreationMetadata;
 
 class NotificationEventRequest;
 
@@ -432,6 +553,116 @@ class CmRecycleResponse;
 
 class TableMeta;
 
+class Materialization;
+
+class WMResourcePlan;
+
+class WMNullableResourcePlan;
+
+class WMPool;
+
+class WMNullablePool;
+
+class WMTrigger;
+
+class WMMapping;
+
+class WMPoolTrigger;
+
+class WMFullResourcePlan;
+
+class WMCreateResourcePlanRequest;
+
+class WMCreateResourcePlanResponse;
+
+class WMGetActiveResourcePlanRequest;
+
+class WMGetActiveResourcePlanResponse;
+
+class WMGetResourcePlanRequest;
+
+class WMGetResourcePlanResponse;
+
+class WMGetAllResourcePlanRequest;
+
+class WMGetAllResourcePlanResponse;
+
+class WMAlterResourcePlanRequest;
+
+class WMAlterResourcePlanResponse;
+
+class WMValidateResourcePlanRequest;
+
+class WMValidateResourcePlanResponse;
+
+class WMDropResourcePlanRequest;
+
+class WMDropResourcePlanResponse;
+
+class WMCreateTriggerRequest;
+
+class WMCreateTriggerResponse;
+
+class WMAlterTriggerRequest;
+
+class WMAlterTriggerResponse;
+
+class WMDropTriggerRequest;
+
+class WMDropTriggerResponse;
+
+class WMGetTriggersForResourePlanRequest;
+
+class WMGetTriggersForResourePlanResponse;
+
+class WMCreatePoolRequest;
+
+class WMCreatePoolResponse;
+
+class WMAlterPoolRequest;
+
+class WMAlterPoolResponse;
+
+class WMDropPoolRequest;
+
+class WMDropPoolResponse;
+
+class WMCreateOrUpdateMappingRequest;
+
+class WMCreateOrUpdateMappingResponse;
+
+class WMDropMappingRequest;
+
+class WMDropMappingResponse;
+
+class WMCreateOrDropTriggerToPoolMappingRequest;
+
+class WMCreateOrDropTriggerToPoolMappingResponse;
+
+class ISchema;
+
+class ISchemaName;
+
+class AlterISchemaRequest;
+
+class SchemaVersion;
+
+class SchemaVersionDescriptor;
+
+class FindSchemasByColsRqst;
+
+class FindSchemasByColsResp;
+
+class MapSchemaVersionToSerdeRequest;
+
+class SetSchemaVersionStateRequest;
+
+class GetSerdeRequest;
+
+class RuntimeStat;
+
+class GetRuntimeStatsRequest;
+
 class MetaException;
 
 class UnknownTableException;
@@ -447,8 +678,6 @@ class UnknownPartitionException;
 class InvalidObjectException;
 
 class NoSuchObjectException;
-
-class IndexAlreadyExistsException;
 
 class InvalidOperationException;
 
@@ -575,7 +804,7 @@ inline std::ostream& operator<<(std::ostream& out, const FieldSchema& obj)
 }
 
 typedef struct _SQLPrimaryKey__isset {
-  _SQLPrimaryKey__isset() : table_db(false), table_name(false), column_name(false), key_seq(false), pk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  _SQLPrimaryKey__isset() : table_db(false), table_name(false), column_name(false), key_seq(false), pk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false), catName(false) {}
   bool table_db :1;
   bool table_name :1;
   bool column_name :1;
@@ -584,6 +813,7 @@ typedef struct _SQLPrimaryKey__isset {
   bool enable_cstr :1;
   bool validate_cstr :1;
   bool rely_cstr :1;
+  bool catName :1;
 } _SQLPrimaryKey__isset;
 
 class SQLPrimaryKey {
@@ -591,7 +821,7 @@ class SQLPrimaryKey {
 
   SQLPrimaryKey(const SQLPrimaryKey&);
   SQLPrimaryKey& operator=(const SQLPrimaryKey&);
-  SQLPrimaryKey() : table_db(), table_name(), column_name(), key_seq(0), pk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  SQLPrimaryKey() : table_db(), table_name(), column_name(), key_seq(0), pk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0), catName() {
   }
 
   virtual ~SQLPrimaryKey() throw();
@@ -603,6 +833,7 @@ class SQLPrimaryKey {
   bool enable_cstr;
   bool validate_cstr;
   bool rely_cstr;
+  std::string catName;
 
   _SQLPrimaryKey__isset __isset;
 
@@ -622,6 +853,8 @@ class SQLPrimaryKey {
 
   void __set_rely_cstr(const bool val);
 
+  void __set_catName(const std::string& val);
+
   bool operator == (const SQLPrimaryKey & rhs) const
   {
     if (!(table_db == rhs.table_db))
@@ -639,6 +872,10 @@ class SQLPrimaryKey {
     if (!(validate_cstr == rhs.validate_cstr))
       return false;
     if (!(rely_cstr == rhs.rely_cstr))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -663,7 +900,7 @@ inline std::ostream& operator<<(std::ostream& out, const SQLPrimaryKey& obj)
 }
 
 typedef struct _SQLForeignKey__isset {
-  _SQLForeignKey__isset() : pktable_db(false), pktable_name(false), pkcolumn_name(false), fktable_db(false), fktable_name(false), fkcolumn_name(false), key_seq(false), update_rule(false), delete_rule(false), fk_name(false), pk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  _SQLForeignKey__isset() : pktable_db(false), pktable_name(false), pkcolumn_name(false), fktable_db(false), fktable_name(false), fkcolumn_name(false), key_seq(false), update_rule(false), delete_rule(false), fk_name(false), pk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false), catName(false) {}
   bool pktable_db :1;
   bool pktable_name :1;
   bool pkcolumn_name :1;
@@ -678,6 +915,7 @@ typedef struct _SQLForeignKey__isset {
   bool enable_cstr :1;
   bool validate_cstr :1;
   bool rely_cstr :1;
+  bool catName :1;
 } _SQLForeignKey__isset;
 
 class SQLForeignKey {
@@ -685,7 +923,7 @@ class SQLForeignKey {
 
   SQLForeignKey(const SQLForeignKey&);
   SQLForeignKey& operator=(const SQLForeignKey&);
-  SQLForeignKey() : pktable_db(), pktable_name(), pkcolumn_name(), fktable_db(), fktable_name(), fkcolumn_name(), key_seq(0), update_rule(0), delete_rule(0), fk_name(), pk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  SQLForeignKey() : pktable_db(), pktable_name(), pkcolumn_name(), fktable_db(), fktable_name(), fkcolumn_name(), key_seq(0), update_rule(0), delete_rule(0), fk_name(), pk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0), catName() {
   }
 
   virtual ~SQLForeignKey() throw();
@@ -703,6 +941,7 @@ class SQLForeignKey {
   bool enable_cstr;
   bool validate_cstr;
   bool rely_cstr;
+  std::string catName;
 
   _SQLForeignKey__isset __isset;
 
@@ -734,6 +973,8 @@ class SQLForeignKey {
 
   void __set_rely_cstr(const bool val);
 
+  void __set_catName(const std::string& val);
+
   bool operator == (const SQLForeignKey & rhs) const
   {
     if (!(pktable_db == rhs.pktable_db))
@@ -764,6 +1005,10 @@ class SQLForeignKey {
       return false;
     if (!(rely_cstr == rhs.rely_cstr))
       return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
+      return false;
     return true;
   }
   bool operator != (const SQLForeignKey &rhs) const {
@@ -787,7 +1032,8 @@ inline std::ostream& operator<<(std::ostream& out, const SQLForeignKey& obj)
 }
 
 typedef struct _SQLUniqueConstraint__isset {
-  _SQLUniqueConstraint__isset() : table_db(false), table_name(false), column_name(false), key_seq(false), uk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  _SQLUniqueConstraint__isset() : catName(false), table_db(false), table_name(false), column_name(false), key_seq(false), uk_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  bool catName :1;
   bool table_db :1;
   bool table_name :1;
   bool column_name :1;
@@ -803,10 +1049,11 @@ class SQLUniqueConstraint {
 
   SQLUniqueConstraint(const SQLUniqueConstraint&);
   SQLUniqueConstraint& operator=(const SQLUniqueConstraint&);
-  SQLUniqueConstraint() : table_db(), table_name(), column_name(), key_seq(0), uk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  SQLUniqueConstraint() : catName(), table_db(), table_name(), column_name(), key_seq(0), uk_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
   }
 
   virtual ~SQLUniqueConstraint() throw();
+  std::string catName;
   std::string table_db;
   std::string table_name;
   std::string column_name;
@@ -817,6 +1064,8 @@ class SQLUniqueConstraint {
   bool rely_cstr;
 
   _SQLUniqueConstraint__isset __isset;
+
+  void __set_catName(const std::string& val);
 
   void __set_table_db(const std::string& val);
 
@@ -836,6 +1085,8 @@ class SQLUniqueConstraint {
 
   bool operator == (const SQLUniqueConstraint & rhs) const
   {
+    if (!(catName == rhs.catName))
+      return false;
     if (!(table_db == rhs.table_db))
       return false;
     if (!(table_name == rhs.table_name))
@@ -875,7 +1126,8 @@ inline std::ostream& operator<<(std::ostream& out, const SQLUniqueConstraint& ob
 }
 
 typedef struct _SQLNotNullConstraint__isset {
-  _SQLNotNullConstraint__isset() : table_db(false), table_name(false), column_name(false), nn_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  _SQLNotNullConstraint__isset() : catName(false), table_db(false), table_name(false), column_name(false), nn_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  bool catName :1;
   bool table_db :1;
   bool table_name :1;
   bool column_name :1;
@@ -890,10 +1142,11 @@ class SQLNotNullConstraint {
 
   SQLNotNullConstraint(const SQLNotNullConstraint&);
   SQLNotNullConstraint& operator=(const SQLNotNullConstraint&);
-  SQLNotNullConstraint() : table_db(), table_name(), column_name(), nn_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  SQLNotNullConstraint() : catName(), table_db(), table_name(), column_name(), nn_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
   }
 
   virtual ~SQLNotNullConstraint() throw();
+  std::string catName;
   std::string table_db;
   std::string table_name;
   std::string column_name;
@@ -903,6 +1156,8 @@ class SQLNotNullConstraint {
   bool rely_cstr;
 
   _SQLNotNullConstraint__isset __isset;
+
+  void __set_catName(const std::string& val);
 
   void __set_table_db(const std::string& val);
 
@@ -920,6 +1175,8 @@ class SQLNotNullConstraint {
 
   bool operator == (const SQLNotNullConstraint & rhs) const
   {
+    if (!(catName == rhs.catName))
+      return false;
     if (!(table_db == rhs.table_db))
       return false;
     if (!(table_name == rhs.table_name))
@@ -951,6 +1208,194 @@ class SQLNotNullConstraint {
 void swap(SQLNotNullConstraint &a, SQLNotNullConstraint &b);
 
 inline std::ostream& operator<<(std::ostream& out, const SQLNotNullConstraint& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _SQLDefaultConstraint__isset {
+  _SQLDefaultConstraint__isset() : catName(false), table_db(false), table_name(false), column_name(false), default_value(false), dc_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  bool catName :1;
+  bool table_db :1;
+  bool table_name :1;
+  bool column_name :1;
+  bool default_value :1;
+  bool dc_name :1;
+  bool enable_cstr :1;
+  bool validate_cstr :1;
+  bool rely_cstr :1;
+} _SQLDefaultConstraint__isset;
+
+class SQLDefaultConstraint {
+ public:
+
+  SQLDefaultConstraint(const SQLDefaultConstraint&);
+  SQLDefaultConstraint& operator=(const SQLDefaultConstraint&);
+  SQLDefaultConstraint() : catName(), table_db(), table_name(), column_name(), default_value(), dc_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  }
+
+  virtual ~SQLDefaultConstraint() throw();
+  std::string catName;
+  std::string table_db;
+  std::string table_name;
+  std::string column_name;
+  std::string default_value;
+  std::string dc_name;
+  bool enable_cstr;
+  bool validate_cstr;
+  bool rely_cstr;
+
+  _SQLDefaultConstraint__isset __isset;
+
+  void __set_catName(const std::string& val);
+
+  void __set_table_db(const std::string& val);
+
+  void __set_table_name(const std::string& val);
+
+  void __set_column_name(const std::string& val);
+
+  void __set_default_value(const std::string& val);
+
+  void __set_dc_name(const std::string& val);
+
+  void __set_enable_cstr(const bool val);
+
+  void __set_validate_cstr(const bool val);
+
+  void __set_rely_cstr(const bool val);
+
+  bool operator == (const SQLDefaultConstraint & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(table_db == rhs.table_db))
+      return false;
+    if (!(table_name == rhs.table_name))
+      return false;
+    if (!(column_name == rhs.column_name))
+      return false;
+    if (!(default_value == rhs.default_value))
+      return false;
+    if (!(dc_name == rhs.dc_name))
+      return false;
+    if (!(enable_cstr == rhs.enable_cstr))
+      return false;
+    if (!(validate_cstr == rhs.validate_cstr))
+      return false;
+    if (!(rely_cstr == rhs.rely_cstr))
+      return false;
+    return true;
+  }
+  bool operator != (const SQLDefaultConstraint &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SQLDefaultConstraint & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SQLDefaultConstraint &a, SQLDefaultConstraint &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SQLDefaultConstraint& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _SQLCheckConstraint__isset {
+  _SQLCheckConstraint__isset() : catName(false), table_db(false), table_name(false), column_name(false), check_expression(false), dc_name(false), enable_cstr(false), validate_cstr(false), rely_cstr(false) {}
+  bool catName :1;
+  bool table_db :1;
+  bool table_name :1;
+  bool column_name :1;
+  bool check_expression :1;
+  bool dc_name :1;
+  bool enable_cstr :1;
+  bool validate_cstr :1;
+  bool rely_cstr :1;
+} _SQLCheckConstraint__isset;
+
+class SQLCheckConstraint {
+ public:
+
+  SQLCheckConstraint(const SQLCheckConstraint&);
+  SQLCheckConstraint& operator=(const SQLCheckConstraint&);
+  SQLCheckConstraint() : catName(), table_db(), table_name(), column_name(), check_expression(), dc_name(), enable_cstr(0), validate_cstr(0), rely_cstr(0) {
+  }
+
+  virtual ~SQLCheckConstraint() throw();
+  std::string catName;
+  std::string table_db;
+  std::string table_name;
+  std::string column_name;
+  std::string check_expression;
+  std::string dc_name;
+  bool enable_cstr;
+  bool validate_cstr;
+  bool rely_cstr;
+
+  _SQLCheckConstraint__isset __isset;
+
+  void __set_catName(const std::string& val);
+
+  void __set_table_db(const std::string& val);
+
+  void __set_table_name(const std::string& val);
+
+  void __set_column_name(const std::string& val);
+
+  void __set_check_expression(const std::string& val);
+
+  void __set_dc_name(const std::string& val);
+
+  void __set_enable_cstr(const bool val);
+
+  void __set_validate_cstr(const bool val);
+
+  void __set_rely_cstr(const bool val);
+
+  bool operator == (const SQLCheckConstraint & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(table_db == rhs.table_db))
+      return false;
+    if (!(table_name == rhs.table_name))
+      return false;
+    if (!(column_name == rhs.column_name))
+      return false;
+    if (!(check_expression == rhs.check_expression))
+      return false;
+    if (!(dc_name == rhs.dc_name))
+      return false;
+    if (!(enable_cstr == rhs.enable_cstr))
+      return false;
+    if (!(validate_cstr == rhs.validate_cstr))
+      return false;
+    if (!(rely_cstr == rhs.rely_cstr))
+      return false;
+    return true;
+  }
+  bool operator != (const SQLCheckConstraint &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SQLCheckConstraint & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SQLCheckConstraint &a, SQLCheckConstraint &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SQLCheckConstraint& obj)
 {
   obj.printTo(out);
   return out;
@@ -1027,12 +1472,13 @@ inline std::ostream& operator<<(std::ostream& out, const Type& obj)
 }
 
 typedef struct _HiveObjectRef__isset {
-  _HiveObjectRef__isset() : objectType(false), dbName(false), objectName(false), partValues(false), columnName(false) {}
+  _HiveObjectRef__isset() : objectType(false), dbName(false), objectName(false), partValues(false), columnName(false), catName(false) {}
   bool objectType :1;
   bool dbName :1;
   bool objectName :1;
   bool partValues :1;
   bool columnName :1;
+  bool catName :1;
 } _HiveObjectRef__isset;
 
 class HiveObjectRef {
@@ -1040,7 +1486,7 @@ class HiveObjectRef {
 
   HiveObjectRef(const HiveObjectRef&);
   HiveObjectRef& operator=(const HiveObjectRef&);
-  HiveObjectRef() : objectType((HiveObjectType::type)0), dbName(), objectName(), columnName() {
+  HiveObjectRef() : objectType((HiveObjectType::type)0), dbName(), objectName(), columnName(), catName() {
   }
 
   virtual ~HiveObjectRef() throw();
@@ -1049,6 +1495,7 @@ class HiveObjectRef {
   std::string objectName;
   std::vector<std::string>  partValues;
   std::string columnName;
+  std::string catName;
 
   _HiveObjectRef__isset __isset;
 
@@ -1062,6 +1509,8 @@ class HiveObjectRef {
 
   void __set_columnName(const std::string& val);
 
+  void __set_catName(const std::string& val);
+
   bool operator == (const HiveObjectRef & rhs) const
   {
     if (!(objectType == rhs.objectType))
@@ -1073,6 +1522,10 @@ class HiveObjectRef {
     if (!(partValues == rhs.partValues))
       return false;
     if (!(columnName == rhs.columnName))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -1883,8 +2336,298 @@ inline std::ostream& operator<<(std::ostream& out, const GrantRevokeRoleResponse
   return out;
 }
 
+typedef struct _Catalog__isset {
+  _Catalog__isset() : name(false), description(false), locationUri(false) {}
+  bool name :1;
+  bool description :1;
+  bool locationUri :1;
+} _Catalog__isset;
+
+class Catalog {
+ public:
+
+  Catalog(const Catalog&);
+  Catalog& operator=(const Catalog&);
+  Catalog() : name(), description(), locationUri() {
+  }
+
+  virtual ~Catalog() throw();
+  std::string name;
+  std::string description;
+  std::string locationUri;
+
+  _Catalog__isset __isset;
+
+  void __set_name(const std::string& val);
+
+  void __set_description(const std::string& val);
+
+  void __set_locationUri(const std::string& val);
+
+  bool operator == (const Catalog & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (__isset.description != rhs.__isset.description)
+      return false;
+    else if (__isset.description && !(description == rhs.description))
+      return false;
+    if (!(locationUri == rhs.locationUri))
+      return false;
+    return true;
+  }
+  bool operator != (const Catalog &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const Catalog & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(Catalog &a, Catalog &b);
+
+inline std::ostream& operator<<(std::ostream& out, const Catalog& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _CreateCatalogRequest__isset {
+  _CreateCatalogRequest__isset() : catalog(false) {}
+  bool catalog :1;
+} _CreateCatalogRequest__isset;
+
+class CreateCatalogRequest {
+ public:
+
+  CreateCatalogRequest(const CreateCatalogRequest&);
+  CreateCatalogRequest& operator=(const CreateCatalogRequest&);
+  CreateCatalogRequest() {
+  }
+
+  virtual ~CreateCatalogRequest() throw();
+  Catalog catalog;
+
+  _CreateCatalogRequest__isset __isset;
+
+  void __set_catalog(const Catalog& val);
+
+  bool operator == (const CreateCatalogRequest & rhs) const
+  {
+    if (!(catalog == rhs.catalog))
+      return false;
+    return true;
+  }
+  bool operator != (const CreateCatalogRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const CreateCatalogRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(CreateCatalogRequest &a, CreateCatalogRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const CreateCatalogRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _GetCatalogRequest__isset {
+  _GetCatalogRequest__isset() : name(false) {}
+  bool name :1;
+} _GetCatalogRequest__isset;
+
+class GetCatalogRequest {
+ public:
+
+  GetCatalogRequest(const GetCatalogRequest&);
+  GetCatalogRequest& operator=(const GetCatalogRequest&);
+  GetCatalogRequest() : name() {
+  }
+
+  virtual ~GetCatalogRequest() throw();
+  std::string name;
+
+  _GetCatalogRequest__isset __isset;
+
+  void __set_name(const std::string& val);
+
+  bool operator == (const GetCatalogRequest & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const GetCatalogRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetCatalogRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetCatalogRequest &a, GetCatalogRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetCatalogRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _GetCatalogResponse__isset {
+  _GetCatalogResponse__isset() : catalog(false) {}
+  bool catalog :1;
+} _GetCatalogResponse__isset;
+
+class GetCatalogResponse {
+ public:
+
+  GetCatalogResponse(const GetCatalogResponse&);
+  GetCatalogResponse& operator=(const GetCatalogResponse&);
+  GetCatalogResponse() {
+  }
+
+  virtual ~GetCatalogResponse() throw();
+  Catalog catalog;
+
+  _GetCatalogResponse__isset __isset;
+
+  void __set_catalog(const Catalog& val);
+
+  bool operator == (const GetCatalogResponse & rhs) const
+  {
+    if (!(catalog == rhs.catalog))
+      return false;
+    return true;
+  }
+  bool operator != (const GetCatalogResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetCatalogResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetCatalogResponse &a, GetCatalogResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetCatalogResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _GetCatalogsResponse__isset {
+  _GetCatalogsResponse__isset() : names(false) {}
+  bool names :1;
+} _GetCatalogsResponse__isset;
+
+class GetCatalogsResponse {
+ public:
+
+  GetCatalogsResponse(const GetCatalogsResponse&);
+  GetCatalogsResponse& operator=(const GetCatalogsResponse&);
+  GetCatalogsResponse() {
+  }
+
+  virtual ~GetCatalogsResponse() throw();
+  std::vector<std::string>  names;
+
+  _GetCatalogsResponse__isset __isset;
+
+  void __set_names(const std::vector<std::string> & val);
+
+  bool operator == (const GetCatalogsResponse & rhs) const
+  {
+    if (!(names == rhs.names))
+      return false;
+    return true;
+  }
+  bool operator != (const GetCatalogsResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetCatalogsResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetCatalogsResponse &a, GetCatalogsResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetCatalogsResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _DropCatalogRequest__isset {
+  _DropCatalogRequest__isset() : name(false) {}
+  bool name :1;
+} _DropCatalogRequest__isset;
+
+class DropCatalogRequest {
+ public:
+
+  DropCatalogRequest(const DropCatalogRequest&);
+  DropCatalogRequest& operator=(const DropCatalogRequest&);
+  DropCatalogRequest() : name() {
+  }
+
+  virtual ~DropCatalogRequest() throw();
+  std::string name;
+
+  _DropCatalogRequest__isset __isset;
+
+  void __set_name(const std::string& val);
+
+  bool operator == (const DropCatalogRequest & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    return true;
+  }
+  bool operator != (const DropCatalogRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DropCatalogRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(DropCatalogRequest &a, DropCatalogRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const DropCatalogRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
 typedef struct _Database__isset {
-  _Database__isset() : name(false), description(false), locationUri(false), parameters(false), privileges(false), ownerName(false), ownerType(false) {}
+  _Database__isset() : name(false), description(false), locationUri(false), parameters(false), privileges(false), ownerName(false), ownerType(false), catalogName(false) {}
   bool name :1;
   bool description :1;
   bool locationUri :1;
@@ -1892,6 +2635,7 @@ typedef struct _Database__isset {
   bool privileges :1;
   bool ownerName :1;
   bool ownerType :1;
+  bool catalogName :1;
 } _Database__isset;
 
 class Database {
@@ -1899,7 +2643,7 @@ class Database {
 
   Database(const Database&);
   Database& operator=(const Database&);
-  Database() : name(), description(), locationUri(), ownerName(), ownerType((PrincipalType::type)0) {
+  Database() : name(), description(), locationUri(), ownerName(), ownerType((PrincipalType::type)0), catalogName() {
   }
 
   virtual ~Database() throw();
@@ -1910,6 +2654,7 @@ class Database {
   PrincipalPrivilegeSet privileges;
   std::string ownerName;
   PrincipalType::type ownerType;
+  std::string catalogName;
 
   _Database__isset __isset;
 
@@ -1926,6 +2671,8 @@ class Database {
   void __set_ownerName(const std::string& val);
 
   void __set_ownerType(const PrincipalType::type val);
+
+  void __set_catalogName(const std::string& val);
 
   bool operator == (const Database & rhs) const
   {
@@ -1948,6 +2695,10 @@ class Database {
     if (__isset.ownerType != rhs.__isset.ownerType)
       return false;
     else if (__isset.ownerType && !(ownerType == rhs.ownerType))
+      return false;
+    if (__isset.catalogName != rhs.__isset.catalogName)
+      return false;
+    else if (__isset.catalogName && !(catalogName == rhs.catalogName))
       return false;
     return true;
   }
@@ -1972,10 +2723,14 @@ inline std::ostream& operator<<(std::ostream& out, const Database& obj)
 }
 
 typedef struct _SerDeInfo__isset {
-  _SerDeInfo__isset() : name(false), serializationLib(false), parameters(false) {}
+  _SerDeInfo__isset() : name(false), serializationLib(false), parameters(false), description(false), serializerClass(false), deserializerClass(false), serdeType(false) {}
   bool name :1;
   bool serializationLib :1;
   bool parameters :1;
+  bool description :1;
+  bool serializerClass :1;
+  bool deserializerClass :1;
+  bool serdeType :1;
 } _SerDeInfo__isset;
 
 class SerDeInfo {
@@ -1983,13 +2738,17 @@ class SerDeInfo {
 
   SerDeInfo(const SerDeInfo&);
   SerDeInfo& operator=(const SerDeInfo&);
-  SerDeInfo() : name(), serializationLib() {
+  SerDeInfo() : name(), serializationLib(), description(), serializerClass(), deserializerClass(), serdeType((SerdeType::type)0) {
   }
 
   virtual ~SerDeInfo() throw();
   std::string name;
   std::string serializationLib;
   std::map<std::string, std::string>  parameters;
+  std::string description;
+  std::string serializerClass;
+  std::string deserializerClass;
+  SerdeType::type serdeType;
 
   _SerDeInfo__isset __isset;
 
@@ -1999,6 +2758,14 @@ class SerDeInfo {
 
   void __set_parameters(const std::map<std::string, std::string> & val);
 
+  void __set_description(const std::string& val);
+
+  void __set_serializerClass(const std::string& val);
+
+  void __set_deserializerClass(const std::string& val);
+
+  void __set_serdeType(const SerdeType::type val);
+
   bool operator == (const SerDeInfo & rhs) const
   {
     if (!(name == rhs.name))
@@ -2006,6 +2773,22 @@ class SerDeInfo {
     if (!(serializationLib == rhs.serializationLib))
       return false;
     if (!(parameters == rhs.parameters))
+      return false;
+    if (__isset.description != rhs.__isset.description)
+      return false;
+    else if (__isset.description && !(description == rhs.description))
+      return false;
+    if (__isset.serializerClass != rhs.__isset.serializerClass)
+      return false;
+    else if (__isset.serializerClass && !(serializerClass == rhs.serializerClass))
+      return false;
+    if (__isset.deserializerClass != rhs.__isset.deserializerClass)
+      return false;
+    else if (__isset.deserializerClass && !(deserializerClass == rhs.deserializerClass))
+      return false;
+    if (__isset.serdeType != rhs.__isset.serdeType)
+      return false;
+    else if (__isset.serdeType && !(serdeType == rhs.serdeType))
       return false;
     return true;
   }
@@ -2256,7 +3039,7 @@ inline std::ostream& operator<<(std::ostream& out, const StorageDescriptor& obj)
 }
 
 typedef struct _Table__isset {
-  _Table__isset() : tableName(false), dbName(false), owner(false), createTime(false), lastAccessTime(false), retention(false), sd(false), partitionKeys(false), parameters(false), viewOriginalText(false), viewExpandedText(false), tableType(false), privileges(false), temporary(true), rewriteEnabled(false) {}
+  _Table__isset() : tableName(false), dbName(false), owner(false), createTime(false), lastAccessTime(false), retention(false), sd(false), partitionKeys(false), parameters(false), viewOriginalText(false), viewExpandedText(false), tableType(false), privileges(false), temporary(true), rewriteEnabled(false), creationMetadata(false), catName(false) {}
   bool tableName :1;
   bool dbName :1;
   bool owner :1;
@@ -2272,6 +3055,8 @@ typedef struct _Table__isset {
   bool privileges :1;
   bool temporary :1;
   bool rewriteEnabled :1;
+  bool creationMetadata :1;
+  bool catName :1;
 } _Table__isset;
 
 class Table {
@@ -2279,7 +3064,7 @@ class Table {
 
   Table(const Table&);
   Table& operator=(const Table&);
-  Table() : tableName(), dbName(), owner(), createTime(0), lastAccessTime(0), retention(0), viewOriginalText(), viewExpandedText(), tableType(), temporary(false), rewriteEnabled(0) {
+  Table() : tableName(), dbName(), owner(), createTime(0), lastAccessTime(0), retention(0), viewOriginalText(), viewExpandedText(), tableType(), temporary(false), rewriteEnabled(0), catName() {
   }
 
   virtual ~Table() throw();
@@ -2298,6 +3083,8 @@ class Table {
   PrincipalPrivilegeSet privileges;
   bool temporary;
   bool rewriteEnabled;
+  CreationMetadata creationMetadata;
+  std::string catName;
 
   _Table__isset __isset;
 
@@ -2330,6 +3117,10 @@ class Table {
   void __set_temporary(const bool val);
 
   void __set_rewriteEnabled(const bool val);
+
+  void __set_creationMetadata(const CreationMetadata& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const Table & rhs) const
   {
@@ -2369,6 +3160,14 @@ class Table {
       return false;
     else if (__isset.rewriteEnabled && !(rewriteEnabled == rhs.rewriteEnabled))
       return false;
+    if (__isset.creationMetadata != rhs.__isset.creationMetadata)
+      return false;
+    else if (__isset.creationMetadata && !(creationMetadata == rhs.creationMetadata))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
+      return false;
     return true;
   }
   bool operator != (const Table &rhs) const {
@@ -2392,7 +3191,7 @@ inline std::ostream& operator<<(std::ostream& out, const Table& obj)
 }
 
 typedef struct _Partition__isset {
-  _Partition__isset() : values(false), dbName(false), tableName(false), createTime(false), lastAccessTime(false), sd(false), parameters(false), privileges(false) {}
+  _Partition__isset() : values(false), dbName(false), tableName(false), createTime(false), lastAccessTime(false), sd(false), parameters(false), privileges(false), catName(false) {}
   bool values :1;
   bool dbName :1;
   bool tableName :1;
@@ -2401,6 +3200,7 @@ typedef struct _Partition__isset {
   bool sd :1;
   bool parameters :1;
   bool privileges :1;
+  bool catName :1;
 } _Partition__isset;
 
 class Partition {
@@ -2408,7 +3208,7 @@ class Partition {
 
   Partition(const Partition&);
   Partition& operator=(const Partition&);
-  Partition() : dbName(), tableName(), createTime(0), lastAccessTime(0) {
+  Partition() : dbName(), tableName(), createTime(0), lastAccessTime(0), catName() {
   }
 
   virtual ~Partition() throw();
@@ -2420,6 +3220,7 @@ class Partition {
   StorageDescriptor sd;
   std::map<std::string, std::string>  parameters;
   PrincipalPrivilegeSet privileges;
+  std::string catName;
 
   _Partition__isset __isset;
 
@@ -2438,6 +3239,8 @@ class Partition {
   void __set_parameters(const std::map<std::string, std::string> & val);
 
   void __set_privileges(const PrincipalPrivilegeSet& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const Partition & rhs) const
   {
@@ -2458,6 +3261,10 @@ class Partition {
     if (__isset.privileges != rhs.__isset.privileges)
       return false;
     else if (__isset.privileges && !(privileges == rhs.privileges))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -2658,12 +3465,13 @@ inline std::ostream& operator<<(std::ostream& out, const PartitionListComposingS
 }
 
 typedef struct _PartitionSpec__isset {
-  _PartitionSpec__isset() : dbName(false), tableName(false), rootPath(false), sharedSDPartitionSpec(false), partitionList(false) {}
+  _PartitionSpec__isset() : dbName(false), tableName(false), rootPath(false), sharedSDPartitionSpec(false), partitionList(false), catName(false) {}
   bool dbName :1;
   bool tableName :1;
   bool rootPath :1;
   bool sharedSDPartitionSpec :1;
   bool partitionList :1;
+  bool catName :1;
 } _PartitionSpec__isset;
 
 class PartitionSpec {
@@ -2671,7 +3479,7 @@ class PartitionSpec {
 
   PartitionSpec(const PartitionSpec&);
   PartitionSpec& operator=(const PartitionSpec&);
-  PartitionSpec() : dbName(), tableName(), rootPath() {
+  PartitionSpec() : dbName(), tableName(), rootPath(), catName() {
   }
 
   virtual ~PartitionSpec() throw();
@@ -2680,6 +3488,7 @@ class PartitionSpec {
   std::string rootPath;
   PartitionSpecWithSharedSD sharedSDPartitionSpec;
   PartitionListComposingSpec partitionList;
+  std::string catName;
 
   _PartitionSpec__isset __isset;
 
@@ -2692,6 +3501,8 @@ class PartitionSpec {
   void __set_sharedSDPartitionSpec(const PartitionSpecWithSharedSD& val);
 
   void __set_partitionList(const PartitionListComposingSpec& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const PartitionSpec & rhs) const
   {
@@ -2708,6 +3519,10 @@ class PartitionSpec {
     if (__isset.partitionList != rhs.__isset.partitionList)
       return false;
     else if (__isset.partitionList && !(partitionList == rhs.partitionList))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -2726,106 +3541,6 @@ class PartitionSpec {
 void swap(PartitionSpec &a, PartitionSpec &b);
 
 inline std::ostream& operator<<(std::ostream& out, const PartitionSpec& obj)
-{
-  obj.printTo(out);
-  return out;
-}
-
-typedef struct _Index__isset {
-  _Index__isset() : indexName(false), indexHandlerClass(false), dbName(false), origTableName(false), createTime(false), lastAccessTime(false), indexTableName(false), sd(false), parameters(false), deferredRebuild(false) {}
-  bool indexName :1;
-  bool indexHandlerClass :1;
-  bool dbName :1;
-  bool origTableName :1;
-  bool createTime :1;
-  bool lastAccessTime :1;
-  bool indexTableName :1;
-  bool sd :1;
-  bool parameters :1;
-  bool deferredRebuild :1;
-} _Index__isset;
-
-class Index {
- public:
-
-  Index(const Index&);
-  Index& operator=(const Index&);
-  Index() : indexName(), indexHandlerClass(), dbName(), origTableName(), createTime(0), lastAccessTime(0), indexTableName(), deferredRebuild(0) {
-  }
-
-  virtual ~Index() throw();
-  std::string indexName;
-  std::string indexHandlerClass;
-  std::string dbName;
-  std::string origTableName;
-  int32_t createTime;
-  int32_t lastAccessTime;
-  std::string indexTableName;
-  StorageDescriptor sd;
-  std::map<std::string, std::string>  parameters;
-  bool deferredRebuild;
-
-  _Index__isset __isset;
-
-  void __set_indexName(const std::string& val);
-
-  void __set_indexHandlerClass(const std::string& val);
-
-  void __set_dbName(const std::string& val);
-
-  void __set_origTableName(const std::string& val);
-
-  void __set_createTime(const int32_t val);
-
-  void __set_lastAccessTime(const int32_t val);
-
-  void __set_indexTableName(const std::string& val);
-
-  void __set_sd(const StorageDescriptor& val);
-
-  void __set_parameters(const std::map<std::string, std::string> & val);
-
-  void __set_deferredRebuild(const bool val);
-
-  bool operator == (const Index & rhs) const
-  {
-    if (!(indexName == rhs.indexName))
-      return false;
-    if (!(indexHandlerClass == rhs.indexHandlerClass))
-      return false;
-    if (!(dbName == rhs.dbName))
-      return false;
-    if (!(origTableName == rhs.origTableName))
-      return false;
-    if (!(createTime == rhs.createTime))
-      return false;
-    if (!(lastAccessTime == rhs.lastAccessTime))
-      return false;
-    if (!(indexTableName == rhs.indexTableName))
-      return false;
-    if (!(sd == rhs.sd))
-      return false;
-    if (!(parameters == rhs.parameters))
-      return false;
-    if (!(deferredRebuild == rhs.deferredRebuild))
-      return false;
-    return true;
-  }
-  bool operator != (const Index &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const Index & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-  virtual void printTo(std::ostream& out) const;
-};
-
-void swap(Index &a, Index &b);
-
-inline std::ostream& operator<<(std::ostream& out, const Index& obj)
 {
   obj.printTo(out);
   return out;
@@ -3179,22 +3894,22 @@ class Decimal {
 
   Decimal(const Decimal&);
   Decimal& operator=(const Decimal&);
-  Decimal() : unscaled(), scale(0) {
+  Decimal() : scale(0), unscaled() {
   }
 
   virtual ~Decimal() throw();
-  std::string unscaled;
   int16_t scale;
-
-  void __set_unscaled(const std::string& val);
+  std::string unscaled;
 
   void __set_scale(const int16_t val);
 
+  void __set_unscaled(const std::string& val);
+
   bool operator == (const Decimal & rhs) const
   {
-    if (!(unscaled == rhs.unscaled))
-      return false;
     if (!(scale == rhs.scale))
+      return false;
+    if (!(unscaled == rhs.unscaled))
       return false;
     return true;
   }
@@ -3539,9 +4254,10 @@ inline std::ostream& operator<<(std::ostream& out, const ColumnStatisticsObj& ob
 }
 
 typedef struct _ColumnStatisticsDesc__isset {
-  _ColumnStatisticsDesc__isset() : partName(false), lastAnalyzed(false) {}
+  _ColumnStatisticsDesc__isset() : partName(false), lastAnalyzed(false), catName(false) {}
   bool partName :1;
   bool lastAnalyzed :1;
+  bool catName :1;
 } _ColumnStatisticsDesc__isset;
 
 class ColumnStatisticsDesc {
@@ -3549,7 +4265,7 @@ class ColumnStatisticsDesc {
 
   ColumnStatisticsDesc(const ColumnStatisticsDesc&);
   ColumnStatisticsDesc& operator=(const ColumnStatisticsDesc&);
-  ColumnStatisticsDesc() : isTblLevel(0), dbName(), tableName(), partName(), lastAnalyzed(0) {
+  ColumnStatisticsDesc() : isTblLevel(0), dbName(), tableName(), partName(), lastAnalyzed(0), catName() {
   }
 
   virtual ~ColumnStatisticsDesc() throw();
@@ -3558,6 +4274,7 @@ class ColumnStatisticsDesc {
   std::string tableName;
   std::string partName;
   int64_t lastAnalyzed;
+  std::string catName;
 
   _ColumnStatisticsDesc__isset __isset;
 
@@ -3570,6 +4287,8 @@ class ColumnStatisticsDesc {
   void __set_partName(const std::string& val);
 
   void __set_lastAnalyzed(const int64_t val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const ColumnStatisticsDesc & rhs) const
   {
@@ -3586,6 +4305,10 @@ class ColumnStatisticsDesc {
     if (__isset.lastAnalyzed != rhs.__isset.lastAnalyzed)
       return false;
     else if (__isset.lastAnalyzed && !(lastAnalyzed == rhs.lastAnalyzed))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -3850,28 +4573,41 @@ inline std::ostream& operator<<(std::ostream& out, const EnvironmentContext& obj
   return out;
 }
 
+typedef struct _PrimaryKeysRequest__isset {
+  _PrimaryKeysRequest__isset() : catName(false) {}
+  bool catName :1;
+} _PrimaryKeysRequest__isset;
 
 class PrimaryKeysRequest {
  public:
 
   PrimaryKeysRequest(const PrimaryKeysRequest&);
   PrimaryKeysRequest& operator=(const PrimaryKeysRequest&);
-  PrimaryKeysRequest() : db_name(), tbl_name() {
+  PrimaryKeysRequest() : db_name(), tbl_name(), catName() {
   }
 
   virtual ~PrimaryKeysRequest() throw();
   std::string db_name;
   std::string tbl_name;
+  std::string catName;
+
+  _PrimaryKeysRequest__isset __isset;
 
   void __set_db_name(const std::string& val);
 
   void __set_tbl_name(const std::string& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const PrimaryKeysRequest & rhs) const
   {
     if (!(db_name == rhs.db_name))
       return false;
     if (!(tbl_name == rhs.tbl_name))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -3936,11 +4672,12 @@ inline std::ostream& operator<<(std::ostream& out, const PrimaryKeysResponse& ob
 }
 
 typedef struct _ForeignKeysRequest__isset {
-  _ForeignKeysRequest__isset() : parent_db_name(false), parent_tbl_name(false), foreign_db_name(false), foreign_tbl_name(false) {}
+  _ForeignKeysRequest__isset() : parent_db_name(false), parent_tbl_name(false), foreign_db_name(false), foreign_tbl_name(false), catName(false) {}
   bool parent_db_name :1;
   bool parent_tbl_name :1;
   bool foreign_db_name :1;
   bool foreign_tbl_name :1;
+  bool catName :1;
 } _ForeignKeysRequest__isset;
 
 class ForeignKeysRequest {
@@ -3948,7 +4685,7 @@ class ForeignKeysRequest {
 
   ForeignKeysRequest(const ForeignKeysRequest&);
   ForeignKeysRequest& operator=(const ForeignKeysRequest&);
-  ForeignKeysRequest() : parent_db_name(), parent_tbl_name(), foreign_db_name(), foreign_tbl_name() {
+  ForeignKeysRequest() : parent_db_name(), parent_tbl_name(), foreign_db_name(), foreign_tbl_name(), catName() {
   }
 
   virtual ~ForeignKeysRequest() throw();
@@ -3956,6 +4693,7 @@ class ForeignKeysRequest {
   std::string parent_tbl_name;
   std::string foreign_db_name;
   std::string foreign_tbl_name;
+  std::string catName;
 
   _ForeignKeysRequest__isset __isset;
 
@@ -3967,6 +4705,8 @@ class ForeignKeysRequest {
 
   void __set_foreign_tbl_name(const std::string& val);
 
+  void __set_catName(const std::string& val);
+
   bool operator == (const ForeignKeysRequest & rhs) const
   {
     if (!(parent_db_name == rhs.parent_db_name))
@@ -3976,6 +4716,10 @@ class ForeignKeysRequest {
     if (!(foreign_db_name == rhs.foreign_db_name))
       return false;
     if (!(foreign_tbl_name == rhs.foreign_tbl_name))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4045,12 +4789,15 @@ class UniqueConstraintsRequest {
 
   UniqueConstraintsRequest(const UniqueConstraintsRequest&);
   UniqueConstraintsRequest& operator=(const UniqueConstraintsRequest&);
-  UniqueConstraintsRequest() : db_name(), tbl_name() {
+  UniqueConstraintsRequest() : catName(), db_name(), tbl_name() {
   }
 
   virtual ~UniqueConstraintsRequest() throw();
+  std::string catName;
   std::string db_name;
   std::string tbl_name;
+
+  void __set_catName(const std::string& val);
 
   void __set_db_name(const std::string& val);
 
@@ -4058,6 +4805,8 @@ class UniqueConstraintsRequest {
 
   bool operator == (const UniqueConstraintsRequest & rhs) const
   {
+    if (!(catName == rhs.catName))
+      return false;
     if (!(db_name == rhs.db_name))
       return false;
     if (!(tbl_name == rhs.tbl_name))
@@ -4130,12 +4879,15 @@ class NotNullConstraintsRequest {
 
   NotNullConstraintsRequest(const NotNullConstraintsRequest&);
   NotNullConstraintsRequest& operator=(const NotNullConstraintsRequest&);
-  NotNullConstraintsRequest() : db_name(), tbl_name() {
+  NotNullConstraintsRequest() : catName(), db_name(), tbl_name() {
   }
 
   virtual ~NotNullConstraintsRequest() throw();
+  std::string catName;
   std::string db_name;
   std::string tbl_name;
+
+  void __set_catName(const std::string& val);
 
   void __set_db_name(const std::string& val);
 
@@ -4143,6 +4895,8 @@ class NotNullConstraintsRequest {
 
   bool operator == (const NotNullConstraintsRequest & rhs) const
   {
+    if (!(catName == rhs.catName))
+      return false;
     if (!(db_name == rhs.db_name))
       return false;
     if (!(tbl_name == rhs.tbl_name))
@@ -4210,24 +4964,213 @@ inline std::ostream& operator<<(std::ostream& out, const NotNullConstraintsRespo
 }
 
 
+class DefaultConstraintsRequest {
+ public:
+
+  DefaultConstraintsRequest(const DefaultConstraintsRequest&);
+  DefaultConstraintsRequest& operator=(const DefaultConstraintsRequest&);
+  DefaultConstraintsRequest() : catName(), db_name(), tbl_name() {
+  }
+
+  virtual ~DefaultConstraintsRequest() throw();
+  std::string catName;
+  std::string db_name;
+  std::string tbl_name;
+
+  void __set_catName(const std::string& val);
+
+  void __set_db_name(const std::string& val);
+
+  void __set_tbl_name(const std::string& val);
+
+  bool operator == (const DefaultConstraintsRequest & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(db_name == rhs.db_name))
+      return false;
+    if (!(tbl_name == rhs.tbl_name))
+      return false;
+    return true;
+  }
+  bool operator != (const DefaultConstraintsRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DefaultConstraintsRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(DefaultConstraintsRequest &a, DefaultConstraintsRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const DefaultConstraintsRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class DefaultConstraintsResponse {
+ public:
+
+  DefaultConstraintsResponse(const DefaultConstraintsResponse&);
+  DefaultConstraintsResponse& operator=(const DefaultConstraintsResponse&);
+  DefaultConstraintsResponse() {
+  }
+
+  virtual ~DefaultConstraintsResponse() throw();
+  std::vector<SQLDefaultConstraint>  defaultConstraints;
+
+  void __set_defaultConstraints(const std::vector<SQLDefaultConstraint> & val);
+
+  bool operator == (const DefaultConstraintsResponse & rhs) const
+  {
+    if (!(defaultConstraints == rhs.defaultConstraints))
+      return false;
+    return true;
+  }
+  bool operator != (const DefaultConstraintsResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DefaultConstraintsResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(DefaultConstraintsResponse &a, DefaultConstraintsResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const DefaultConstraintsResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class CheckConstraintsRequest {
+ public:
+
+  CheckConstraintsRequest(const CheckConstraintsRequest&);
+  CheckConstraintsRequest& operator=(const CheckConstraintsRequest&);
+  CheckConstraintsRequest() : catName(), db_name(), tbl_name() {
+  }
+
+  virtual ~CheckConstraintsRequest() throw();
+  std::string catName;
+  std::string db_name;
+  std::string tbl_name;
+
+  void __set_catName(const std::string& val);
+
+  void __set_db_name(const std::string& val);
+
+  void __set_tbl_name(const std::string& val);
+
+  bool operator == (const CheckConstraintsRequest & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(db_name == rhs.db_name))
+      return false;
+    if (!(tbl_name == rhs.tbl_name))
+      return false;
+    return true;
+  }
+  bool operator != (const CheckConstraintsRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const CheckConstraintsRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(CheckConstraintsRequest &a, CheckConstraintsRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const CheckConstraintsRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class CheckConstraintsResponse {
+ public:
+
+  CheckConstraintsResponse(const CheckConstraintsResponse&);
+  CheckConstraintsResponse& operator=(const CheckConstraintsResponse&);
+  CheckConstraintsResponse() {
+  }
+
+  virtual ~CheckConstraintsResponse() throw();
+  std::vector<SQLCheckConstraint>  checkConstraints;
+
+  void __set_checkConstraints(const std::vector<SQLCheckConstraint> & val);
+
+  bool operator == (const CheckConstraintsResponse & rhs) const
+  {
+    if (!(checkConstraints == rhs.checkConstraints))
+      return false;
+    return true;
+  }
+  bool operator != (const CheckConstraintsResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const CheckConstraintsResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(CheckConstraintsResponse &a, CheckConstraintsResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const CheckConstraintsResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _DropConstraintRequest__isset {
+  _DropConstraintRequest__isset() : catName(false) {}
+  bool catName :1;
+} _DropConstraintRequest__isset;
+
 class DropConstraintRequest {
  public:
 
   DropConstraintRequest(const DropConstraintRequest&);
   DropConstraintRequest& operator=(const DropConstraintRequest&);
-  DropConstraintRequest() : dbname(), tablename(), constraintname() {
+  DropConstraintRequest() : dbname(), tablename(), constraintname(), catName() {
   }
 
   virtual ~DropConstraintRequest() throw();
   std::string dbname;
   std::string tablename;
   std::string constraintname;
+  std::string catName;
+
+  _DropConstraintRequest__isset __isset;
 
   void __set_dbname(const std::string& val);
 
   void __set_tablename(const std::string& val);
 
   void __set_constraintname(const std::string& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const DropConstraintRequest & rhs) const
   {
@@ -4236,6 +5179,10 @@ class DropConstraintRequest {
     if (!(tablename == rhs.tablename))
       return false;
     if (!(constraintname == rhs.constraintname))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4420,6 +5367,86 @@ inline std::ostream& operator<<(std::ostream& out, const AddNotNullConstraintReq
 }
 
 
+class AddDefaultConstraintRequest {
+ public:
+
+  AddDefaultConstraintRequest(const AddDefaultConstraintRequest&);
+  AddDefaultConstraintRequest& operator=(const AddDefaultConstraintRequest&);
+  AddDefaultConstraintRequest() {
+  }
+
+  virtual ~AddDefaultConstraintRequest() throw();
+  std::vector<SQLDefaultConstraint>  defaultConstraintCols;
+
+  void __set_defaultConstraintCols(const std::vector<SQLDefaultConstraint> & val);
+
+  bool operator == (const AddDefaultConstraintRequest & rhs) const
+  {
+    if (!(defaultConstraintCols == rhs.defaultConstraintCols))
+      return false;
+    return true;
+  }
+  bool operator != (const AddDefaultConstraintRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const AddDefaultConstraintRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(AddDefaultConstraintRequest &a, AddDefaultConstraintRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const AddDefaultConstraintRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class AddCheckConstraintRequest {
+ public:
+
+  AddCheckConstraintRequest(const AddCheckConstraintRequest&);
+  AddCheckConstraintRequest& operator=(const AddCheckConstraintRequest&);
+  AddCheckConstraintRequest() {
+  }
+
+  virtual ~AddCheckConstraintRequest() throw();
+  std::vector<SQLCheckConstraint>  checkConstraintCols;
+
+  void __set_checkConstraintCols(const std::vector<SQLCheckConstraint> & val);
+
+  bool operator == (const AddCheckConstraintRequest & rhs) const
+  {
+    if (!(checkConstraintCols == rhs.checkConstraintCols))
+      return false;
+    return true;
+  }
+  bool operator != (const AddCheckConstraintRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const AddCheckConstraintRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(AddCheckConstraintRequest &a, AddCheckConstraintRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const AddCheckConstraintRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
 class PartitionsByExprResult {
  public:
 
@@ -4465,9 +5492,10 @@ inline std::ostream& operator<<(std::ostream& out, const PartitionsByExprResult&
 }
 
 typedef struct _PartitionsByExprRequest__isset {
-  _PartitionsByExprRequest__isset() : defaultPartitionName(false), maxParts(true) {}
+  _PartitionsByExprRequest__isset() : defaultPartitionName(false), maxParts(true), catName(false) {}
   bool defaultPartitionName :1;
   bool maxParts :1;
+  bool catName :1;
 } _PartitionsByExprRequest__isset;
 
 class PartitionsByExprRequest {
@@ -4475,7 +5503,7 @@ class PartitionsByExprRequest {
 
   PartitionsByExprRequest(const PartitionsByExprRequest&);
   PartitionsByExprRequest& operator=(const PartitionsByExprRequest&);
-  PartitionsByExprRequest() : dbName(), tblName(), expr(), defaultPartitionName(), maxParts(-1) {
+  PartitionsByExprRequest() : dbName(), tblName(), expr(), defaultPartitionName(), maxParts(-1), catName() {
   }
 
   virtual ~PartitionsByExprRequest() throw();
@@ -4484,6 +5512,7 @@ class PartitionsByExprRequest {
   std::string expr;
   std::string defaultPartitionName;
   int16_t maxParts;
+  std::string catName;
 
   _PartitionsByExprRequest__isset __isset;
 
@@ -4496,6 +5525,8 @@ class PartitionsByExprRequest {
   void __set_defaultPartitionName(const std::string& val);
 
   void __set_maxParts(const int16_t val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const PartitionsByExprRequest & rhs) const
   {
@@ -4512,6 +5543,10 @@ class PartitionsByExprRequest {
     if (__isset.maxParts != rhs.__isset.maxParts)
       return false;
     else if (__isset.maxParts && !(maxParts == rhs.maxParts))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4615,25 +5650,34 @@ inline std::ostream& operator<<(std::ostream& out, const PartitionsStatsResult& 
   return out;
 }
 
+typedef struct _TableStatsRequest__isset {
+  _TableStatsRequest__isset() : catName(false) {}
+  bool catName :1;
+} _TableStatsRequest__isset;
 
 class TableStatsRequest {
  public:
 
   TableStatsRequest(const TableStatsRequest&);
   TableStatsRequest& operator=(const TableStatsRequest&);
-  TableStatsRequest() : dbName(), tblName() {
+  TableStatsRequest() : dbName(), tblName(), catName() {
   }
 
   virtual ~TableStatsRequest() throw();
   std::string dbName;
   std::string tblName;
   std::vector<std::string>  colNames;
+  std::string catName;
+
+  _TableStatsRequest__isset __isset;
 
   void __set_dbName(const std::string& val);
 
   void __set_tblName(const std::string& val);
 
   void __set_colNames(const std::vector<std::string> & val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const TableStatsRequest & rhs) const
   {
@@ -4642,6 +5686,10 @@ class TableStatsRequest {
     if (!(tblName == rhs.tblName))
       return false;
     if (!(colNames == rhs.colNames))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4665,13 +5713,17 @@ inline std::ostream& operator<<(std::ostream& out, const TableStatsRequest& obj)
   return out;
 }
 
+typedef struct _PartitionsStatsRequest__isset {
+  _PartitionsStatsRequest__isset() : catName(false) {}
+  bool catName :1;
+} _PartitionsStatsRequest__isset;
 
 class PartitionsStatsRequest {
  public:
 
   PartitionsStatsRequest(const PartitionsStatsRequest&);
   PartitionsStatsRequest& operator=(const PartitionsStatsRequest&);
-  PartitionsStatsRequest() : dbName(), tblName() {
+  PartitionsStatsRequest() : dbName(), tblName(), catName() {
   }
 
   virtual ~PartitionsStatsRequest() throw();
@@ -4679,6 +5731,9 @@ class PartitionsStatsRequest {
   std::string tblName;
   std::vector<std::string>  colNames;
   std::vector<std::string>  partNames;
+  std::string catName;
+
+  _PartitionsStatsRequest__isset __isset;
 
   void __set_dbName(const std::string& val);
 
@@ -4687,6 +5742,8 @@ class PartitionsStatsRequest {
   void __set_colNames(const std::vector<std::string> & val);
 
   void __set_partNames(const std::vector<std::string> & val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const PartitionsStatsRequest & rhs) const
   {
@@ -4697,6 +5754,10 @@ class PartitionsStatsRequest {
     if (!(colNames == rhs.colNames))
       return false;
     if (!(partNames == rhs.partNames))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4769,8 +5830,9 @@ inline std::ostream& operator<<(std::ostream& out, const AddPartitionsResult& ob
 }
 
 typedef struct _AddPartitionsRequest__isset {
-  _AddPartitionsRequest__isset() : needResult(true) {}
+  _AddPartitionsRequest__isset() : needResult(true), catName(false) {}
   bool needResult :1;
+  bool catName :1;
 } _AddPartitionsRequest__isset;
 
 class AddPartitionsRequest {
@@ -4778,7 +5840,7 @@ class AddPartitionsRequest {
 
   AddPartitionsRequest(const AddPartitionsRequest&);
   AddPartitionsRequest& operator=(const AddPartitionsRequest&);
-  AddPartitionsRequest() : dbName(), tblName(), ifNotExists(0), needResult(true) {
+  AddPartitionsRequest() : dbName(), tblName(), ifNotExists(0), needResult(true), catName() {
   }
 
   virtual ~AddPartitionsRequest() throw();
@@ -4787,6 +5849,7 @@ class AddPartitionsRequest {
   std::vector<Partition>  parts;
   bool ifNotExists;
   bool needResult;
+  std::string catName;
 
   _AddPartitionsRequest__isset __isset;
 
@@ -4799,6 +5862,8 @@ class AddPartitionsRequest {
   void __set_ifNotExists(const bool val);
 
   void __set_needResult(const bool val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const AddPartitionsRequest & rhs) const
   {
@@ -4813,6 +5878,10 @@ class AddPartitionsRequest {
     if (__isset.needResult != rhs.__isset.needResult)
       return false;
     else if (__isset.needResult && !(needResult == rhs.needResult))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -4990,12 +6059,13 @@ inline std::ostream& operator<<(std::ostream& out, const RequestPartsSpec& obj)
 }
 
 typedef struct _DropPartitionsRequest__isset {
-  _DropPartitionsRequest__isset() : deleteData(false), ifExists(true), ignoreProtection(false), environmentContext(false), needResult(true) {}
+  _DropPartitionsRequest__isset() : deleteData(false), ifExists(true), ignoreProtection(false), environmentContext(false), needResult(true), catName(false) {}
   bool deleteData :1;
   bool ifExists :1;
   bool ignoreProtection :1;
   bool environmentContext :1;
   bool needResult :1;
+  bool catName :1;
 } _DropPartitionsRequest__isset;
 
 class DropPartitionsRequest {
@@ -5003,7 +6073,7 @@ class DropPartitionsRequest {
 
   DropPartitionsRequest(const DropPartitionsRequest&);
   DropPartitionsRequest& operator=(const DropPartitionsRequest&);
-  DropPartitionsRequest() : dbName(), tblName(), deleteData(0), ifExists(true), ignoreProtection(0), needResult(true) {
+  DropPartitionsRequest() : dbName(), tblName(), deleteData(0), ifExists(true), ignoreProtection(0), needResult(true), catName() {
   }
 
   virtual ~DropPartitionsRequest() throw();
@@ -5015,6 +6085,7 @@ class DropPartitionsRequest {
   bool ignoreProtection;
   EnvironmentContext environmentContext;
   bool needResult;
+  std::string catName;
 
   _DropPartitionsRequest__isset __isset;
 
@@ -5033,6 +6104,8 @@ class DropPartitionsRequest {
   void __set_environmentContext(const EnvironmentContext& val);
 
   void __set_needResult(const bool val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const DropPartitionsRequest & rhs) const
   {
@@ -5062,6 +6135,10 @@ class DropPartitionsRequest {
       return false;
     else if (__isset.needResult && !(needResult == rhs.needResult))
       return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
+      return false;
     return true;
   }
   bool operator != (const DropPartitionsRequest &rhs) const {
@@ -5079,6 +6156,189 @@ class DropPartitionsRequest {
 void swap(DropPartitionsRequest &a, DropPartitionsRequest &b);
 
 inline std::ostream& operator<<(std::ostream& out, const DropPartitionsRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _PartitionValuesRequest__isset {
+  _PartitionValuesRequest__isset() : applyDistinct(true), filter(false), partitionOrder(false), ascending(true), maxParts(true), catName(false) {}
+  bool applyDistinct :1;
+  bool filter :1;
+  bool partitionOrder :1;
+  bool ascending :1;
+  bool maxParts :1;
+  bool catName :1;
+} _PartitionValuesRequest__isset;
+
+class PartitionValuesRequest {
+ public:
+
+  PartitionValuesRequest(const PartitionValuesRequest&);
+  PartitionValuesRequest& operator=(const PartitionValuesRequest&);
+  PartitionValuesRequest() : dbName(), tblName(), applyDistinct(true), filter(), ascending(true), maxParts(-1LL), catName() {
+  }
+
+  virtual ~PartitionValuesRequest() throw();
+  std::string dbName;
+  std::string tblName;
+  std::vector<FieldSchema>  partitionKeys;
+  bool applyDistinct;
+  std::string filter;
+  std::vector<FieldSchema>  partitionOrder;
+  bool ascending;
+  int64_t maxParts;
+  std::string catName;
+
+  _PartitionValuesRequest__isset __isset;
+
+  void __set_dbName(const std::string& val);
+
+  void __set_tblName(const std::string& val);
+
+  void __set_partitionKeys(const std::vector<FieldSchema> & val);
+
+  void __set_applyDistinct(const bool val);
+
+  void __set_filter(const std::string& val);
+
+  void __set_partitionOrder(const std::vector<FieldSchema> & val);
+
+  void __set_ascending(const bool val);
+
+  void __set_maxParts(const int64_t val);
+
+  void __set_catName(const std::string& val);
+
+  bool operator == (const PartitionValuesRequest & rhs) const
+  {
+    if (!(dbName == rhs.dbName))
+      return false;
+    if (!(tblName == rhs.tblName))
+      return false;
+    if (!(partitionKeys == rhs.partitionKeys))
+      return false;
+    if (__isset.applyDistinct != rhs.__isset.applyDistinct)
+      return false;
+    else if (__isset.applyDistinct && !(applyDistinct == rhs.applyDistinct))
+      return false;
+    if (__isset.filter != rhs.__isset.filter)
+      return false;
+    else if (__isset.filter && !(filter == rhs.filter))
+      return false;
+    if (__isset.partitionOrder != rhs.__isset.partitionOrder)
+      return false;
+    else if (__isset.partitionOrder && !(partitionOrder == rhs.partitionOrder))
+      return false;
+    if (__isset.ascending != rhs.__isset.ascending)
+      return false;
+    else if (__isset.ascending && !(ascending == rhs.ascending))
+      return false;
+    if (__isset.maxParts != rhs.__isset.maxParts)
+      return false;
+    else if (__isset.maxParts && !(maxParts == rhs.maxParts))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
+      return false;
+    return true;
+  }
+  bool operator != (const PartitionValuesRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const PartitionValuesRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(PartitionValuesRequest &a, PartitionValuesRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const PartitionValuesRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class PartitionValuesRow {
+ public:
+
+  PartitionValuesRow(const PartitionValuesRow&);
+  PartitionValuesRow& operator=(const PartitionValuesRow&);
+  PartitionValuesRow() {
+  }
+
+  virtual ~PartitionValuesRow() throw();
+  std::vector<std::string>  row;
+
+  void __set_row(const std::vector<std::string> & val);
+
+  bool operator == (const PartitionValuesRow & rhs) const
+  {
+    if (!(row == rhs.row))
+      return false;
+    return true;
+  }
+  bool operator != (const PartitionValuesRow &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const PartitionValuesRow & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(PartitionValuesRow &a, PartitionValuesRow &b);
+
+inline std::ostream& operator<<(std::ostream& out, const PartitionValuesRow& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class PartitionValuesResponse {
+ public:
+
+  PartitionValuesResponse(const PartitionValuesResponse&);
+  PartitionValuesResponse& operator=(const PartitionValuesResponse&);
+  PartitionValuesResponse() {
+  }
+
+  virtual ~PartitionValuesResponse() throw();
+  std::vector<PartitionValuesRow>  partitionValues;
+
+  void __set_partitionValues(const std::vector<PartitionValuesRow> & val);
+
+  bool operator == (const PartitionValuesResponse & rhs) const
+  {
+    if (!(partitionValues == rhs.partitionValues))
+      return false;
+    return true;
+  }
+  bool operator != (const PartitionValuesResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const PartitionValuesResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(PartitionValuesResponse &a, PartitionValuesResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const PartitionValuesResponse& obj)
 {
   obj.printTo(out);
   return out;
@@ -5137,7 +6397,7 @@ inline std::ostream& operator<<(std::ostream& out, const ResourceUri& obj)
 }
 
 typedef struct _Function__isset {
-  _Function__isset() : functionName(false), dbName(false), className(false), ownerName(false), ownerType(false), createTime(false), functionType(false), resourceUris(false) {}
+  _Function__isset() : functionName(false), dbName(false), className(false), ownerName(false), ownerType(false), createTime(false), functionType(false), resourceUris(false), catName(false) {}
   bool functionName :1;
   bool dbName :1;
   bool className :1;
@@ -5146,6 +6406,7 @@ typedef struct _Function__isset {
   bool createTime :1;
   bool functionType :1;
   bool resourceUris :1;
+  bool catName :1;
 } _Function__isset;
 
 class Function {
@@ -5153,7 +6414,7 @@ class Function {
 
   Function(const Function&);
   Function& operator=(const Function&);
-  Function() : functionName(), dbName(), className(), ownerName(), ownerType((PrincipalType::type)0), createTime(0), functionType((FunctionType::type)0) {
+  Function() : functionName(), dbName(), className(), ownerName(), ownerType((PrincipalType::type)0), createTime(0), functionType((FunctionType::type)0), catName() {
   }
 
   virtual ~Function() throw();
@@ -5165,6 +6426,7 @@ class Function {
   int32_t createTime;
   FunctionType::type functionType;
   std::vector<ResourceUri>  resourceUris;
+  std::string catName;
 
   _Function__isset __isset;
 
@@ -5184,6 +6446,8 @@ class Function {
 
   void __set_resourceUris(const std::vector<ResourceUri> & val);
 
+  void __set_catName(const std::string& val);
+
   bool operator == (const Function & rhs) const
   {
     if (!(functionName == rhs.functionName))
@@ -5201,6 +6465,10 @@ class Function {
     if (!(functionType == rhs.functionType))
       return false;
     if (!(resourceUris == rhs.resourceUris))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -5433,8 +6701,10 @@ inline std::ostream& operator<<(std::ostream& out, const GetOpenTxnsResponse& ob
 }
 
 typedef struct _OpenTxnRequest__isset {
-  _OpenTxnRequest__isset() : agentInfo(true) {}
+  _OpenTxnRequest__isset() : agentInfo(true), replPolicy(false), replSrcTxnIds(false) {}
   bool agentInfo :1;
+  bool replPolicy :1;
+  bool replSrcTxnIds :1;
 } _OpenTxnRequest__isset;
 
 class OpenTxnRequest {
@@ -5442,7 +6712,7 @@ class OpenTxnRequest {
 
   OpenTxnRequest(const OpenTxnRequest&);
   OpenTxnRequest& operator=(const OpenTxnRequest&);
-  OpenTxnRequest() : num_txns(0), user(), hostname(), agentInfo("Unknown") {
+  OpenTxnRequest() : num_txns(0), user(), hostname(), agentInfo("Unknown"), replPolicy() {
   }
 
   virtual ~OpenTxnRequest() throw();
@@ -5450,6 +6720,8 @@ class OpenTxnRequest {
   std::string user;
   std::string hostname;
   std::string agentInfo;
+  std::string replPolicy;
+  std::vector<int64_t>  replSrcTxnIds;
 
   _OpenTxnRequest__isset __isset;
 
@@ -5460,6 +6732,10 @@ class OpenTxnRequest {
   void __set_hostname(const std::string& val);
 
   void __set_agentInfo(const std::string& val);
+
+  void __set_replPolicy(const std::string& val);
+
+  void __set_replSrcTxnIds(const std::vector<int64_t> & val);
 
   bool operator == (const OpenTxnRequest & rhs) const
   {
@@ -5472,6 +6748,14 @@ class OpenTxnRequest {
     if (__isset.agentInfo != rhs.__isset.agentInfo)
       return false;
     else if (__isset.agentInfo && !(agentInfo == rhs.agentInfo))
+      return false;
+    if (__isset.replPolicy != rhs.__isset.replPolicy)
+      return false;
+    else if (__isset.replPolicy && !(replPolicy == rhs.replPolicy))
+      return false;
+    if (__isset.replSrcTxnIds != rhs.__isset.replSrcTxnIds)
+      return false;
+    else if (__isset.replSrcTxnIds && !(replSrcTxnIds == rhs.replSrcTxnIds))
       return false;
     return true;
   }
@@ -5535,23 +6819,36 @@ inline std::ostream& operator<<(std::ostream& out, const OpenTxnsResponse& obj)
   return out;
 }
 
+typedef struct _AbortTxnRequest__isset {
+  _AbortTxnRequest__isset() : replPolicy(false) {}
+  bool replPolicy :1;
+} _AbortTxnRequest__isset;
 
 class AbortTxnRequest {
  public:
 
   AbortTxnRequest(const AbortTxnRequest&);
   AbortTxnRequest& operator=(const AbortTxnRequest&);
-  AbortTxnRequest() : txnid(0) {
+  AbortTxnRequest() : txnid(0), replPolicy() {
   }
 
   virtual ~AbortTxnRequest() throw();
   int64_t txnid;
+  std::string replPolicy;
+
+  _AbortTxnRequest__isset __isset;
 
   void __set_txnid(const int64_t val);
+
+  void __set_replPolicy(const std::string& val);
 
   bool operator == (const AbortTxnRequest & rhs) const
   {
     if (!(txnid == rhs.txnid))
+      return false;
+    if (__isset.replPolicy != rhs.__isset.replPolicy)
+      return false;
+    else if (__isset.replPolicy && !(replPolicy == rhs.replPolicy))
       return false;
     return true;
   }
@@ -5615,23 +6912,36 @@ inline std::ostream& operator<<(std::ostream& out, const AbortTxnsRequest& obj)
   return out;
 }
 
+typedef struct _CommitTxnRequest__isset {
+  _CommitTxnRequest__isset() : replPolicy(false) {}
+  bool replPolicy :1;
+} _CommitTxnRequest__isset;
 
 class CommitTxnRequest {
  public:
 
   CommitTxnRequest(const CommitTxnRequest&);
   CommitTxnRequest& operator=(const CommitTxnRequest&);
-  CommitTxnRequest() : txnid(0) {
+  CommitTxnRequest() : txnid(0), replPolicy() {
   }
 
   virtual ~CommitTxnRequest() throw();
   int64_t txnid;
+  std::string replPolicy;
+
+  _CommitTxnRequest__isset __isset;
 
   void __set_txnid(const int64_t val);
+
+  void __set_replPolicy(const std::string& val);
 
   bool operator == (const CommitTxnRequest & rhs) const
   {
     if (!(txnid == rhs.txnid))
+      return false;
+    if (__isset.replPolicy != rhs.__isset.replPolicy)
+      return false;
+    else if (__isset.replPolicy && !(replPolicy == rhs.replPolicy))
       return false;
     return true;
   }
@@ -5655,12 +6965,324 @@ inline std::ostream& operator<<(std::ostream& out, const CommitTxnRequest& obj)
   return out;
 }
 
+
+class GetValidWriteIdsRequest {
+ public:
+
+  GetValidWriteIdsRequest(const GetValidWriteIdsRequest&);
+  GetValidWriteIdsRequest& operator=(const GetValidWriteIdsRequest&);
+  GetValidWriteIdsRequest() : validTxnList() {
+  }
+
+  virtual ~GetValidWriteIdsRequest() throw();
+  std::vector<std::string>  fullTableNames;
+  std::string validTxnList;
+
+  void __set_fullTableNames(const std::vector<std::string> & val);
+
+  void __set_validTxnList(const std::string& val);
+
+  bool operator == (const GetValidWriteIdsRequest & rhs) const
+  {
+    if (!(fullTableNames == rhs.fullTableNames))
+      return false;
+    if (!(validTxnList == rhs.validTxnList))
+      return false;
+    return true;
+  }
+  bool operator != (const GetValidWriteIdsRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetValidWriteIdsRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetValidWriteIdsRequest &a, GetValidWriteIdsRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetValidWriteIdsRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _TableValidWriteIds__isset {
+  _TableValidWriteIds__isset() : minOpenWriteId(false) {}
+  bool minOpenWriteId :1;
+} _TableValidWriteIds__isset;
+
+class TableValidWriteIds {
+ public:
+
+  TableValidWriteIds(const TableValidWriteIds&);
+  TableValidWriteIds& operator=(const TableValidWriteIds&);
+  TableValidWriteIds() : fullTableName(), writeIdHighWaterMark(0), minOpenWriteId(0), abortedBits() {
+  }
+
+  virtual ~TableValidWriteIds() throw();
+  std::string fullTableName;
+  int64_t writeIdHighWaterMark;
+  std::vector<int64_t>  invalidWriteIds;
+  int64_t minOpenWriteId;
+  std::string abortedBits;
+
+  _TableValidWriteIds__isset __isset;
+
+  void __set_fullTableName(const std::string& val);
+
+  void __set_writeIdHighWaterMark(const int64_t val);
+
+  void __set_invalidWriteIds(const std::vector<int64_t> & val);
+
+  void __set_minOpenWriteId(const int64_t val);
+
+  void __set_abortedBits(const std::string& val);
+
+  bool operator == (const TableValidWriteIds & rhs) const
+  {
+    if (!(fullTableName == rhs.fullTableName))
+      return false;
+    if (!(writeIdHighWaterMark == rhs.writeIdHighWaterMark))
+      return false;
+    if (!(invalidWriteIds == rhs.invalidWriteIds))
+      return false;
+    if (__isset.minOpenWriteId != rhs.__isset.minOpenWriteId)
+      return false;
+    else if (__isset.minOpenWriteId && !(minOpenWriteId == rhs.minOpenWriteId))
+      return false;
+    if (!(abortedBits == rhs.abortedBits))
+      return false;
+    return true;
+  }
+  bool operator != (const TableValidWriteIds &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const TableValidWriteIds & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(TableValidWriteIds &a, TableValidWriteIds &b);
+
+inline std::ostream& operator<<(std::ostream& out, const TableValidWriteIds& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class GetValidWriteIdsResponse {
+ public:
+
+  GetValidWriteIdsResponse(const GetValidWriteIdsResponse&);
+  GetValidWriteIdsResponse& operator=(const GetValidWriteIdsResponse&);
+  GetValidWriteIdsResponse() {
+  }
+
+  virtual ~GetValidWriteIdsResponse() throw();
+  std::vector<TableValidWriteIds>  tblValidWriteIds;
+
+  void __set_tblValidWriteIds(const std::vector<TableValidWriteIds> & val);
+
+  bool operator == (const GetValidWriteIdsResponse & rhs) const
+  {
+    if (!(tblValidWriteIds == rhs.tblValidWriteIds))
+      return false;
+    return true;
+  }
+  bool operator != (const GetValidWriteIdsResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetValidWriteIdsResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetValidWriteIdsResponse &a, GetValidWriteIdsResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetValidWriteIdsResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _AllocateTableWriteIdsRequest__isset {
+  _AllocateTableWriteIdsRequest__isset() : txnIds(false), replPolicy(false), srcTxnToWriteIdList(false) {}
+  bool txnIds :1;
+  bool replPolicy :1;
+  bool srcTxnToWriteIdList :1;
+} _AllocateTableWriteIdsRequest__isset;
+
+class AllocateTableWriteIdsRequest {
+ public:
+
+  AllocateTableWriteIdsRequest(const AllocateTableWriteIdsRequest&);
+  AllocateTableWriteIdsRequest& operator=(const AllocateTableWriteIdsRequest&);
+  AllocateTableWriteIdsRequest() : dbName(), tableName(), replPolicy() {
+  }
+
+  virtual ~AllocateTableWriteIdsRequest() throw();
+  std::string dbName;
+  std::string tableName;
+  std::vector<int64_t>  txnIds;
+  std::string replPolicy;
+  std::vector<TxnToWriteId>  srcTxnToWriteIdList;
+
+  _AllocateTableWriteIdsRequest__isset __isset;
+
+  void __set_dbName(const std::string& val);
+
+  void __set_tableName(const std::string& val);
+
+  void __set_txnIds(const std::vector<int64_t> & val);
+
+  void __set_replPolicy(const std::string& val);
+
+  void __set_srcTxnToWriteIdList(const std::vector<TxnToWriteId> & val);
+
+  bool operator == (const AllocateTableWriteIdsRequest & rhs) const
+  {
+    if (!(dbName == rhs.dbName))
+      return false;
+    if (!(tableName == rhs.tableName))
+      return false;
+    if (__isset.txnIds != rhs.__isset.txnIds)
+      return false;
+    else if (__isset.txnIds && !(txnIds == rhs.txnIds))
+      return false;
+    if (__isset.replPolicy != rhs.__isset.replPolicy)
+      return false;
+    else if (__isset.replPolicy && !(replPolicy == rhs.replPolicy))
+      return false;
+    if (__isset.srcTxnToWriteIdList != rhs.__isset.srcTxnToWriteIdList)
+      return false;
+    else if (__isset.srcTxnToWriteIdList && !(srcTxnToWriteIdList == rhs.srcTxnToWriteIdList))
+      return false;
+    return true;
+  }
+  bool operator != (const AllocateTableWriteIdsRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const AllocateTableWriteIdsRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(AllocateTableWriteIdsRequest &a, AllocateTableWriteIdsRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const AllocateTableWriteIdsRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class TxnToWriteId {
+ public:
+
+  TxnToWriteId(const TxnToWriteId&);
+  TxnToWriteId& operator=(const TxnToWriteId&);
+  TxnToWriteId() : txnId(0), writeId(0) {
+  }
+
+  virtual ~TxnToWriteId() throw();
+  int64_t txnId;
+  int64_t writeId;
+
+  void __set_txnId(const int64_t val);
+
+  void __set_writeId(const int64_t val);
+
+  bool operator == (const TxnToWriteId & rhs) const
+  {
+    if (!(txnId == rhs.txnId))
+      return false;
+    if (!(writeId == rhs.writeId))
+      return false;
+    return true;
+  }
+  bool operator != (const TxnToWriteId &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const TxnToWriteId & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(TxnToWriteId &a, TxnToWriteId &b);
+
+inline std::ostream& operator<<(std::ostream& out, const TxnToWriteId& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class AllocateTableWriteIdsResponse {
+ public:
+
+  AllocateTableWriteIdsResponse(const AllocateTableWriteIdsResponse&);
+  AllocateTableWriteIdsResponse& operator=(const AllocateTableWriteIdsResponse&);
+  AllocateTableWriteIdsResponse() {
+  }
+
+  virtual ~AllocateTableWriteIdsResponse() throw();
+  std::vector<TxnToWriteId>  txnToWriteIds;
+
+  void __set_txnToWriteIds(const std::vector<TxnToWriteId> & val);
+
+  bool operator == (const AllocateTableWriteIdsResponse & rhs) const
+  {
+    if (!(txnToWriteIds == rhs.txnToWriteIds))
+      return false;
+    return true;
+  }
+  bool operator != (const AllocateTableWriteIdsResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const AllocateTableWriteIdsResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(AllocateTableWriteIdsResponse &a, AllocateTableWriteIdsResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const AllocateTableWriteIdsResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
 typedef struct _LockComponent__isset {
-  _LockComponent__isset() : tablename(false), partitionname(false), operationType(true), isAcid(true), isDynamicPartitionWrite(true) {}
+  _LockComponent__isset() : tablename(false), partitionname(false), operationType(true), isTransactional(true), isDynamicPartitionWrite(true) {}
   bool tablename :1;
   bool partitionname :1;
   bool operationType :1;
-  bool isAcid :1;
+  bool isTransactional :1;
   bool isDynamicPartitionWrite :1;
 } _LockComponent__isset;
 
@@ -5669,7 +7291,7 @@ class LockComponent {
 
   LockComponent(const LockComponent&);
   LockComponent& operator=(const LockComponent&);
-  LockComponent() : type((LockType::type)0), level((LockLevel::type)0), dbname(), tablename(), partitionname(), operationType((DataOperationType::type)5), isAcid(false), isDynamicPartitionWrite(false) {
+  LockComponent() : type((LockType::type)0), level((LockLevel::type)0), dbname(), tablename(), partitionname(), operationType((DataOperationType::type)5), isTransactional(false), isDynamicPartitionWrite(false) {
     operationType = (DataOperationType::type)5;
 
   }
@@ -5681,7 +7303,7 @@ class LockComponent {
   std::string tablename;
   std::string partitionname;
   DataOperationType::type operationType;
-  bool isAcid;
+  bool isTransactional;
   bool isDynamicPartitionWrite;
 
   _LockComponent__isset __isset;
@@ -5698,7 +7320,7 @@ class LockComponent {
 
   void __set_operationType(const DataOperationType::type val);
 
-  void __set_isAcid(const bool val);
+  void __set_isTransactional(const bool val);
 
   void __set_isDynamicPartitionWrite(const bool val);
 
@@ -5722,9 +7344,9 @@ class LockComponent {
       return false;
     else if (__isset.operationType && !(operationType == rhs.operationType))
       return false;
-    if (__isset.isAcid != rhs.__isset.isAcid)
+    if (__isset.isTransactional != rhs.__isset.isTransactional)
       return false;
-    else if (__isset.isAcid && !(isAcid == rhs.isAcid))
+    else if (__isset.isTransactional && !(isTransactional == rhs.isTransactional))
       return false;
     if (__isset.isDynamicPartitionWrite != rhs.__isset.isDynamicPartitionWrite)
       return false;
@@ -6726,13 +8348,14 @@ class AddDynamicPartitions {
 
   AddDynamicPartitions(const AddDynamicPartitions&);
   AddDynamicPartitions& operator=(const AddDynamicPartitions&);
-  AddDynamicPartitions() : txnid(0), dbname(), tablename(), operationType((DataOperationType::type)5) {
+  AddDynamicPartitions() : txnid(0), writeid(0), dbname(), tablename(), operationType((DataOperationType::type)5) {
     operationType = (DataOperationType::type)5;
 
   }
 
   virtual ~AddDynamicPartitions() throw();
   int64_t txnid;
+  int64_t writeid;
   std::string dbname;
   std::string tablename;
   std::vector<std::string>  partitionnames;
@@ -6741,6 +8364,8 @@ class AddDynamicPartitions {
   _AddDynamicPartitions__isset __isset;
 
   void __set_txnid(const int64_t val);
+
+  void __set_writeid(const int64_t val);
 
   void __set_dbname(const std::string& val);
 
@@ -6753,6 +8378,8 @@ class AddDynamicPartitions {
   bool operator == (const AddDynamicPartitions & rhs) const
   {
     if (!(txnid == rhs.txnid))
+      return false;
+    if (!(writeid == rhs.writeid))
       return false;
     if (!(dbname == rhs.dbname))
       return false;
@@ -6781,6 +8408,159 @@ class AddDynamicPartitions {
 void swap(AddDynamicPartitions &a, AddDynamicPartitions &b);
 
 inline std::ostream& operator<<(std::ostream& out, const AddDynamicPartitions& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _BasicTxnInfo__isset {
+  _BasicTxnInfo__isset() : time(false), txnid(false), dbname(false), tablename(false), partitionname(false) {}
+  bool time :1;
+  bool txnid :1;
+  bool dbname :1;
+  bool tablename :1;
+  bool partitionname :1;
+} _BasicTxnInfo__isset;
+
+class BasicTxnInfo {
+ public:
+
+  BasicTxnInfo(const BasicTxnInfo&);
+  BasicTxnInfo& operator=(const BasicTxnInfo&);
+  BasicTxnInfo() : isnull(0), time(0), txnid(0), dbname(), tablename(), partitionname() {
+  }
+
+  virtual ~BasicTxnInfo() throw();
+  bool isnull;
+  int64_t time;
+  int64_t txnid;
+  std::string dbname;
+  std::string tablename;
+  std::string partitionname;
+
+  _BasicTxnInfo__isset __isset;
+
+  void __set_isnull(const bool val);
+
+  void __set_time(const int64_t val);
+
+  void __set_txnid(const int64_t val);
+
+  void __set_dbname(const std::string& val);
+
+  void __set_tablename(const std::string& val);
+
+  void __set_partitionname(const std::string& val);
+
+  bool operator == (const BasicTxnInfo & rhs) const
+  {
+    if (!(isnull == rhs.isnull))
+      return false;
+    if (__isset.time != rhs.__isset.time)
+      return false;
+    else if (__isset.time && !(time == rhs.time))
+      return false;
+    if (__isset.txnid != rhs.__isset.txnid)
+      return false;
+    else if (__isset.txnid && !(txnid == rhs.txnid))
+      return false;
+    if (__isset.dbname != rhs.__isset.dbname)
+      return false;
+    else if (__isset.dbname && !(dbname == rhs.dbname))
+      return false;
+    if (__isset.tablename != rhs.__isset.tablename)
+      return false;
+    else if (__isset.tablename && !(tablename == rhs.tablename))
+      return false;
+    if (__isset.partitionname != rhs.__isset.partitionname)
+      return false;
+    else if (__isset.partitionname && !(partitionname == rhs.partitionname))
+      return false;
+    return true;
+  }
+  bool operator != (const BasicTxnInfo &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const BasicTxnInfo & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(BasicTxnInfo &a, BasicTxnInfo &b);
+
+inline std::ostream& operator<<(std::ostream& out, const BasicTxnInfo& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _CreationMetadata__isset {
+  _CreationMetadata__isset() : validTxnList(false) {}
+  bool validTxnList :1;
+} _CreationMetadata__isset;
+
+class CreationMetadata {
+ public:
+
+  CreationMetadata(const CreationMetadata&);
+  CreationMetadata& operator=(const CreationMetadata&);
+  CreationMetadata() : catName(), dbName(), tblName(), validTxnList() {
+  }
+
+  virtual ~CreationMetadata() throw();
+  std::string catName;
+  std::string dbName;
+  std::string tblName;
+  std::set<std::string>  tablesUsed;
+  std::string validTxnList;
+
+  _CreationMetadata__isset __isset;
+
+  void __set_catName(const std::string& val);
+
+  void __set_dbName(const std::string& val);
+
+  void __set_tblName(const std::string& val);
+
+  void __set_tablesUsed(const std::set<std::string> & val);
+
+  void __set_validTxnList(const std::string& val);
+
+  bool operator == (const CreationMetadata & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(dbName == rhs.dbName))
+      return false;
+    if (!(tblName == rhs.tblName))
+      return false;
+    if (!(tablesUsed == rhs.tablesUsed))
+      return false;
+    if (__isset.validTxnList != rhs.__isset.validTxnList)
+      return false;
+    else if (__isset.validTxnList && !(validTxnList == rhs.validTxnList))
+      return false;
+    return true;
+  }
+  bool operator != (const CreationMetadata &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const CreationMetadata & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(CreationMetadata &a, CreationMetadata &b);
+
+inline std::ostream& operator<<(std::ostream& out, const CreationMetadata& obj)
 {
   obj.printTo(out);
   return out;
@@ -6840,10 +8620,11 @@ inline std::ostream& operator<<(std::ostream& out, const NotificationEventReques
 }
 
 typedef struct _NotificationEvent__isset {
-  _NotificationEvent__isset() : dbName(false), tableName(false), messageFormat(false) {}
+  _NotificationEvent__isset() : dbName(false), tableName(false), messageFormat(false), catName(false) {}
   bool dbName :1;
   bool tableName :1;
   bool messageFormat :1;
+  bool catName :1;
 } _NotificationEvent__isset;
 
 class NotificationEvent {
@@ -6851,7 +8632,7 @@ class NotificationEvent {
 
   NotificationEvent(const NotificationEvent&);
   NotificationEvent& operator=(const NotificationEvent&);
-  NotificationEvent() : eventId(0), eventTime(0), eventType(), dbName(), tableName(), message(), messageFormat() {
+  NotificationEvent() : eventId(0), eventTime(0), eventType(), dbName(), tableName(), message(), messageFormat(), catName() {
   }
 
   virtual ~NotificationEvent() throw();
@@ -6862,6 +8643,7 @@ class NotificationEvent {
   std::string tableName;
   std::string message;
   std::string messageFormat;
+  std::string catName;
 
   _NotificationEvent__isset __isset;
 
@@ -6878,6 +8660,8 @@ class NotificationEvent {
   void __set_message(const std::string& val);
 
   void __set_messageFormat(const std::string& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const NotificationEvent & rhs) const
   {
@@ -6900,6 +8684,10 @@ class NotificationEvent {
     if (__isset.messageFormat != rhs.__isset.messageFormat)
       return false;
     else if (__isset.messageFormat && !(messageFormat == rhs.messageFormat))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -7003,28 +8791,41 @@ inline std::ostream& operator<<(std::ostream& out, const CurrentNotificationEven
   return out;
 }
 
+typedef struct _NotificationEventsCountRequest__isset {
+  _NotificationEventsCountRequest__isset() : catName(false) {}
+  bool catName :1;
+} _NotificationEventsCountRequest__isset;
 
 class NotificationEventsCountRequest {
  public:
 
   NotificationEventsCountRequest(const NotificationEventsCountRequest&);
   NotificationEventsCountRequest& operator=(const NotificationEventsCountRequest&);
-  NotificationEventsCountRequest() : fromEventId(0), dbName() {
+  NotificationEventsCountRequest() : fromEventId(0), dbName(), catName() {
   }
 
   virtual ~NotificationEventsCountRequest() throw();
   int64_t fromEventId;
   std::string dbName;
+  std::string catName;
+
+  _NotificationEventsCountRequest__isset __isset;
 
   void __set_fromEventId(const int64_t val);
 
   void __set_dbName(const std::string& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const NotificationEventsCountRequest & rhs) const
   {
     if (!(fromEventId == rhs.fromEventId))
       return false;
     if (!(dbName == rhs.dbName))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -7196,10 +8997,11 @@ inline std::ostream& operator<<(std::ostream& out, const FireEventRequestData& o
 }
 
 typedef struct _FireEventRequest__isset {
-  _FireEventRequest__isset() : dbName(false), tableName(false), partitionVals(false) {}
+  _FireEventRequest__isset() : dbName(false), tableName(false), partitionVals(false), catName(false) {}
   bool dbName :1;
   bool tableName :1;
   bool partitionVals :1;
+  bool catName :1;
 } _FireEventRequest__isset;
 
 class FireEventRequest {
@@ -7207,7 +9009,7 @@ class FireEventRequest {
 
   FireEventRequest(const FireEventRequest&);
   FireEventRequest& operator=(const FireEventRequest&);
-  FireEventRequest() : successful(0), dbName(), tableName() {
+  FireEventRequest() : successful(0), dbName(), tableName(), catName() {
   }
 
   virtual ~FireEventRequest() throw();
@@ -7216,6 +9018,7 @@ class FireEventRequest {
   std::string dbName;
   std::string tableName;
   std::vector<std::string>  partitionVals;
+  std::string catName;
 
   _FireEventRequest__isset __isset;
 
@@ -7228,6 +9031,8 @@ class FireEventRequest {
   void __set_tableName(const std::string& val);
 
   void __set_partitionVals(const std::vector<std::string> & val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const FireEventRequest & rhs) const
   {
@@ -7246,6 +9051,10 @@ class FireEventRequest {
     if (__isset.partitionVals != rhs.__isset.partitionVals)
       return false;
     else if (__isset.partitionVals && !(partitionVals == rhs.partitionVals))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -7919,8 +9728,9 @@ inline std::ostream& operator<<(std::ostream& out, const ClientCapabilities& obj
 }
 
 typedef struct _GetTableRequest__isset {
-  _GetTableRequest__isset() : capabilities(false) {}
+  _GetTableRequest__isset() : capabilities(false), catName(false) {}
   bool capabilities :1;
+  bool catName :1;
 } _GetTableRequest__isset;
 
 class GetTableRequest {
@@ -7928,13 +9738,14 @@ class GetTableRequest {
 
   GetTableRequest(const GetTableRequest&);
   GetTableRequest& operator=(const GetTableRequest&);
-  GetTableRequest() : dbName(), tblName() {
+  GetTableRequest() : dbName(), tblName(), catName() {
   }
 
   virtual ~GetTableRequest() throw();
   std::string dbName;
   std::string tblName;
   ClientCapabilities capabilities;
+  std::string catName;
 
   _GetTableRequest__isset __isset;
 
@@ -7943,6 +9754,8 @@ class GetTableRequest {
   void __set_tblName(const std::string& val);
 
   void __set_capabilities(const ClientCapabilities& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const GetTableRequest & rhs) const
   {
@@ -7953,6 +9766,10 @@ class GetTableRequest {
     if (__isset.capabilities != rhs.__isset.capabilities)
       return false;
     else if (__isset.capabilities && !(capabilities == rhs.capabilities))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -8017,9 +9834,10 @@ inline std::ostream& operator<<(std::ostream& out, const GetTableResult& obj)
 }
 
 typedef struct _GetTablesRequest__isset {
-  _GetTablesRequest__isset() : tblNames(false), capabilities(false) {}
+  _GetTablesRequest__isset() : tblNames(false), capabilities(false), catName(false) {}
   bool tblNames :1;
   bool capabilities :1;
+  bool catName :1;
 } _GetTablesRequest__isset;
 
 class GetTablesRequest {
@@ -8027,13 +9845,14 @@ class GetTablesRequest {
 
   GetTablesRequest(const GetTablesRequest&);
   GetTablesRequest& operator=(const GetTablesRequest&);
-  GetTablesRequest() : dbName() {
+  GetTablesRequest() : dbName(), catName() {
   }
 
   virtual ~GetTablesRequest() throw();
   std::string dbName;
   std::vector<std::string>  tblNames;
   ClientCapabilities capabilities;
+  std::string catName;
 
   _GetTablesRequest__isset __isset;
 
@@ -8042,6 +9861,8 @@ class GetTablesRequest {
   void __set_tblNames(const std::vector<std::string> & val);
 
   void __set_capabilities(const ClientCapabilities& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const GetTablesRequest & rhs) const
   {
@@ -8054,6 +9875,10 @@ class GetTablesRequest {
     if (__isset.capabilities != rhs.__isset.capabilities)
       return false;
     else if (__isset.capabilities && !(capabilities == rhs.capabilities))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -8198,8 +10023,9 @@ inline std::ostream& operator<<(std::ostream& out, const CmRecycleResponse& obj)
 }
 
 typedef struct _TableMeta__isset {
-  _TableMeta__isset() : comments(false) {}
+  _TableMeta__isset() : comments(false), catName(false) {}
   bool comments :1;
+  bool catName :1;
 } _TableMeta__isset;
 
 class TableMeta {
@@ -8207,7 +10033,7 @@ class TableMeta {
 
   TableMeta(const TableMeta&);
   TableMeta& operator=(const TableMeta&);
-  TableMeta() : dbName(), tableName(), tableType(), comments() {
+  TableMeta() : dbName(), tableName(), tableType(), comments(), catName() {
   }
 
   virtual ~TableMeta() throw();
@@ -8215,6 +10041,7 @@ class TableMeta {
   std::string tableName;
   std::string tableType;
   std::string comments;
+  std::string catName;
 
   _TableMeta__isset __isset;
 
@@ -8225,6 +10052,8 @@ class TableMeta {
   void __set_tableType(const std::string& val);
 
   void __set_comments(const std::string& val);
+
+  void __set_catName(const std::string& val);
 
   bool operator == (const TableMeta & rhs) const
   {
@@ -8237,6 +10066,10 @@ class TableMeta {
     if (__isset.comments != rhs.__isset.comments)
       return false;
     else if (__isset.comments && !(comments == rhs.comments))
+      return false;
+    if (__isset.catName != rhs.__isset.catName)
+      return false;
+    else if (__isset.catName && !(catName == rhs.catName))
       return false;
     return true;
   }
@@ -8255,6 +10088,2954 @@ class TableMeta {
 void swap(TableMeta &a, TableMeta &b);
 
 inline std::ostream& operator<<(std::ostream& out, const TableMeta& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _Materialization__isset {
+  _Materialization__isset() : validTxnList(false), invalidationTime(false), sourceTablesUpdateDeleteModified(false) {}
+  bool validTxnList :1;
+  bool invalidationTime :1;
+  bool sourceTablesUpdateDeleteModified :1;
+} _Materialization__isset;
+
+class Materialization {
+ public:
+
+  Materialization(const Materialization&);
+  Materialization& operator=(const Materialization&);
+  Materialization() : validTxnList(), invalidationTime(0), sourceTablesUpdateDeleteModified(0) {
+  }
+
+  virtual ~Materialization() throw();
+  std::set<std::string>  tablesUsed;
+  std::string validTxnList;
+  int64_t invalidationTime;
+  bool sourceTablesUpdateDeleteModified;
+
+  _Materialization__isset __isset;
+
+  void __set_tablesUsed(const std::set<std::string> & val);
+
+  void __set_validTxnList(const std::string& val);
+
+  void __set_invalidationTime(const int64_t val);
+
+  void __set_sourceTablesUpdateDeleteModified(const bool val);
+
+  bool operator == (const Materialization & rhs) const
+  {
+    if (!(tablesUsed == rhs.tablesUsed))
+      return false;
+    if (__isset.validTxnList != rhs.__isset.validTxnList)
+      return false;
+    else if (__isset.validTxnList && !(validTxnList == rhs.validTxnList))
+      return false;
+    if (__isset.invalidationTime != rhs.__isset.invalidationTime)
+      return false;
+    else if (__isset.invalidationTime && !(invalidationTime == rhs.invalidationTime))
+      return false;
+    if (__isset.sourceTablesUpdateDeleteModified != rhs.__isset.sourceTablesUpdateDeleteModified)
+      return false;
+    else if (__isset.sourceTablesUpdateDeleteModified && !(sourceTablesUpdateDeleteModified == rhs.sourceTablesUpdateDeleteModified))
+      return false;
+    return true;
+  }
+  bool operator != (const Materialization &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const Materialization & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(Materialization &a, Materialization &b);
+
+inline std::ostream& operator<<(std::ostream& out, const Materialization& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMResourcePlan__isset {
+  _WMResourcePlan__isset() : status(false), queryParallelism(false), defaultPoolPath(false) {}
+  bool status :1;
+  bool queryParallelism :1;
+  bool defaultPoolPath :1;
+} _WMResourcePlan__isset;
+
+class WMResourcePlan {
+ public:
+
+  WMResourcePlan(const WMResourcePlan&);
+  WMResourcePlan& operator=(const WMResourcePlan&);
+  WMResourcePlan() : name(), status((WMResourcePlanStatus::type)0), queryParallelism(0), defaultPoolPath() {
+  }
+
+  virtual ~WMResourcePlan() throw();
+  std::string name;
+  WMResourcePlanStatus::type status;
+  int32_t queryParallelism;
+  std::string defaultPoolPath;
+
+  _WMResourcePlan__isset __isset;
+
+  void __set_name(const std::string& val);
+
+  void __set_status(const WMResourcePlanStatus::type val);
+
+  void __set_queryParallelism(const int32_t val);
+
+  void __set_defaultPoolPath(const std::string& val);
+
+  bool operator == (const WMResourcePlan & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (__isset.status != rhs.__isset.status)
+      return false;
+    else if (__isset.status && !(status == rhs.status))
+      return false;
+    if (__isset.queryParallelism != rhs.__isset.queryParallelism)
+      return false;
+    else if (__isset.queryParallelism && !(queryParallelism == rhs.queryParallelism))
+      return false;
+    if (__isset.defaultPoolPath != rhs.__isset.defaultPoolPath)
+      return false;
+    else if (__isset.defaultPoolPath && !(defaultPoolPath == rhs.defaultPoolPath))
+      return false;
+    return true;
+  }
+  bool operator != (const WMResourcePlan &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMResourcePlan & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMResourcePlan &a, WMResourcePlan &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMResourcePlan& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMNullableResourcePlan__isset {
+  _WMNullableResourcePlan__isset() : name(false), status(false), queryParallelism(false), isSetQueryParallelism(false), defaultPoolPath(false), isSetDefaultPoolPath(false) {}
+  bool name :1;
+  bool status :1;
+  bool queryParallelism :1;
+  bool isSetQueryParallelism :1;
+  bool defaultPoolPath :1;
+  bool isSetDefaultPoolPath :1;
+} _WMNullableResourcePlan__isset;
+
+class WMNullableResourcePlan {
+ public:
+
+  WMNullableResourcePlan(const WMNullableResourcePlan&);
+  WMNullableResourcePlan& operator=(const WMNullableResourcePlan&);
+  WMNullableResourcePlan() : name(), status((WMResourcePlanStatus::type)0), queryParallelism(0), isSetQueryParallelism(0), defaultPoolPath(), isSetDefaultPoolPath(0) {
+  }
+
+  virtual ~WMNullableResourcePlan() throw();
+  std::string name;
+  WMResourcePlanStatus::type status;
+  int32_t queryParallelism;
+  bool isSetQueryParallelism;
+  std::string defaultPoolPath;
+  bool isSetDefaultPoolPath;
+
+  _WMNullableResourcePlan__isset __isset;
+
+  void __set_name(const std::string& val);
+
+  void __set_status(const WMResourcePlanStatus::type val);
+
+  void __set_queryParallelism(const int32_t val);
+
+  void __set_isSetQueryParallelism(const bool val);
+
+  void __set_defaultPoolPath(const std::string& val);
+
+  void __set_isSetDefaultPoolPath(const bool val);
+
+  bool operator == (const WMNullableResourcePlan & rhs) const
+  {
+    if (__isset.name != rhs.__isset.name)
+      return false;
+    else if (__isset.name && !(name == rhs.name))
+      return false;
+    if (__isset.status != rhs.__isset.status)
+      return false;
+    else if (__isset.status && !(status == rhs.status))
+      return false;
+    if (__isset.queryParallelism != rhs.__isset.queryParallelism)
+      return false;
+    else if (__isset.queryParallelism && !(queryParallelism == rhs.queryParallelism))
+      return false;
+    if (__isset.isSetQueryParallelism != rhs.__isset.isSetQueryParallelism)
+      return false;
+    else if (__isset.isSetQueryParallelism && !(isSetQueryParallelism == rhs.isSetQueryParallelism))
+      return false;
+    if (__isset.defaultPoolPath != rhs.__isset.defaultPoolPath)
+      return false;
+    else if (__isset.defaultPoolPath && !(defaultPoolPath == rhs.defaultPoolPath))
+      return false;
+    if (__isset.isSetDefaultPoolPath != rhs.__isset.isSetDefaultPoolPath)
+      return false;
+    else if (__isset.isSetDefaultPoolPath && !(isSetDefaultPoolPath == rhs.isSetDefaultPoolPath))
+      return false;
+    return true;
+  }
+  bool operator != (const WMNullableResourcePlan &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMNullableResourcePlan & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMNullableResourcePlan &a, WMNullableResourcePlan &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMNullableResourcePlan& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMPool__isset {
+  _WMPool__isset() : allocFraction(false), queryParallelism(false), schedulingPolicy(false) {}
+  bool allocFraction :1;
+  bool queryParallelism :1;
+  bool schedulingPolicy :1;
+} _WMPool__isset;
+
+class WMPool {
+ public:
+
+  WMPool(const WMPool&);
+  WMPool& operator=(const WMPool&);
+  WMPool() : resourcePlanName(), poolPath(), allocFraction(0), queryParallelism(0), schedulingPolicy() {
+  }
+
+  virtual ~WMPool() throw();
+  std::string resourcePlanName;
+  std::string poolPath;
+  double allocFraction;
+  int32_t queryParallelism;
+  std::string schedulingPolicy;
+
+  _WMPool__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_poolPath(const std::string& val);
+
+  void __set_allocFraction(const double val);
+
+  void __set_queryParallelism(const int32_t val);
+
+  void __set_schedulingPolicy(const std::string& val);
+
+  bool operator == (const WMPool & rhs) const
+  {
+    if (!(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (!(poolPath == rhs.poolPath))
+      return false;
+    if (__isset.allocFraction != rhs.__isset.allocFraction)
+      return false;
+    else if (__isset.allocFraction && !(allocFraction == rhs.allocFraction))
+      return false;
+    if (__isset.queryParallelism != rhs.__isset.queryParallelism)
+      return false;
+    else if (__isset.queryParallelism && !(queryParallelism == rhs.queryParallelism))
+      return false;
+    if (__isset.schedulingPolicy != rhs.__isset.schedulingPolicy)
+      return false;
+    else if (__isset.schedulingPolicy && !(schedulingPolicy == rhs.schedulingPolicy))
+      return false;
+    return true;
+  }
+  bool operator != (const WMPool &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMPool & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMPool &a, WMPool &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMPool& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMNullablePool__isset {
+  _WMNullablePool__isset() : allocFraction(false), queryParallelism(false), schedulingPolicy(false), isSetSchedulingPolicy(false) {}
+  bool allocFraction :1;
+  bool queryParallelism :1;
+  bool schedulingPolicy :1;
+  bool isSetSchedulingPolicy :1;
+} _WMNullablePool__isset;
+
+class WMNullablePool {
+ public:
+
+  WMNullablePool(const WMNullablePool&);
+  WMNullablePool& operator=(const WMNullablePool&);
+  WMNullablePool() : resourcePlanName(), poolPath(), allocFraction(0), queryParallelism(0), schedulingPolicy(), isSetSchedulingPolicy(0) {
+  }
+
+  virtual ~WMNullablePool() throw();
+  std::string resourcePlanName;
+  std::string poolPath;
+  double allocFraction;
+  int32_t queryParallelism;
+  std::string schedulingPolicy;
+  bool isSetSchedulingPolicy;
+
+  _WMNullablePool__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_poolPath(const std::string& val);
+
+  void __set_allocFraction(const double val);
+
+  void __set_queryParallelism(const int32_t val);
+
+  void __set_schedulingPolicy(const std::string& val);
+
+  void __set_isSetSchedulingPolicy(const bool val);
+
+  bool operator == (const WMNullablePool & rhs) const
+  {
+    if (!(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (!(poolPath == rhs.poolPath))
+      return false;
+    if (__isset.allocFraction != rhs.__isset.allocFraction)
+      return false;
+    else if (__isset.allocFraction && !(allocFraction == rhs.allocFraction))
+      return false;
+    if (__isset.queryParallelism != rhs.__isset.queryParallelism)
+      return false;
+    else if (__isset.queryParallelism && !(queryParallelism == rhs.queryParallelism))
+      return false;
+    if (__isset.schedulingPolicy != rhs.__isset.schedulingPolicy)
+      return false;
+    else if (__isset.schedulingPolicy && !(schedulingPolicy == rhs.schedulingPolicy))
+      return false;
+    if (__isset.isSetSchedulingPolicy != rhs.__isset.isSetSchedulingPolicy)
+      return false;
+    else if (__isset.isSetSchedulingPolicy && !(isSetSchedulingPolicy == rhs.isSetSchedulingPolicy))
+      return false;
+    return true;
+  }
+  bool operator != (const WMNullablePool &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMNullablePool & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMNullablePool &a, WMNullablePool &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMNullablePool& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMTrigger__isset {
+  _WMTrigger__isset() : triggerExpression(false), actionExpression(false), isInUnmanaged(false) {}
+  bool triggerExpression :1;
+  bool actionExpression :1;
+  bool isInUnmanaged :1;
+} _WMTrigger__isset;
+
+class WMTrigger {
+ public:
+
+  WMTrigger(const WMTrigger&);
+  WMTrigger& operator=(const WMTrigger&);
+  WMTrigger() : resourcePlanName(), triggerName(), triggerExpression(), actionExpression(), isInUnmanaged(0) {
+  }
+
+  virtual ~WMTrigger() throw();
+  std::string resourcePlanName;
+  std::string triggerName;
+  std::string triggerExpression;
+  std::string actionExpression;
+  bool isInUnmanaged;
+
+  _WMTrigger__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_triggerName(const std::string& val);
+
+  void __set_triggerExpression(const std::string& val);
+
+  void __set_actionExpression(const std::string& val);
+
+  void __set_isInUnmanaged(const bool val);
+
+  bool operator == (const WMTrigger & rhs) const
+  {
+    if (!(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (!(triggerName == rhs.triggerName))
+      return false;
+    if (__isset.triggerExpression != rhs.__isset.triggerExpression)
+      return false;
+    else if (__isset.triggerExpression && !(triggerExpression == rhs.triggerExpression))
+      return false;
+    if (__isset.actionExpression != rhs.__isset.actionExpression)
+      return false;
+    else if (__isset.actionExpression && !(actionExpression == rhs.actionExpression))
+      return false;
+    if (__isset.isInUnmanaged != rhs.__isset.isInUnmanaged)
+      return false;
+    else if (__isset.isInUnmanaged && !(isInUnmanaged == rhs.isInUnmanaged))
+      return false;
+    return true;
+  }
+  bool operator != (const WMTrigger &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMTrigger & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMTrigger &a, WMTrigger &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMTrigger& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMMapping__isset {
+  _WMMapping__isset() : poolPath(false), ordering(false) {}
+  bool poolPath :1;
+  bool ordering :1;
+} _WMMapping__isset;
+
+class WMMapping {
+ public:
+
+  WMMapping(const WMMapping&);
+  WMMapping& operator=(const WMMapping&);
+  WMMapping() : resourcePlanName(), entityType(), entityName(), poolPath(), ordering(0) {
+  }
+
+  virtual ~WMMapping() throw();
+  std::string resourcePlanName;
+  std::string entityType;
+  std::string entityName;
+  std::string poolPath;
+  int32_t ordering;
+
+  _WMMapping__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_entityType(const std::string& val);
+
+  void __set_entityName(const std::string& val);
+
+  void __set_poolPath(const std::string& val);
+
+  void __set_ordering(const int32_t val);
+
+  bool operator == (const WMMapping & rhs) const
+  {
+    if (!(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (!(entityType == rhs.entityType))
+      return false;
+    if (!(entityName == rhs.entityName))
+      return false;
+    if (__isset.poolPath != rhs.__isset.poolPath)
+      return false;
+    else if (__isset.poolPath && !(poolPath == rhs.poolPath))
+      return false;
+    if (__isset.ordering != rhs.__isset.ordering)
+      return false;
+    else if (__isset.ordering && !(ordering == rhs.ordering))
+      return false;
+    return true;
+  }
+  bool operator != (const WMMapping &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMMapping & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMMapping &a, WMMapping &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMMapping& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMPoolTrigger {
+ public:
+
+  WMPoolTrigger(const WMPoolTrigger&);
+  WMPoolTrigger& operator=(const WMPoolTrigger&);
+  WMPoolTrigger() : pool(), trigger() {
+  }
+
+  virtual ~WMPoolTrigger() throw();
+  std::string pool;
+  std::string trigger;
+
+  void __set_pool(const std::string& val);
+
+  void __set_trigger(const std::string& val);
+
+  bool operator == (const WMPoolTrigger & rhs) const
+  {
+    if (!(pool == rhs.pool))
+      return false;
+    if (!(trigger == rhs.trigger))
+      return false;
+    return true;
+  }
+  bool operator != (const WMPoolTrigger &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMPoolTrigger & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMPoolTrigger &a, WMPoolTrigger &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMPoolTrigger& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMFullResourcePlan__isset {
+  _WMFullResourcePlan__isset() : mappings(false), triggers(false), poolTriggers(false) {}
+  bool mappings :1;
+  bool triggers :1;
+  bool poolTriggers :1;
+} _WMFullResourcePlan__isset;
+
+class WMFullResourcePlan {
+ public:
+
+  WMFullResourcePlan(const WMFullResourcePlan&);
+  WMFullResourcePlan& operator=(const WMFullResourcePlan&);
+  WMFullResourcePlan() {
+  }
+
+  virtual ~WMFullResourcePlan() throw();
+  WMResourcePlan plan;
+  std::vector<WMPool>  pools;
+  std::vector<WMMapping>  mappings;
+  std::vector<WMTrigger>  triggers;
+  std::vector<WMPoolTrigger>  poolTriggers;
+
+  _WMFullResourcePlan__isset __isset;
+
+  void __set_plan(const WMResourcePlan& val);
+
+  void __set_pools(const std::vector<WMPool> & val);
+
+  void __set_mappings(const std::vector<WMMapping> & val);
+
+  void __set_triggers(const std::vector<WMTrigger> & val);
+
+  void __set_poolTriggers(const std::vector<WMPoolTrigger> & val);
+
+  bool operator == (const WMFullResourcePlan & rhs) const
+  {
+    if (!(plan == rhs.plan))
+      return false;
+    if (!(pools == rhs.pools))
+      return false;
+    if (__isset.mappings != rhs.__isset.mappings)
+      return false;
+    else if (__isset.mappings && !(mappings == rhs.mappings))
+      return false;
+    if (__isset.triggers != rhs.__isset.triggers)
+      return false;
+    else if (__isset.triggers && !(triggers == rhs.triggers))
+      return false;
+    if (__isset.poolTriggers != rhs.__isset.poolTriggers)
+      return false;
+    else if (__isset.poolTriggers && !(poolTriggers == rhs.poolTriggers))
+      return false;
+    return true;
+  }
+  bool operator != (const WMFullResourcePlan &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMFullResourcePlan & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMFullResourcePlan &a, WMFullResourcePlan &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMFullResourcePlan& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMCreateResourcePlanRequest__isset {
+  _WMCreateResourcePlanRequest__isset() : resourcePlan(false), copyFrom(false) {}
+  bool resourcePlan :1;
+  bool copyFrom :1;
+} _WMCreateResourcePlanRequest__isset;
+
+class WMCreateResourcePlanRequest {
+ public:
+
+  WMCreateResourcePlanRequest(const WMCreateResourcePlanRequest&);
+  WMCreateResourcePlanRequest& operator=(const WMCreateResourcePlanRequest&);
+  WMCreateResourcePlanRequest() : copyFrom() {
+  }
+
+  virtual ~WMCreateResourcePlanRequest() throw();
+  WMResourcePlan resourcePlan;
+  std::string copyFrom;
+
+  _WMCreateResourcePlanRequest__isset __isset;
+
+  void __set_resourcePlan(const WMResourcePlan& val);
+
+  void __set_copyFrom(const std::string& val);
+
+  bool operator == (const WMCreateResourcePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlan != rhs.__isset.resourcePlan)
+      return false;
+    else if (__isset.resourcePlan && !(resourcePlan == rhs.resourcePlan))
+      return false;
+    if (__isset.copyFrom != rhs.__isset.copyFrom)
+      return false;
+    else if (__isset.copyFrom && !(copyFrom == rhs.copyFrom))
+      return false;
+    return true;
+  }
+  bool operator != (const WMCreateResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateResourcePlanRequest &a, WMCreateResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMCreateResourcePlanResponse {
+ public:
+
+  WMCreateResourcePlanResponse(const WMCreateResourcePlanResponse&);
+  WMCreateResourcePlanResponse& operator=(const WMCreateResourcePlanResponse&);
+  WMCreateResourcePlanResponse() {
+  }
+
+  virtual ~WMCreateResourcePlanResponse() throw();
+
+  bool operator == (const WMCreateResourcePlanResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMCreateResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateResourcePlanResponse &a, WMCreateResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMGetActiveResourcePlanRequest {
+ public:
+
+  WMGetActiveResourcePlanRequest(const WMGetActiveResourcePlanRequest&);
+  WMGetActiveResourcePlanRequest& operator=(const WMGetActiveResourcePlanRequest&);
+  WMGetActiveResourcePlanRequest() {
+  }
+
+  virtual ~WMGetActiveResourcePlanRequest() throw();
+
+  bool operator == (const WMGetActiveResourcePlanRequest & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMGetActiveResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetActiveResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetActiveResourcePlanRequest &a, WMGetActiveResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetActiveResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetActiveResourcePlanResponse__isset {
+  _WMGetActiveResourcePlanResponse__isset() : resourcePlan(false) {}
+  bool resourcePlan :1;
+} _WMGetActiveResourcePlanResponse__isset;
+
+class WMGetActiveResourcePlanResponse {
+ public:
+
+  WMGetActiveResourcePlanResponse(const WMGetActiveResourcePlanResponse&);
+  WMGetActiveResourcePlanResponse& operator=(const WMGetActiveResourcePlanResponse&);
+  WMGetActiveResourcePlanResponse() {
+  }
+
+  virtual ~WMGetActiveResourcePlanResponse() throw();
+  WMFullResourcePlan resourcePlan;
+
+  _WMGetActiveResourcePlanResponse__isset __isset;
+
+  void __set_resourcePlan(const WMFullResourcePlan& val);
+
+  bool operator == (const WMGetActiveResourcePlanResponse & rhs) const
+  {
+    if (__isset.resourcePlan != rhs.__isset.resourcePlan)
+      return false;
+    else if (__isset.resourcePlan && !(resourcePlan == rhs.resourcePlan))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetActiveResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetActiveResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetActiveResourcePlanResponse &a, WMGetActiveResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetActiveResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetResourcePlanRequest__isset {
+  _WMGetResourcePlanRequest__isset() : resourcePlanName(false) {}
+  bool resourcePlanName :1;
+} _WMGetResourcePlanRequest__isset;
+
+class WMGetResourcePlanRequest {
+ public:
+
+  WMGetResourcePlanRequest(const WMGetResourcePlanRequest&);
+  WMGetResourcePlanRequest& operator=(const WMGetResourcePlanRequest&);
+  WMGetResourcePlanRequest() : resourcePlanName() {
+  }
+
+  virtual ~WMGetResourcePlanRequest() throw();
+  std::string resourcePlanName;
+
+  _WMGetResourcePlanRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  bool operator == (const WMGetResourcePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetResourcePlanRequest &a, WMGetResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetResourcePlanResponse__isset {
+  _WMGetResourcePlanResponse__isset() : resourcePlan(false) {}
+  bool resourcePlan :1;
+} _WMGetResourcePlanResponse__isset;
+
+class WMGetResourcePlanResponse {
+ public:
+
+  WMGetResourcePlanResponse(const WMGetResourcePlanResponse&);
+  WMGetResourcePlanResponse& operator=(const WMGetResourcePlanResponse&);
+  WMGetResourcePlanResponse() {
+  }
+
+  virtual ~WMGetResourcePlanResponse() throw();
+  WMFullResourcePlan resourcePlan;
+
+  _WMGetResourcePlanResponse__isset __isset;
+
+  void __set_resourcePlan(const WMFullResourcePlan& val);
+
+  bool operator == (const WMGetResourcePlanResponse & rhs) const
+  {
+    if (__isset.resourcePlan != rhs.__isset.resourcePlan)
+      return false;
+    else if (__isset.resourcePlan && !(resourcePlan == rhs.resourcePlan))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetResourcePlanResponse &a, WMGetResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMGetAllResourcePlanRequest {
+ public:
+
+  WMGetAllResourcePlanRequest(const WMGetAllResourcePlanRequest&);
+  WMGetAllResourcePlanRequest& operator=(const WMGetAllResourcePlanRequest&);
+  WMGetAllResourcePlanRequest() {
+  }
+
+  virtual ~WMGetAllResourcePlanRequest() throw();
+
+  bool operator == (const WMGetAllResourcePlanRequest & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMGetAllResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetAllResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetAllResourcePlanRequest &a, WMGetAllResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetAllResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetAllResourcePlanResponse__isset {
+  _WMGetAllResourcePlanResponse__isset() : resourcePlans(false) {}
+  bool resourcePlans :1;
+} _WMGetAllResourcePlanResponse__isset;
+
+class WMGetAllResourcePlanResponse {
+ public:
+
+  WMGetAllResourcePlanResponse(const WMGetAllResourcePlanResponse&);
+  WMGetAllResourcePlanResponse& operator=(const WMGetAllResourcePlanResponse&);
+  WMGetAllResourcePlanResponse() {
+  }
+
+  virtual ~WMGetAllResourcePlanResponse() throw();
+  std::vector<WMResourcePlan>  resourcePlans;
+
+  _WMGetAllResourcePlanResponse__isset __isset;
+
+  void __set_resourcePlans(const std::vector<WMResourcePlan> & val);
+
+  bool operator == (const WMGetAllResourcePlanResponse & rhs) const
+  {
+    if (__isset.resourcePlans != rhs.__isset.resourcePlans)
+      return false;
+    else if (__isset.resourcePlans && !(resourcePlans == rhs.resourcePlans))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetAllResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetAllResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetAllResourcePlanResponse &a, WMGetAllResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetAllResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMAlterResourcePlanRequest__isset {
+  _WMAlterResourcePlanRequest__isset() : resourcePlanName(false), resourcePlan(false), isEnableAndActivate(false), isForceDeactivate(false), isReplace(false) {}
+  bool resourcePlanName :1;
+  bool resourcePlan :1;
+  bool isEnableAndActivate :1;
+  bool isForceDeactivate :1;
+  bool isReplace :1;
+} _WMAlterResourcePlanRequest__isset;
+
+class WMAlterResourcePlanRequest {
+ public:
+
+  WMAlterResourcePlanRequest(const WMAlterResourcePlanRequest&);
+  WMAlterResourcePlanRequest& operator=(const WMAlterResourcePlanRequest&);
+  WMAlterResourcePlanRequest() : resourcePlanName(), isEnableAndActivate(0), isForceDeactivate(0), isReplace(0) {
+  }
+
+  virtual ~WMAlterResourcePlanRequest() throw();
+  std::string resourcePlanName;
+  WMNullableResourcePlan resourcePlan;
+  bool isEnableAndActivate;
+  bool isForceDeactivate;
+  bool isReplace;
+
+  _WMAlterResourcePlanRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_resourcePlan(const WMNullableResourcePlan& val);
+
+  void __set_isEnableAndActivate(const bool val);
+
+  void __set_isForceDeactivate(const bool val);
+
+  void __set_isReplace(const bool val);
+
+  bool operator == (const WMAlterResourcePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (__isset.resourcePlan != rhs.__isset.resourcePlan)
+      return false;
+    else if (__isset.resourcePlan && !(resourcePlan == rhs.resourcePlan))
+      return false;
+    if (__isset.isEnableAndActivate != rhs.__isset.isEnableAndActivate)
+      return false;
+    else if (__isset.isEnableAndActivate && !(isEnableAndActivate == rhs.isEnableAndActivate))
+      return false;
+    if (__isset.isForceDeactivate != rhs.__isset.isForceDeactivate)
+      return false;
+    else if (__isset.isForceDeactivate && !(isForceDeactivate == rhs.isForceDeactivate))
+      return false;
+    if (__isset.isReplace != rhs.__isset.isReplace)
+      return false;
+    else if (__isset.isReplace && !(isReplace == rhs.isReplace))
+      return false;
+    return true;
+  }
+  bool operator != (const WMAlterResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterResourcePlanRequest &a, WMAlterResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMAlterResourcePlanResponse__isset {
+  _WMAlterResourcePlanResponse__isset() : fullResourcePlan(false) {}
+  bool fullResourcePlan :1;
+} _WMAlterResourcePlanResponse__isset;
+
+class WMAlterResourcePlanResponse {
+ public:
+
+  WMAlterResourcePlanResponse(const WMAlterResourcePlanResponse&);
+  WMAlterResourcePlanResponse& operator=(const WMAlterResourcePlanResponse&);
+  WMAlterResourcePlanResponse() {
+  }
+
+  virtual ~WMAlterResourcePlanResponse() throw();
+  WMFullResourcePlan fullResourcePlan;
+
+  _WMAlterResourcePlanResponse__isset __isset;
+
+  void __set_fullResourcePlan(const WMFullResourcePlan& val);
+
+  bool operator == (const WMAlterResourcePlanResponse & rhs) const
+  {
+    if (__isset.fullResourcePlan != rhs.__isset.fullResourcePlan)
+      return false;
+    else if (__isset.fullResourcePlan && !(fullResourcePlan == rhs.fullResourcePlan))
+      return false;
+    return true;
+  }
+  bool operator != (const WMAlterResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterResourcePlanResponse &a, WMAlterResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMValidateResourcePlanRequest__isset {
+  _WMValidateResourcePlanRequest__isset() : resourcePlanName(false) {}
+  bool resourcePlanName :1;
+} _WMValidateResourcePlanRequest__isset;
+
+class WMValidateResourcePlanRequest {
+ public:
+
+  WMValidateResourcePlanRequest(const WMValidateResourcePlanRequest&);
+  WMValidateResourcePlanRequest& operator=(const WMValidateResourcePlanRequest&);
+  WMValidateResourcePlanRequest() : resourcePlanName() {
+  }
+
+  virtual ~WMValidateResourcePlanRequest() throw();
+  std::string resourcePlanName;
+
+  _WMValidateResourcePlanRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  bool operator == (const WMValidateResourcePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    return true;
+  }
+  bool operator != (const WMValidateResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMValidateResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMValidateResourcePlanRequest &a, WMValidateResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMValidateResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMValidateResourcePlanResponse__isset {
+  _WMValidateResourcePlanResponse__isset() : errors(false), warnings(false) {}
+  bool errors :1;
+  bool warnings :1;
+} _WMValidateResourcePlanResponse__isset;
+
+class WMValidateResourcePlanResponse {
+ public:
+
+  WMValidateResourcePlanResponse(const WMValidateResourcePlanResponse&);
+  WMValidateResourcePlanResponse& operator=(const WMValidateResourcePlanResponse&);
+  WMValidateResourcePlanResponse() {
+  }
+
+  virtual ~WMValidateResourcePlanResponse() throw();
+  std::vector<std::string>  errors;
+  std::vector<std::string>  warnings;
+
+  _WMValidateResourcePlanResponse__isset __isset;
+
+  void __set_errors(const std::vector<std::string> & val);
+
+  void __set_warnings(const std::vector<std::string> & val);
+
+  bool operator == (const WMValidateResourcePlanResponse & rhs) const
+  {
+    if (__isset.errors != rhs.__isset.errors)
+      return false;
+    else if (__isset.errors && !(errors == rhs.errors))
+      return false;
+    if (__isset.warnings != rhs.__isset.warnings)
+      return false;
+    else if (__isset.warnings && !(warnings == rhs.warnings))
+      return false;
+    return true;
+  }
+  bool operator != (const WMValidateResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMValidateResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMValidateResourcePlanResponse &a, WMValidateResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMValidateResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMDropResourcePlanRequest__isset {
+  _WMDropResourcePlanRequest__isset() : resourcePlanName(false) {}
+  bool resourcePlanName :1;
+} _WMDropResourcePlanRequest__isset;
+
+class WMDropResourcePlanRequest {
+ public:
+
+  WMDropResourcePlanRequest(const WMDropResourcePlanRequest&);
+  WMDropResourcePlanRequest& operator=(const WMDropResourcePlanRequest&);
+  WMDropResourcePlanRequest() : resourcePlanName() {
+  }
+
+  virtual ~WMDropResourcePlanRequest() throw();
+  std::string resourcePlanName;
+
+  _WMDropResourcePlanRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  bool operator == (const WMDropResourcePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    return true;
+  }
+  bool operator != (const WMDropResourcePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropResourcePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropResourcePlanRequest &a, WMDropResourcePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropResourcePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMDropResourcePlanResponse {
+ public:
+
+  WMDropResourcePlanResponse(const WMDropResourcePlanResponse&);
+  WMDropResourcePlanResponse& operator=(const WMDropResourcePlanResponse&);
+  WMDropResourcePlanResponse() {
+  }
+
+  virtual ~WMDropResourcePlanResponse() throw();
+
+  bool operator == (const WMDropResourcePlanResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMDropResourcePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropResourcePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropResourcePlanResponse &a, WMDropResourcePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropResourcePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMCreateTriggerRequest__isset {
+  _WMCreateTriggerRequest__isset() : trigger(false) {}
+  bool trigger :1;
+} _WMCreateTriggerRequest__isset;
+
+class WMCreateTriggerRequest {
+ public:
+
+  WMCreateTriggerRequest(const WMCreateTriggerRequest&);
+  WMCreateTriggerRequest& operator=(const WMCreateTriggerRequest&);
+  WMCreateTriggerRequest() {
+  }
+
+  virtual ~WMCreateTriggerRequest() throw();
+  WMTrigger trigger;
+
+  _WMCreateTriggerRequest__isset __isset;
+
+  void __set_trigger(const WMTrigger& val);
+
+  bool operator == (const WMCreateTriggerRequest & rhs) const
+  {
+    if (__isset.trigger != rhs.__isset.trigger)
+      return false;
+    else if (__isset.trigger && !(trigger == rhs.trigger))
+      return false;
+    return true;
+  }
+  bool operator != (const WMCreateTriggerRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateTriggerRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateTriggerRequest &a, WMCreateTriggerRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateTriggerRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMCreateTriggerResponse {
+ public:
+
+  WMCreateTriggerResponse(const WMCreateTriggerResponse&);
+  WMCreateTriggerResponse& operator=(const WMCreateTriggerResponse&);
+  WMCreateTriggerResponse() {
+  }
+
+  virtual ~WMCreateTriggerResponse() throw();
+
+  bool operator == (const WMCreateTriggerResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMCreateTriggerResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateTriggerResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateTriggerResponse &a, WMCreateTriggerResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateTriggerResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMAlterTriggerRequest__isset {
+  _WMAlterTriggerRequest__isset() : trigger(false) {}
+  bool trigger :1;
+} _WMAlterTriggerRequest__isset;
+
+class WMAlterTriggerRequest {
+ public:
+
+  WMAlterTriggerRequest(const WMAlterTriggerRequest&);
+  WMAlterTriggerRequest& operator=(const WMAlterTriggerRequest&);
+  WMAlterTriggerRequest() {
+  }
+
+  virtual ~WMAlterTriggerRequest() throw();
+  WMTrigger trigger;
+
+  _WMAlterTriggerRequest__isset __isset;
+
+  void __set_trigger(const WMTrigger& val);
+
+  bool operator == (const WMAlterTriggerRequest & rhs) const
+  {
+    if (__isset.trigger != rhs.__isset.trigger)
+      return false;
+    else if (__isset.trigger && !(trigger == rhs.trigger))
+      return false;
+    return true;
+  }
+  bool operator != (const WMAlterTriggerRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterTriggerRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterTriggerRequest &a, WMAlterTriggerRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterTriggerRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMAlterTriggerResponse {
+ public:
+
+  WMAlterTriggerResponse(const WMAlterTriggerResponse&);
+  WMAlterTriggerResponse& operator=(const WMAlterTriggerResponse&);
+  WMAlterTriggerResponse() {
+  }
+
+  virtual ~WMAlterTriggerResponse() throw();
+
+  bool operator == (const WMAlterTriggerResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMAlterTriggerResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterTriggerResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterTriggerResponse &a, WMAlterTriggerResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterTriggerResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMDropTriggerRequest__isset {
+  _WMDropTriggerRequest__isset() : resourcePlanName(false), triggerName(false) {}
+  bool resourcePlanName :1;
+  bool triggerName :1;
+} _WMDropTriggerRequest__isset;
+
+class WMDropTriggerRequest {
+ public:
+
+  WMDropTriggerRequest(const WMDropTriggerRequest&);
+  WMDropTriggerRequest& operator=(const WMDropTriggerRequest&);
+  WMDropTriggerRequest() : resourcePlanName(), triggerName() {
+  }
+
+  virtual ~WMDropTriggerRequest() throw();
+  std::string resourcePlanName;
+  std::string triggerName;
+
+  _WMDropTriggerRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_triggerName(const std::string& val);
+
+  bool operator == (const WMDropTriggerRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (__isset.triggerName != rhs.__isset.triggerName)
+      return false;
+    else if (__isset.triggerName && !(triggerName == rhs.triggerName))
+      return false;
+    return true;
+  }
+  bool operator != (const WMDropTriggerRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropTriggerRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropTriggerRequest &a, WMDropTriggerRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropTriggerRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMDropTriggerResponse {
+ public:
+
+  WMDropTriggerResponse(const WMDropTriggerResponse&);
+  WMDropTriggerResponse& operator=(const WMDropTriggerResponse&);
+  WMDropTriggerResponse() {
+  }
+
+  virtual ~WMDropTriggerResponse() throw();
+
+  bool operator == (const WMDropTriggerResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMDropTriggerResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropTriggerResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropTriggerResponse &a, WMDropTriggerResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropTriggerResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetTriggersForResourePlanRequest__isset {
+  _WMGetTriggersForResourePlanRequest__isset() : resourcePlanName(false) {}
+  bool resourcePlanName :1;
+} _WMGetTriggersForResourePlanRequest__isset;
+
+class WMGetTriggersForResourePlanRequest {
+ public:
+
+  WMGetTriggersForResourePlanRequest(const WMGetTriggersForResourePlanRequest&);
+  WMGetTriggersForResourePlanRequest& operator=(const WMGetTriggersForResourePlanRequest&);
+  WMGetTriggersForResourePlanRequest() : resourcePlanName() {
+  }
+
+  virtual ~WMGetTriggersForResourePlanRequest() throw();
+  std::string resourcePlanName;
+
+  _WMGetTriggersForResourePlanRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  bool operator == (const WMGetTriggersForResourePlanRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetTriggersForResourePlanRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetTriggersForResourePlanRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetTriggersForResourePlanRequest &a, WMGetTriggersForResourePlanRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetTriggersForResourePlanRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMGetTriggersForResourePlanResponse__isset {
+  _WMGetTriggersForResourePlanResponse__isset() : triggers(false) {}
+  bool triggers :1;
+} _WMGetTriggersForResourePlanResponse__isset;
+
+class WMGetTriggersForResourePlanResponse {
+ public:
+
+  WMGetTriggersForResourePlanResponse(const WMGetTriggersForResourePlanResponse&);
+  WMGetTriggersForResourePlanResponse& operator=(const WMGetTriggersForResourePlanResponse&);
+  WMGetTriggersForResourePlanResponse() {
+  }
+
+  virtual ~WMGetTriggersForResourePlanResponse() throw();
+  std::vector<WMTrigger>  triggers;
+
+  _WMGetTriggersForResourePlanResponse__isset __isset;
+
+  void __set_triggers(const std::vector<WMTrigger> & val);
+
+  bool operator == (const WMGetTriggersForResourePlanResponse & rhs) const
+  {
+    if (__isset.triggers != rhs.__isset.triggers)
+      return false;
+    else if (__isset.triggers && !(triggers == rhs.triggers))
+      return false;
+    return true;
+  }
+  bool operator != (const WMGetTriggersForResourePlanResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMGetTriggersForResourePlanResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMGetTriggersForResourePlanResponse &a, WMGetTriggersForResourePlanResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMGetTriggersForResourePlanResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMCreatePoolRequest__isset {
+  _WMCreatePoolRequest__isset() : pool(false) {}
+  bool pool :1;
+} _WMCreatePoolRequest__isset;
+
+class WMCreatePoolRequest {
+ public:
+
+  WMCreatePoolRequest(const WMCreatePoolRequest&);
+  WMCreatePoolRequest& operator=(const WMCreatePoolRequest&);
+  WMCreatePoolRequest() {
+  }
+
+  virtual ~WMCreatePoolRequest() throw();
+  WMPool pool;
+
+  _WMCreatePoolRequest__isset __isset;
+
+  void __set_pool(const WMPool& val);
+
+  bool operator == (const WMCreatePoolRequest & rhs) const
+  {
+    if (__isset.pool != rhs.__isset.pool)
+      return false;
+    else if (__isset.pool && !(pool == rhs.pool))
+      return false;
+    return true;
+  }
+  bool operator != (const WMCreatePoolRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreatePoolRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreatePoolRequest &a, WMCreatePoolRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreatePoolRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMCreatePoolResponse {
+ public:
+
+  WMCreatePoolResponse(const WMCreatePoolResponse&);
+  WMCreatePoolResponse& operator=(const WMCreatePoolResponse&);
+  WMCreatePoolResponse() {
+  }
+
+  virtual ~WMCreatePoolResponse() throw();
+
+  bool operator == (const WMCreatePoolResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMCreatePoolResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreatePoolResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreatePoolResponse &a, WMCreatePoolResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreatePoolResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMAlterPoolRequest__isset {
+  _WMAlterPoolRequest__isset() : pool(false), poolPath(false) {}
+  bool pool :1;
+  bool poolPath :1;
+} _WMAlterPoolRequest__isset;
+
+class WMAlterPoolRequest {
+ public:
+
+  WMAlterPoolRequest(const WMAlterPoolRequest&);
+  WMAlterPoolRequest& operator=(const WMAlterPoolRequest&);
+  WMAlterPoolRequest() : poolPath() {
+  }
+
+  virtual ~WMAlterPoolRequest() throw();
+  WMNullablePool pool;
+  std::string poolPath;
+
+  _WMAlterPoolRequest__isset __isset;
+
+  void __set_pool(const WMNullablePool& val);
+
+  void __set_poolPath(const std::string& val);
+
+  bool operator == (const WMAlterPoolRequest & rhs) const
+  {
+    if (__isset.pool != rhs.__isset.pool)
+      return false;
+    else if (__isset.pool && !(pool == rhs.pool))
+      return false;
+    if (__isset.poolPath != rhs.__isset.poolPath)
+      return false;
+    else if (__isset.poolPath && !(poolPath == rhs.poolPath))
+      return false;
+    return true;
+  }
+  bool operator != (const WMAlterPoolRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterPoolRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterPoolRequest &a, WMAlterPoolRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterPoolRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMAlterPoolResponse {
+ public:
+
+  WMAlterPoolResponse(const WMAlterPoolResponse&);
+  WMAlterPoolResponse& operator=(const WMAlterPoolResponse&);
+  WMAlterPoolResponse() {
+  }
+
+  virtual ~WMAlterPoolResponse() throw();
+
+  bool operator == (const WMAlterPoolResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMAlterPoolResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMAlterPoolResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMAlterPoolResponse &a, WMAlterPoolResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMAlterPoolResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMDropPoolRequest__isset {
+  _WMDropPoolRequest__isset() : resourcePlanName(false), poolPath(false) {}
+  bool resourcePlanName :1;
+  bool poolPath :1;
+} _WMDropPoolRequest__isset;
+
+class WMDropPoolRequest {
+ public:
+
+  WMDropPoolRequest(const WMDropPoolRequest&);
+  WMDropPoolRequest& operator=(const WMDropPoolRequest&);
+  WMDropPoolRequest() : resourcePlanName(), poolPath() {
+  }
+
+  virtual ~WMDropPoolRequest() throw();
+  std::string resourcePlanName;
+  std::string poolPath;
+
+  _WMDropPoolRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_poolPath(const std::string& val);
+
+  bool operator == (const WMDropPoolRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (__isset.poolPath != rhs.__isset.poolPath)
+      return false;
+    else if (__isset.poolPath && !(poolPath == rhs.poolPath))
+      return false;
+    return true;
+  }
+  bool operator != (const WMDropPoolRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropPoolRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropPoolRequest &a, WMDropPoolRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropPoolRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMDropPoolResponse {
+ public:
+
+  WMDropPoolResponse(const WMDropPoolResponse&);
+  WMDropPoolResponse& operator=(const WMDropPoolResponse&);
+  WMDropPoolResponse() {
+  }
+
+  virtual ~WMDropPoolResponse() throw();
+
+  bool operator == (const WMDropPoolResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMDropPoolResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropPoolResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropPoolResponse &a, WMDropPoolResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropPoolResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMCreateOrUpdateMappingRequest__isset {
+  _WMCreateOrUpdateMappingRequest__isset() : mapping(false), update(false) {}
+  bool mapping :1;
+  bool update :1;
+} _WMCreateOrUpdateMappingRequest__isset;
+
+class WMCreateOrUpdateMappingRequest {
+ public:
+
+  WMCreateOrUpdateMappingRequest(const WMCreateOrUpdateMappingRequest&);
+  WMCreateOrUpdateMappingRequest& operator=(const WMCreateOrUpdateMappingRequest&);
+  WMCreateOrUpdateMappingRequest() : update(0) {
+  }
+
+  virtual ~WMCreateOrUpdateMappingRequest() throw();
+  WMMapping mapping;
+  bool update;
+
+  _WMCreateOrUpdateMappingRequest__isset __isset;
+
+  void __set_mapping(const WMMapping& val);
+
+  void __set_update(const bool val);
+
+  bool operator == (const WMCreateOrUpdateMappingRequest & rhs) const
+  {
+    if (__isset.mapping != rhs.__isset.mapping)
+      return false;
+    else if (__isset.mapping && !(mapping == rhs.mapping))
+      return false;
+    if (__isset.update != rhs.__isset.update)
+      return false;
+    else if (__isset.update && !(update == rhs.update))
+      return false;
+    return true;
+  }
+  bool operator != (const WMCreateOrUpdateMappingRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateOrUpdateMappingRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateOrUpdateMappingRequest &a, WMCreateOrUpdateMappingRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateOrUpdateMappingRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMCreateOrUpdateMappingResponse {
+ public:
+
+  WMCreateOrUpdateMappingResponse(const WMCreateOrUpdateMappingResponse&);
+  WMCreateOrUpdateMappingResponse& operator=(const WMCreateOrUpdateMappingResponse&);
+  WMCreateOrUpdateMappingResponse() {
+  }
+
+  virtual ~WMCreateOrUpdateMappingResponse() throw();
+
+  bool operator == (const WMCreateOrUpdateMappingResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMCreateOrUpdateMappingResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateOrUpdateMappingResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateOrUpdateMappingResponse &a, WMCreateOrUpdateMappingResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateOrUpdateMappingResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMDropMappingRequest__isset {
+  _WMDropMappingRequest__isset() : mapping(false) {}
+  bool mapping :1;
+} _WMDropMappingRequest__isset;
+
+class WMDropMappingRequest {
+ public:
+
+  WMDropMappingRequest(const WMDropMappingRequest&);
+  WMDropMappingRequest& operator=(const WMDropMappingRequest&);
+  WMDropMappingRequest() {
+  }
+
+  virtual ~WMDropMappingRequest() throw();
+  WMMapping mapping;
+
+  _WMDropMappingRequest__isset __isset;
+
+  void __set_mapping(const WMMapping& val);
+
+  bool operator == (const WMDropMappingRequest & rhs) const
+  {
+    if (__isset.mapping != rhs.__isset.mapping)
+      return false;
+    else if (__isset.mapping && !(mapping == rhs.mapping))
+      return false;
+    return true;
+  }
+  bool operator != (const WMDropMappingRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropMappingRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropMappingRequest &a, WMDropMappingRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropMappingRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMDropMappingResponse {
+ public:
+
+  WMDropMappingResponse(const WMDropMappingResponse&);
+  WMDropMappingResponse& operator=(const WMDropMappingResponse&);
+  WMDropMappingResponse() {
+  }
+
+  virtual ~WMDropMappingResponse() throw();
+
+  bool operator == (const WMDropMappingResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMDropMappingResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMDropMappingResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMDropMappingResponse &a, WMDropMappingResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMDropMappingResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _WMCreateOrDropTriggerToPoolMappingRequest__isset {
+  _WMCreateOrDropTriggerToPoolMappingRequest__isset() : resourcePlanName(false), triggerName(false), poolPath(false), drop(false) {}
+  bool resourcePlanName :1;
+  bool triggerName :1;
+  bool poolPath :1;
+  bool drop :1;
+} _WMCreateOrDropTriggerToPoolMappingRequest__isset;
+
+class WMCreateOrDropTriggerToPoolMappingRequest {
+ public:
+
+  WMCreateOrDropTriggerToPoolMappingRequest(const WMCreateOrDropTriggerToPoolMappingRequest&);
+  WMCreateOrDropTriggerToPoolMappingRequest& operator=(const WMCreateOrDropTriggerToPoolMappingRequest&);
+  WMCreateOrDropTriggerToPoolMappingRequest() : resourcePlanName(), triggerName(), poolPath(), drop(0) {
+  }
+
+  virtual ~WMCreateOrDropTriggerToPoolMappingRequest() throw();
+  std::string resourcePlanName;
+  std::string triggerName;
+  std::string poolPath;
+  bool drop;
+
+  _WMCreateOrDropTriggerToPoolMappingRequest__isset __isset;
+
+  void __set_resourcePlanName(const std::string& val);
+
+  void __set_triggerName(const std::string& val);
+
+  void __set_poolPath(const std::string& val);
+
+  void __set_drop(const bool val);
+
+  bool operator == (const WMCreateOrDropTriggerToPoolMappingRequest & rhs) const
+  {
+    if (__isset.resourcePlanName != rhs.__isset.resourcePlanName)
+      return false;
+    else if (__isset.resourcePlanName && !(resourcePlanName == rhs.resourcePlanName))
+      return false;
+    if (__isset.triggerName != rhs.__isset.triggerName)
+      return false;
+    else if (__isset.triggerName && !(triggerName == rhs.triggerName))
+      return false;
+    if (__isset.poolPath != rhs.__isset.poolPath)
+      return false;
+    else if (__isset.poolPath && !(poolPath == rhs.poolPath))
+      return false;
+    if (__isset.drop != rhs.__isset.drop)
+      return false;
+    else if (__isset.drop && !(drop == rhs.drop))
+      return false;
+    return true;
+  }
+  bool operator != (const WMCreateOrDropTriggerToPoolMappingRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateOrDropTriggerToPoolMappingRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateOrDropTriggerToPoolMappingRequest &a, WMCreateOrDropTriggerToPoolMappingRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateOrDropTriggerToPoolMappingRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class WMCreateOrDropTriggerToPoolMappingResponse {
+ public:
+
+  WMCreateOrDropTriggerToPoolMappingResponse(const WMCreateOrDropTriggerToPoolMappingResponse&);
+  WMCreateOrDropTriggerToPoolMappingResponse& operator=(const WMCreateOrDropTriggerToPoolMappingResponse&);
+  WMCreateOrDropTriggerToPoolMappingResponse() {
+  }
+
+  virtual ~WMCreateOrDropTriggerToPoolMappingResponse() throw();
+
+  bool operator == (const WMCreateOrDropTriggerToPoolMappingResponse & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const WMCreateOrDropTriggerToPoolMappingResponse &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const WMCreateOrDropTriggerToPoolMappingResponse & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(WMCreateOrDropTriggerToPoolMappingResponse &a, WMCreateOrDropTriggerToPoolMappingResponse &b);
+
+inline std::ostream& operator<<(std::ostream& out, const WMCreateOrDropTriggerToPoolMappingResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _ISchema__isset {
+  _ISchema__isset() : schemaType(false), name(false), catName(false), dbName(false), compatibility(false), validationLevel(false), canEvolve(false), schemaGroup(false), description(false) {}
+  bool schemaType :1;
+  bool name :1;
+  bool catName :1;
+  bool dbName :1;
+  bool compatibility :1;
+  bool validationLevel :1;
+  bool canEvolve :1;
+  bool schemaGroup :1;
+  bool description :1;
+} _ISchema__isset;
+
+class ISchema {
+ public:
+
+  ISchema(const ISchema&);
+  ISchema& operator=(const ISchema&);
+  ISchema() : schemaType((SchemaType::type)0), name(), catName(), dbName(), compatibility((SchemaCompatibility::type)0), validationLevel((SchemaValidation::type)0), canEvolve(0), schemaGroup(), description() {
+  }
+
+  virtual ~ISchema() throw();
+  SchemaType::type schemaType;
+  std::string name;
+  std::string catName;
+  std::string dbName;
+  SchemaCompatibility::type compatibility;
+  SchemaValidation::type validationLevel;
+  bool canEvolve;
+  std::string schemaGroup;
+  std::string description;
+
+  _ISchema__isset __isset;
+
+  void __set_schemaType(const SchemaType::type val);
+
+  void __set_name(const std::string& val);
+
+  void __set_catName(const std::string& val);
+
+  void __set_dbName(const std::string& val);
+
+  void __set_compatibility(const SchemaCompatibility::type val);
+
+  void __set_validationLevel(const SchemaValidation::type val);
+
+  void __set_canEvolve(const bool val);
+
+  void __set_schemaGroup(const std::string& val);
+
+  void __set_description(const std::string& val);
+
+  bool operator == (const ISchema & rhs) const
+  {
+    if (!(schemaType == rhs.schemaType))
+      return false;
+    if (!(name == rhs.name))
+      return false;
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(dbName == rhs.dbName))
+      return false;
+    if (!(compatibility == rhs.compatibility))
+      return false;
+    if (!(validationLevel == rhs.validationLevel))
+      return false;
+    if (!(canEvolve == rhs.canEvolve))
+      return false;
+    if (__isset.schemaGroup != rhs.__isset.schemaGroup)
+      return false;
+    else if (__isset.schemaGroup && !(schemaGroup == rhs.schemaGroup))
+      return false;
+    if (__isset.description != rhs.__isset.description)
+      return false;
+    else if (__isset.description && !(description == rhs.description))
+      return false;
+    return true;
+  }
+  bool operator != (const ISchema &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ISchema & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(ISchema &a, ISchema &b);
+
+inline std::ostream& operator<<(std::ostream& out, const ISchema& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _ISchemaName__isset {
+  _ISchemaName__isset() : catName(false), dbName(false), schemaName(false) {}
+  bool catName :1;
+  bool dbName :1;
+  bool schemaName :1;
+} _ISchemaName__isset;
+
+class ISchemaName {
+ public:
+
+  ISchemaName(const ISchemaName&);
+  ISchemaName& operator=(const ISchemaName&);
+  ISchemaName() : catName(), dbName(), schemaName() {
+  }
+
+  virtual ~ISchemaName() throw();
+  std::string catName;
+  std::string dbName;
+  std::string schemaName;
+
+  _ISchemaName__isset __isset;
+
+  void __set_catName(const std::string& val);
+
+  void __set_dbName(const std::string& val);
+
+  void __set_schemaName(const std::string& val);
+
+  bool operator == (const ISchemaName & rhs) const
+  {
+    if (!(catName == rhs.catName))
+      return false;
+    if (!(dbName == rhs.dbName))
+      return false;
+    if (!(schemaName == rhs.schemaName))
+      return false;
+    return true;
+  }
+  bool operator != (const ISchemaName &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const ISchemaName & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(ISchemaName &a, ISchemaName &b);
+
+inline std::ostream& operator<<(std::ostream& out, const ISchemaName& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _AlterISchemaRequest__isset {
+  _AlterISchemaRequest__isset() : name(false), newSchema(false) {}
+  bool name :1;
+  bool newSchema :1;
+} _AlterISchemaRequest__isset;
+
+class AlterISchemaRequest {
+ public:
+
+  AlterISchemaRequest(const AlterISchemaRequest&);
+  AlterISchemaRequest& operator=(const AlterISchemaRequest&);
+  AlterISchemaRequest() {
+  }
+
+  virtual ~AlterISchemaRequest() throw();
+  ISchemaName name;
+  ISchema newSchema;
+
+  _AlterISchemaRequest__isset __isset;
+
+  void __set_name(const ISchemaName& val);
+
+  void __set_newSchema(const ISchema& val);
+
+  bool operator == (const AlterISchemaRequest & rhs) const
+  {
+    if (!(name == rhs.name))
+      return false;
+    if (!(newSchema == rhs.newSchema))
+      return false;
+    return true;
+  }
+  bool operator != (const AlterISchemaRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const AlterISchemaRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(AlterISchemaRequest &a, AlterISchemaRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const AlterISchemaRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _SchemaVersion__isset {
+  _SchemaVersion__isset() : schema(false), version(false), createdAt(false), cols(false), state(false), description(false), schemaText(false), fingerprint(false), name(false), serDe(false) {}
+  bool schema :1;
+  bool version :1;
+  bool createdAt :1;
+  bool cols :1;
+  bool state :1;
+  bool description :1;
+  bool schemaText :1;
+  bool fingerprint :1;
+  bool name :1;
+  bool serDe :1;
+} _SchemaVersion__isset;
+
+class SchemaVersion {
+ public:
+
+  SchemaVersion(const SchemaVersion&);
+  SchemaVersion& operator=(const SchemaVersion&);
+  SchemaVersion() : version(0), createdAt(0), state((SchemaVersionState::type)0), description(), schemaText(), fingerprint(), name() {
+  }
+
+  virtual ~SchemaVersion() throw();
+  ISchemaName schema;
+  int32_t version;
+  int64_t createdAt;
+  std::vector<FieldSchema>  cols;
+  SchemaVersionState::type state;
+  std::string description;
+  std::string schemaText;
+  std::string fingerprint;
+  std::string name;
+  SerDeInfo serDe;
+
+  _SchemaVersion__isset __isset;
+
+  void __set_schema(const ISchemaName& val);
+
+  void __set_version(const int32_t val);
+
+  void __set_createdAt(const int64_t val);
+
+  void __set_cols(const std::vector<FieldSchema> & val);
+
+  void __set_state(const SchemaVersionState::type val);
+
+  void __set_description(const std::string& val);
+
+  void __set_schemaText(const std::string& val);
+
+  void __set_fingerprint(const std::string& val);
+
+  void __set_name(const std::string& val);
+
+  void __set_serDe(const SerDeInfo& val);
+
+  bool operator == (const SchemaVersion & rhs) const
+  {
+    if (!(schema == rhs.schema))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    if (!(createdAt == rhs.createdAt))
+      return false;
+    if (!(cols == rhs.cols))
+      return false;
+    if (__isset.state != rhs.__isset.state)
+      return false;
+    else if (__isset.state && !(state == rhs.state))
+      return false;
+    if (__isset.description != rhs.__isset.description)
+      return false;
+    else if (__isset.description && !(description == rhs.description))
+      return false;
+    if (__isset.schemaText != rhs.__isset.schemaText)
+      return false;
+    else if (__isset.schemaText && !(schemaText == rhs.schemaText))
+      return false;
+    if (__isset.fingerprint != rhs.__isset.fingerprint)
+      return false;
+    else if (__isset.fingerprint && !(fingerprint == rhs.fingerprint))
+      return false;
+    if (__isset.name != rhs.__isset.name)
+      return false;
+    else if (__isset.name && !(name == rhs.name))
+      return false;
+    if (__isset.serDe != rhs.__isset.serDe)
+      return false;
+    else if (__isset.serDe && !(serDe == rhs.serDe))
+      return false;
+    return true;
+  }
+  bool operator != (const SchemaVersion &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SchemaVersion & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SchemaVersion &a, SchemaVersion &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SchemaVersion& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _SchemaVersionDescriptor__isset {
+  _SchemaVersionDescriptor__isset() : schema(false), version(false) {}
+  bool schema :1;
+  bool version :1;
+} _SchemaVersionDescriptor__isset;
+
+class SchemaVersionDescriptor {
+ public:
+
+  SchemaVersionDescriptor(const SchemaVersionDescriptor&);
+  SchemaVersionDescriptor& operator=(const SchemaVersionDescriptor&);
+  SchemaVersionDescriptor() : version(0) {
+  }
+
+  virtual ~SchemaVersionDescriptor() throw();
+  ISchemaName schema;
+  int32_t version;
+
+  _SchemaVersionDescriptor__isset __isset;
+
+  void __set_schema(const ISchemaName& val);
+
+  void __set_version(const int32_t val);
+
+  bool operator == (const SchemaVersionDescriptor & rhs) const
+  {
+    if (!(schema == rhs.schema))
+      return false;
+    if (!(version == rhs.version))
+      return false;
+    return true;
+  }
+  bool operator != (const SchemaVersionDescriptor &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SchemaVersionDescriptor & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SchemaVersionDescriptor &a, SchemaVersionDescriptor &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SchemaVersionDescriptor& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _FindSchemasByColsRqst__isset {
+  _FindSchemasByColsRqst__isset() : colName(false), colNamespace(false), type(false) {}
+  bool colName :1;
+  bool colNamespace :1;
+  bool type :1;
+} _FindSchemasByColsRqst__isset;
+
+class FindSchemasByColsRqst {
+ public:
+
+  FindSchemasByColsRqst(const FindSchemasByColsRqst&);
+  FindSchemasByColsRqst& operator=(const FindSchemasByColsRqst&);
+  FindSchemasByColsRqst() : colName(), colNamespace(), type() {
+  }
+
+  virtual ~FindSchemasByColsRqst() throw();
+  std::string colName;
+  std::string colNamespace;
+  std::string type;
+
+  _FindSchemasByColsRqst__isset __isset;
+
+  void __set_colName(const std::string& val);
+
+  void __set_colNamespace(const std::string& val);
+
+  void __set_type(const std::string& val);
+
+  bool operator == (const FindSchemasByColsRqst & rhs) const
+  {
+    if (__isset.colName != rhs.__isset.colName)
+      return false;
+    else if (__isset.colName && !(colName == rhs.colName))
+      return false;
+    if (__isset.colNamespace != rhs.__isset.colNamespace)
+      return false;
+    else if (__isset.colNamespace && !(colNamespace == rhs.colNamespace))
+      return false;
+    if (__isset.type != rhs.__isset.type)
+      return false;
+    else if (__isset.type && !(type == rhs.type))
+      return false;
+    return true;
+  }
+  bool operator != (const FindSchemasByColsRqst &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const FindSchemasByColsRqst & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(FindSchemasByColsRqst &a, FindSchemasByColsRqst &b);
+
+inline std::ostream& operator<<(std::ostream& out, const FindSchemasByColsRqst& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _FindSchemasByColsResp__isset {
+  _FindSchemasByColsResp__isset() : schemaVersions(false) {}
+  bool schemaVersions :1;
+} _FindSchemasByColsResp__isset;
+
+class FindSchemasByColsResp {
+ public:
+
+  FindSchemasByColsResp(const FindSchemasByColsResp&);
+  FindSchemasByColsResp& operator=(const FindSchemasByColsResp&);
+  FindSchemasByColsResp() {
+  }
+
+  virtual ~FindSchemasByColsResp() throw();
+  std::vector<SchemaVersionDescriptor>  schemaVersions;
+
+  _FindSchemasByColsResp__isset __isset;
+
+  void __set_schemaVersions(const std::vector<SchemaVersionDescriptor> & val);
+
+  bool operator == (const FindSchemasByColsResp & rhs) const
+  {
+    if (!(schemaVersions == rhs.schemaVersions))
+      return false;
+    return true;
+  }
+  bool operator != (const FindSchemasByColsResp &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const FindSchemasByColsResp & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(FindSchemasByColsResp &a, FindSchemasByColsResp &b);
+
+inline std::ostream& operator<<(std::ostream& out, const FindSchemasByColsResp& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _MapSchemaVersionToSerdeRequest__isset {
+  _MapSchemaVersionToSerdeRequest__isset() : schemaVersion(false), serdeName(false) {}
+  bool schemaVersion :1;
+  bool serdeName :1;
+} _MapSchemaVersionToSerdeRequest__isset;
+
+class MapSchemaVersionToSerdeRequest {
+ public:
+
+  MapSchemaVersionToSerdeRequest(const MapSchemaVersionToSerdeRequest&);
+  MapSchemaVersionToSerdeRequest& operator=(const MapSchemaVersionToSerdeRequest&);
+  MapSchemaVersionToSerdeRequest() : serdeName() {
+  }
+
+  virtual ~MapSchemaVersionToSerdeRequest() throw();
+  SchemaVersionDescriptor schemaVersion;
+  std::string serdeName;
+
+  _MapSchemaVersionToSerdeRequest__isset __isset;
+
+  void __set_schemaVersion(const SchemaVersionDescriptor& val);
+
+  void __set_serdeName(const std::string& val);
+
+  bool operator == (const MapSchemaVersionToSerdeRequest & rhs) const
+  {
+    if (!(schemaVersion == rhs.schemaVersion))
+      return false;
+    if (!(serdeName == rhs.serdeName))
+      return false;
+    return true;
+  }
+  bool operator != (const MapSchemaVersionToSerdeRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const MapSchemaVersionToSerdeRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(MapSchemaVersionToSerdeRequest &a, MapSchemaVersionToSerdeRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const MapSchemaVersionToSerdeRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _SetSchemaVersionStateRequest__isset {
+  _SetSchemaVersionStateRequest__isset() : schemaVersion(false), state(false) {}
+  bool schemaVersion :1;
+  bool state :1;
+} _SetSchemaVersionStateRequest__isset;
+
+class SetSchemaVersionStateRequest {
+ public:
+
+  SetSchemaVersionStateRequest(const SetSchemaVersionStateRequest&);
+  SetSchemaVersionStateRequest& operator=(const SetSchemaVersionStateRequest&);
+  SetSchemaVersionStateRequest() : state((SchemaVersionState::type)0) {
+  }
+
+  virtual ~SetSchemaVersionStateRequest() throw();
+  SchemaVersionDescriptor schemaVersion;
+  SchemaVersionState::type state;
+
+  _SetSchemaVersionStateRequest__isset __isset;
+
+  void __set_schemaVersion(const SchemaVersionDescriptor& val);
+
+  void __set_state(const SchemaVersionState::type val);
+
+  bool operator == (const SetSchemaVersionStateRequest & rhs) const
+  {
+    if (!(schemaVersion == rhs.schemaVersion))
+      return false;
+    if (!(state == rhs.state))
+      return false;
+    return true;
+  }
+  bool operator != (const SetSchemaVersionStateRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const SetSchemaVersionStateRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(SetSchemaVersionStateRequest &a, SetSchemaVersionStateRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const SetSchemaVersionStateRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _GetSerdeRequest__isset {
+  _GetSerdeRequest__isset() : serdeName(false) {}
+  bool serdeName :1;
+} _GetSerdeRequest__isset;
+
+class GetSerdeRequest {
+ public:
+
+  GetSerdeRequest(const GetSerdeRequest&);
+  GetSerdeRequest& operator=(const GetSerdeRequest&);
+  GetSerdeRequest() : serdeName() {
+  }
+
+  virtual ~GetSerdeRequest() throw();
+  std::string serdeName;
+
+  _GetSerdeRequest__isset __isset;
+
+  void __set_serdeName(const std::string& val);
+
+  bool operator == (const GetSerdeRequest & rhs) const
+  {
+    if (!(serdeName == rhs.serdeName))
+      return false;
+    return true;
+  }
+  bool operator != (const GetSerdeRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetSerdeRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetSerdeRequest &a, GetSerdeRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetSerdeRequest& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+typedef struct _RuntimeStat__isset {
+  _RuntimeStat__isset() : createTime(false) {}
+  bool createTime :1;
+} _RuntimeStat__isset;
+
+class RuntimeStat {
+ public:
+
+  RuntimeStat(const RuntimeStat&);
+  RuntimeStat& operator=(const RuntimeStat&);
+  RuntimeStat() : createTime(0), weight(0), payload() {
+  }
+
+  virtual ~RuntimeStat() throw();
+  int32_t createTime;
+  int32_t weight;
+  std::string payload;
+
+  _RuntimeStat__isset __isset;
+
+  void __set_createTime(const int32_t val);
+
+  void __set_weight(const int32_t val);
+
+  void __set_payload(const std::string& val);
+
+  bool operator == (const RuntimeStat & rhs) const
+  {
+    if (__isset.createTime != rhs.__isset.createTime)
+      return false;
+    else if (__isset.createTime && !(createTime == rhs.createTime))
+      return false;
+    if (!(weight == rhs.weight))
+      return false;
+    if (!(payload == rhs.payload))
+      return false;
+    return true;
+  }
+  bool operator != (const RuntimeStat &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const RuntimeStat & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(RuntimeStat &a, RuntimeStat &b);
+
+inline std::ostream& operator<<(std::ostream& out, const RuntimeStat& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class GetRuntimeStatsRequest {
+ public:
+
+  GetRuntimeStatsRequest(const GetRuntimeStatsRequest&);
+  GetRuntimeStatsRequest& operator=(const GetRuntimeStatsRequest&);
+  GetRuntimeStatsRequest() : maxWeight(0), maxCreateTime(0) {
+  }
+
+  virtual ~GetRuntimeStatsRequest() throw();
+  int32_t maxWeight;
+  int32_t maxCreateTime;
+
+  void __set_maxWeight(const int32_t val);
+
+  void __set_maxCreateTime(const int32_t val);
+
+  bool operator == (const GetRuntimeStatsRequest & rhs) const
+  {
+    if (!(maxWeight == rhs.maxWeight))
+      return false;
+    if (!(maxCreateTime == rhs.maxCreateTime))
+      return false;
+    return true;
+  }
+  bool operator != (const GetRuntimeStatsRequest &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const GetRuntimeStatsRequest & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(GetRuntimeStatsRequest &a, GetRuntimeStatsRequest &b);
+
+inline std::ostream& operator<<(std::ostream& out, const GetRuntimeStatsRequest& obj)
 {
   obj.printTo(out);
   return out;
@@ -8639,54 +13420,6 @@ class NoSuchObjectException : public ::apache::thrift::TException {
 void swap(NoSuchObjectException &a, NoSuchObjectException &b);
 
 inline std::ostream& operator<<(std::ostream& out, const NoSuchObjectException& obj)
-{
-  obj.printTo(out);
-  return out;
-}
-
-typedef struct _IndexAlreadyExistsException__isset {
-  _IndexAlreadyExistsException__isset() : message(false) {}
-  bool message :1;
-} _IndexAlreadyExistsException__isset;
-
-class IndexAlreadyExistsException : public ::apache::thrift::TException {
- public:
-
-  IndexAlreadyExistsException(const IndexAlreadyExistsException&);
-  IndexAlreadyExistsException& operator=(const IndexAlreadyExistsException&);
-  IndexAlreadyExistsException() : message() {
-  }
-
-  virtual ~IndexAlreadyExistsException() throw();
-  std::string message;
-
-  _IndexAlreadyExistsException__isset __isset;
-
-  void __set_message(const std::string& val);
-
-  bool operator == (const IndexAlreadyExistsException & rhs) const
-  {
-    if (!(message == rhs.message))
-      return false;
-    return true;
-  }
-  bool operator != (const IndexAlreadyExistsException &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const IndexAlreadyExistsException & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-  virtual void printTo(std::ostream& out) const;
-  mutable std::string thriftTExceptionMessageHolder_;
-  const char* what() const throw();
-};
-
-void swap(IndexAlreadyExistsException &a, IndexAlreadyExistsException &b);
-
-inline std::ostream& operator<<(std::ostream& out, const IndexAlreadyExistsException& obj)
 {
   obj.printTo(out);
   return out;

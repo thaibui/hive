@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -44,6 +44,7 @@ import org.apache.hadoop.hive.ql.exec.vector.VectorColumnSourceMapping;
 import org.apache.hadoop.hive.ql.exec.vector.VectorMapJoinOperator;
 import org.apache.hadoop.hive.ql.exec.vector.VectorMapJoinOuterFilteredOperator;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizationContext;
+import org.apache.hadoop.hive.ql.exec.vector.expressions.VectorExpression;
 import org.apache.hadoop.hive.ql.exec.vector.mapjoin.fast.VectorMapJoinFastTableContainer;
 import org.apache.hadoop.hive.ql.exec.vector.mapjoin.fast.VerifyFastRow;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -211,12 +212,16 @@ public class MapJoinTestConfig {
     vectorMapJoinInfo.setBigTableKeyColumnMap(testDesc.bigTableKeyColumnNums);
     vectorMapJoinInfo.setBigTableKeyColumnNames(testDesc.bigTableKeyColumnNames);
     vectorMapJoinInfo.setBigTableKeyTypeInfos(testDesc.bigTableKeyTypeInfos);
-    vectorMapJoinInfo.setBigTableKeyExpressions(null);
+    vectorMapJoinInfo.setSlimmedBigTableKeyExpressions(null);
+
+    vectorDesc.setAllBigTableKeyExpressions(null);
 
     vectorMapJoinInfo.setBigTableValueColumnMap(new int[0]);
     vectorMapJoinInfo.setBigTableValueColumnNames(new String[0]);
     vectorMapJoinInfo.setBigTableValueTypeInfos(new TypeInfo[0]);
-    vectorMapJoinInfo.setBigTableValueExpressions(null);
+    vectorMapJoinInfo.setSlimmedBigTableValueExpressions(null);
+
+    vectorDesc.setAllBigTableValueExpressions(null);
 
     VectorColumnSourceMapping projectionMapping =
         new VectorColumnSourceMapping("Projection Mapping");
@@ -284,22 +289,22 @@ public class MapJoinTestConfig {
       case INNER:
         operator =
             new VectorMapJoinInnerLongOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case INNER_BIG_ONLY:
         operator =
             new VectorMapJoinInnerBigOnlyLongOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case LEFT_SEMI:
         operator =
             new VectorMapJoinLeftSemiLongOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case OUTER:
         operator =
             new VectorMapJoinOuterLongOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       default:
         throw new RuntimeException("unknown operator variation " + VectorMapJoinVariation);
@@ -310,22 +315,22 @@ public class MapJoinTestConfig {
       case INNER:
         operator =
             new VectorMapJoinInnerStringOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case INNER_BIG_ONLY:
         operator =
             new VectorMapJoinInnerBigOnlyStringOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case LEFT_SEMI:
         operator =
             new VectorMapJoinLeftSemiStringOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case OUTER:
         operator =
             new VectorMapJoinOuterStringOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       default:
         throw new RuntimeException("unknown operator variation " + VectorMapJoinVariation);
@@ -336,22 +341,22 @@ public class MapJoinTestConfig {
       case INNER:
         operator =
             new VectorMapJoinInnerMultiKeyOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case INNER_BIG_ONLY:
         operator =
             new VectorMapJoinInnerBigOnlyMultiKeyOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case LEFT_SEMI:
         operator =
             new VectorMapJoinLeftSemiMultiKeyOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       case OUTER:
         operator =
             new VectorMapJoinOuterMultiKeyOperator(new CompilationOpContext(),
-                vContext, mapJoinDesc);
+                mapJoinDesc, vContext, vectorDesc);
         break;
       default:
         throw new RuntimeException("unknown operator variation " + VectorMapJoinVariation);
@@ -541,12 +546,28 @@ public class MapJoinTestConfig {
       }
 
       // This is what the Vectorizer class does.
+      VectorMapJoinDesc vectorMapJoinDesc = new VectorMapJoinDesc();
+
+      byte posBigTable = (byte) mapJoinDesc.getPosBigTable();
+      VectorExpression[] allBigTableKeyExpressions =
+          vContext.getVectorExpressions(mapJoinDesc.getKeys().get(posBigTable));
+      vectorMapJoinDesc.setAllBigTableKeyExpressions(allBigTableKeyExpressions);
+
+      Map<Byte, List<ExprNodeDesc>> exprs = mapJoinDesc.getExprs();
+      VectorExpression[] allBigTableValueExpressions =
+          vContext.getVectorExpressions(exprs.get(posBigTable));
+      vectorMapJoinDesc.setAllBigTableValueExpressions(allBigTableValueExpressions);
+
       List<ExprNodeDesc> bigTableFilters = mapJoinDesc.getFilters().get(bigTablePos);
       boolean isOuterAndFiltered = (!mapJoinDesc.isNoOuterJoin() && bigTableFilters.size() > 0);
       if (!isOuterAndFiltered) {
-        operator = new VectorMapJoinOperator(new CompilationOpContext(), vContext, mapJoinDesc);
+        operator = new VectorMapJoinOperator(
+            new CompilationOpContext(), mapJoinDesc,
+            vContext, vectorMapJoinDesc);
       } else {
-        operator = new VectorMapJoinOuterFilteredOperator(new CompilationOpContext(), vContext, mapJoinDesc);
+        operator = new VectorMapJoinOuterFilteredOperator(
+            new CompilationOpContext(), mapJoinDesc,
+            vContext, vectorMapJoinDesc);
       }
     }
 
@@ -563,6 +584,8 @@ public class MapJoinTestConfig {
           throws SerDeException, IOException, HiveException {
 
     VectorMapJoinDesc vectorDesc = MapJoinTestConfig.createVectorMapJoinDesc(testDesc);
+
+    // UNDONE
     mapJoinDesc.setVectorDesc(vectorDesc);
 
     vectorDesc.setHashTableImplementationType(hashTableImplementationType);
@@ -595,6 +618,16 @@ public class MapJoinTestConfig {
     loadTableContainerData(testDesc, testData, mapJoinTableContainer);
 
     VectorizationContext vContext = MapJoinTestConfig.createVectorizationContext(testDesc);
+
+    byte posBigTable = (byte) mapJoinDesc.getPosBigTable();
+    VectorExpression[] slimmedBigTableKeyExpressions =
+        vContext.getVectorExpressions(mapJoinDesc.getKeys().get(posBigTable));
+    vectorMapJoinInfo.setSlimmedBigTableKeyExpressions(slimmedBigTableKeyExpressions);
+
+    Map<Byte, List<ExprNodeDesc>> exprs = mapJoinDesc.getExprs();
+    VectorExpression[] slimmedBigTableValueExpressions =
+        vContext.getVectorExpressions(exprs.get(posBigTable));
+    vectorMapJoinInfo.setSlimmedBigTableValueExpressions(slimmedBigTableValueExpressions);
 
     VectorMapJoinCommonOperator operator =
         MapJoinTestConfig.createNativeVectorMapJoinOperator(

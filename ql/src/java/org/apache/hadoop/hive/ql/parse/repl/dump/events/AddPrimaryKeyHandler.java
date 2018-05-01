@@ -21,17 +21,21 @@ import org.apache.hadoop.hive.metastore.api.NotificationEvent;
 import org.apache.hadoop.hive.ql.parse.repl.DumpType;
 import org.apache.hadoop.hive.ql.parse.repl.load.DumpMetaData;
 
-public class AddPrimaryKeyHandler extends AbstractEventHandler {
+public class AddPrimaryKeyHandler extends AbstractConstraintEventHandler {
   AddPrimaryKeyHandler(NotificationEvent event) {
     super(event);
   }
 
   @Override
   public void handle(Context withinContext) throws Exception {
-    LOG.info("Processing#{} ADD_PRIMARYKEY_MESSAGE message : {}", fromEventId(), event.getMessage());
-    DumpMetaData dmd = withinContext.createDmd(this);
-    dmd.setPayload(event.getMessage());
-    dmd.write();
+    LOG.debug("Processing#{} ADD_PRIMARYKEY_MESSAGE message : {}", fromEventId(),
+        event.getMessage());
+
+    if (shouldReplicate(withinContext)) {
+      DumpMetaData dmd = withinContext.createDmd(this);
+      dmd.setPayload(event.getMessage());
+      dmd.write();
+    }
   }
 
   @Override

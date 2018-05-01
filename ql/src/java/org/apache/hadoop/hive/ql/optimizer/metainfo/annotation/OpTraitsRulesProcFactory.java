@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,11 +18,10 @@
 
 package org.apache.hadoop.hive.ql.optimizer.metainfo.annotation;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Stack;
 
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.Order;
 import org.apache.hadoop.hive.ql.exec.GroupByOperator;
 import org.apache.hadoop.hive.ql.exec.JoinOperator;
@@ -40,10 +39,7 @@ import org.apache.hadoop.hive.ql.optimizer.AbstractBucketJoinProc;
 import org.apache.hadoop.hive.ql.parse.ParseContext;
 import org.apache.hadoop.hive.ql.parse.PrunedPartitionList;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
-import org.apache.hadoop.hive.ql.plan.ExprNodeColumnDesc;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
-import org.apache.hadoop.hive.ql.plan.OpTraits;
-import org.apache.hadoop.hive.ql.plan.OperatorDesc;
+import org.apache.hadoop.hive.ql.plan.*;
 
 /*
  * This class populates the following operator traits for the entire operator tree:
@@ -92,28 +88,58 @@ public class OpTraitsRulesProcFactory {
         Object... nodeOutputs) throws SemanticException {
 
       ReduceSinkOperator rs = (ReduceSinkOperator)nd;
-      List<String> bucketCols = new ArrayList<String>();
-      if (rs.getColumnExprMap() != null) {
-        for (ExprNodeDesc exprDesc : rs.getConf().getKeyCols()) {
-          for (Entry<String, ExprNodeDesc> entry : rs.getColumnExprMap().entrySet()) {
-            if (exprDesc.isSame(entry.getValue())) {
-              bucketCols.add(entry.getKey());
+
+      List<List<String>> listBucketCols = new ArrayList<List<String>>();
+      int numBuckets = -1;
+      int numReduceSinks = 1;
+      int bucketingVersion = -1;
+      OpTraits parentOpTraits = rs.getParentOperators().get(0).getOpTraits();
+      if (parentOpTraits != null) {
+        numBuckets = parentOpTraits.getNumBuckets();
+        numReduceSinks += parentOpTraits.getNumReduceSinks();
+        bucketingVersion = parentOpTraits.getBucketingVersion();
+      }
+
+      List<String> bucketCols = new ArrayList<>();
+      if (parentOpTraits != null &&
+              parentOpTraits.getBucketColNames() != null) {
+        if (parentOpTraits.getBucketColNames().size() > 0) {
+          for (List<String> cols : parentOpTraits.getBucketColNames()) {
+            for (String col : cols) {
+              for (Entry<String, ExprNodeDesc> entry : rs.getColumnExprMap().entrySet()) {
+                // Fetch the column expression. There should be atleast one.
+                Map<Integer, ExprNodeDesc> colMap = new HashMap<>();
+                boolean found = false;
+                ExprNodeDescUtils.getExprNodeColumnDesc(entry.getValue(), colMap);
+                for (Integer hashCode : colMap.keySet()) {
+                  ExprNodeColumnDesc expr = (ExprNodeColumnDesc) colMap.get(hashCode);
+                  if (expr.getColumn().equals(col)) {
+                    bucketCols.add(entry.getKey());
+                    found = true;
+                    break;
+                  }
+                }
+                if (found) break;
+              } // column exprmap.
+            } // cols
+          }
+        } else {
+          // fallback to old mechanism which serves SMB Joins.
+          for (ExprNodeDesc exprDesc : rs.getConf().getKeyCols()) {
+            for (Entry<String, ExprNodeDesc> entry : rs.getColumnExprMap().entrySet()) {
+              if (exprDesc.isSame(entry.getValue())) {
+                bucketCols.add(entry.getKey());
+              }
             }
           }
         }
       }
 
-      List<List<String>> listBucketCols = new ArrayList<List<String>>();
       listBucketCols.add(bucketCols);
-      int numBuckets = -1;
-      int numReduceSinks = 1;
-      OpTraits parentOpTraits = rs.getParentOperators().get(0).getConf().getTraits();
-      if (parentOpTraits != null) {
-        numBuckets = parentOpTraits.getNumBuckets();
-        numReduceSinks += parentOpTraits.getNumReduceSinks();
-      }
-      OpTraits opTraits = new OpTraits(listBucketCols, numBuckets, listBucketCols, numReduceSinks);
+      OpTraits opTraits = new OpTraits(listBucketCols, numBuckets,
+              listBucketCols, numReduceSinks, bucketingVersion);
       rs.setOpTraits(opTraits);
+      rs.setBucketingVersion(bucketingVersion);
       return null;
     }
   }
@@ -132,32 +158,34 @@ public class OpTraitsRulesProcFactory {
         return false;
       }
 
-      if (tbl.isPartitioned()) {
-        List<Partition> partitions = prunedParts.getNotDeniedPartns();
-        // construct a mapping of (Partition->bucket file names) and (Partition -> bucket number)
-        if (!partitions.isEmpty()) {
-          for (Partition p : partitions) {
-            List<String> fileNames = 
-                AbstractBucketJoinProc.getBucketFilePathsOfPartition(p.getDataLocation(), 
-                    pGraphContext);
-            // The number of files for the table should be same as number of
-            // buckets.
-            if (fileNames.size() != 0 && fileNames.size() != numBuckets) {
-              return false;
+      // Tez can handle unpopulated buckets
+      if (!HiveConf.getVar(pGraphContext.getConf(), HiveConf.ConfVars.HIVE_EXECUTION_ENGINE).equals("tez")) {
+        if (tbl.isPartitioned()) {
+          List<Partition> partitions = prunedParts.getNotDeniedPartns();
+          // construct a mapping of (Partition->bucket file names) and (Partition -> bucket number)
+          if (!partitions.isEmpty()) {
+            for (Partition p : partitions) {
+              List<String> fileNames =
+                      AbstractBucketJoinProc.getBucketFilePathsOfPartition(p.getDataLocation(),
+                              pGraphContext);
+              // The number of files for the table should be same as number of
+              // buckets.
+              if (fileNames.size() != 0 && fileNames.size() != numBuckets) {
+                return false;
+              }
             }
           }
-        }
-      } else {
+        } else {
 
-        List<String> fileNames =
-            AbstractBucketJoinProc.getBucketFilePathsOfPartition(tbl.getDataLocation(),
-                pGraphContext);
-        // The number of files for the table should be same as number of buckets.
-        if (fileNames.size() != 0 && fileNames.size() != numBuckets) {
-          return false;
+          List<String> fileNames =
+                  AbstractBucketJoinProc.getBucketFilePathsOfPartition(tbl.getDataLocation(),
+                          pGraphContext);
+          // The number of files for the table should be same as number of buckets.
+          if (fileNames.size() != 0 && fileNames.size() != numBuckets) {
+            return false;
+          }
         }
       }
-
       return true;
     }
 
@@ -189,7 +217,8 @@ public class OpTraitsRulesProcFactory {
         sortedColsList.add(sortCols);
       }
       // num reduce sinks hardcoded to 0 because TS has no parents
-      OpTraits opTraits = new OpTraits(bucketColsList, numBuckets, sortedColsList, 0);
+      OpTraits opTraits = new OpTraits(bucketColsList, numBuckets,
+              sortedColsList, 0, table.getBucketingVersion());
       ts.setOpTraits(opTraits);
       return null;
     }
@@ -215,12 +244,15 @@ public class OpTraitsRulesProcFactory {
 
       List<List<String>> listBucketCols = new ArrayList<List<String>>();
       int numReduceSinks = 0;
+      int bucketingVersion = -1;
       OpTraits parentOpTraits = gbyOp.getParentOperators().get(0).getOpTraits();
       if (parentOpTraits != null) {
         numReduceSinks = parentOpTraits.getNumReduceSinks();
+        bucketingVersion = parentOpTraits.getBucketingVersion();
       }
       listBucketCols.add(gbyKeys);
-      OpTraits opTraits = new OpTraits(listBucketCols, -1, listBucketCols, numReduceSinks);
+      OpTraits opTraits = new OpTraits(listBucketCols, -1, listBucketCols,
+              numReduceSinks, bucketingVersion);
       gbyOp.setOpTraits(opTraits);
       return null;
     }
@@ -274,12 +306,15 @@ public class OpTraitsRulesProcFactory {
 
       int numBuckets = -1;
       int numReduceSinks = 0;
+      int bucketingVersion = -1;
       OpTraits parentOpTraits = selOp.getParentOperators().get(0).getOpTraits();
       if (parentOpTraits != null) {
         numBuckets = parentOpTraits.getNumBuckets();
         numReduceSinks = parentOpTraits.getNumReduceSinks();
+        bucketingVersion = parentOpTraits.getBucketingVersion();
       }
-      OpTraits opTraits = new OpTraits(listBucketCols, numBuckets, listSortCols, numReduceSinks);
+      OpTraits opTraits = new OpTraits(listBucketCols, numBuckets, listSortCols,
+              numReduceSinks, bucketingVersion);
       selOp.setOpTraits(opTraits);
       return null;
     }
@@ -314,45 +349,47 @@ public class OpTraitsRulesProcFactory {
         pos++;
       }
 
-      joinOp.setOpTraits(new OpTraits(bucketColsList, -1, bucketColsList, numReduceSinks));
+      // The bucketingVersion is not relevant here as it is never used.
+      // For SMB, we look at the parent tables' bucketing versions and for
+      // bucket map join the big table's bucketing version is considered.
+      joinOp.setOpTraits(new OpTraits(bucketColsList, -1, bucketColsList, numReduceSinks, 2));
       return null;
     }
 
     private List<String> getOutputColNames(JoinOperator joinOp, List<List<String>> parentColNames,
         byte pos) {
-      if (parentColNames != null) {
-        List<String> bucketColNames = new ArrayList<String>();
+      if (parentColNames == null) {
+        // no col names in parent
+        return null;
+      }
+      List<String> bucketColNames = new ArrayList<>();
 
-        // guaranteed that there is only 1 list within this list because
-        // a reduce sink always brings down the bucketing cols to a single list.
-        // may not be true with correlation operators (mux-demux)
-        List<String> colNames = parentColNames.get(0);
-        for (String colName : colNames) {
-          for (ExprNodeDesc exprNode : joinOp.getConf().getExprs().get(pos)) {
-            if (exprNode instanceof ExprNodeColumnDesc) {
-              if (((ExprNodeColumnDesc) (exprNode)).getColumn().equals(colName)) {
-                for (Entry<String, ExprNodeDesc> entry : joinOp.getColumnExprMap().entrySet()) {
-                  if (entry.getValue().isSame(exprNode)) {
-                    bucketColNames.add(entry.getKey());
-                    // we have found the colName
-                    break;
-                  }
+      // guaranteed that there is only 1 list within this list because
+      // a reduce sink always brings down the bucketing cols to a single list.
+      // may not be true with correlation operators (mux-demux)
+      List<String> colNames = parentColNames.size() > 0 ? parentColNames.get(0) : new ArrayList<>();
+      for (String colName : colNames) {
+        for (ExprNodeDesc exprNode : joinOp.getConf().getExprs().get(pos)) {
+          if (exprNode instanceof ExprNodeColumnDesc) {
+            if (((ExprNodeColumnDesc) (exprNode)).getColumn().equals(colName)) {
+              for (Entry<String, ExprNodeDesc> entry : joinOp.getColumnExprMap().entrySet()) {
+                if (entry.getValue().isSame(exprNode)) {
+                  bucketColNames.add(entry.getKey());
+                  // we have found the colName
+                  break;
                 }
-              } else {
-                // continue on to the next exprNode to find a match
-                continue;
               }
-              // we have found the colName. No need to search more exprNodes.
-              break;
+            } else {
+              // continue on to the next exprNode to find a match
+              continue;
             }
+            // we have found the colName. No need to search more exprNodes.
+            break;
           }
         }
-
-        return bucketColNames;
       }
 
-      // no col names in parent
-      return null;
+      return bucketColNames;
     }
   }
 
@@ -369,6 +406,8 @@ public class OpTraitsRulesProcFactory {
       Operator<? extends OperatorDesc> operator = (Operator<? extends OperatorDesc>) nd;
 
       int numReduceSinks = 0;
+      int bucketingVersion = -1;
+      boolean bucketingVersionSeen = false;
       for (Operator<?> parentOp : operator.getParentOperators()) {
         if (parentOp.getOpTraits() == null) {
           continue;
@@ -376,8 +415,17 @@ public class OpTraitsRulesProcFactory {
         if (parentOp.getOpTraits().getNumReduceSinks() > numReduceSinks) {
           numReduceSinks = parentOp.getOpTraits().getNumReduceSinks();
         }
+        // If there is mismatch in bucketingVersion, then it should be set to
+        // -1, that way SMB will be disabled.
+        if (bucketingVersion == -1 && !bucketingVersionSeen) {
+          bucketingVersion = parentOp.getOpTraits().getBucketingVersion();
+          bucketingVersionSeen = true;
+        } else if (bucketingVersion != parentOp.getOpTraits().getBucketingVersion()) {
+          bucketingVersion = -1;
+        }
       }
-      OpTraits opTraits = new OpTraits(null, -1, null, numReduceSinks);
+      OpTraits opTraits = new OpTraits(null, -1,
+              null, numReduceSinks, bucketingVersion);
       operator.setOpTraits(opTraits);
       return null;
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,7 +20,6 @@ package org.apache.hadoop.hive.ql.exec.vector.expressions;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
-
 
 import org.apache.hadoop.hive.ql.exec.vector.ColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.DoubleColumnVector;
@@ -68,7 +67,6 @@ public class TestVectorLogicalExpressions {
     expr.evaluate(batch);
 
     // spot check
-    Assert.assertTrue(outCol.noNulls);
     Assert.assertEquals(0, outCol.vector[0]);
     Assert.assertEquals(1, outCol.vector[1]);
     Assert.assertEquals(1, outCol.vector[2]);
@@ -126,7 +124,6 @@ public class TestVectorLogicalExpressions {
     expr.evaluate(batch);
 
     // spot check
-    Assert.assertTrue(outCol.noNulls);
     Assert.assertEquals(0, outCol.vector[0]);
     Assert.assertEquals(0, outCol.vector[1]);
     Assert.assertEquals(0, outCol.vector[2]);
@@ -145,13 +142,13 @@ public class TestVectorLogicalExpressions {
     expr.evaluate(batch);
 
     // spot check
-    Assert.assertFalse(outCol.isRepeating);   
+    Assert.assertFalse(outCol.isRepeating);
     Assert.assertEquals(0, outCol.vector[0]);
     Assert.assertEquals(1, outCol.vector[1]);
     Assert.assertEquals(0, outCol.vector[2]);
     Assert.assertEquals(1, outCol.vector[3]);
-  }  
-  
+  }
+
   /**
    * Get a batch with three boolean (long) columns.
    */
@@ -208,7 +205,6 @@ public class TestVectorLogicalExpressions {
     batch.cols[0].noNulls = true;
     expr.evaluate(batch);
     Assert.assertFalse(outCol.isRepeating);
-    Assert.assertTrue(outCol.noNulls);
     Assert.assertEquals(1, outCol.vector[0]);
     Assert.assertEquals(0, outCol.vector[2]);
 
@@ -427,13 +423,13 @@ public class TestVectorLogicalExpressions {
     }
 
     @Override
-    public int getOutputColumn() {
+    public Descriptor getDescriptor() {
       // TODO Auto-generated method stub
-      return 0;
+      return null;
     }
 
     @Override
-    public Descriptor getDescriptor() {
+    public String vectorExpressionParameters() {
       // TODO Auto-generated method stub
       return null;
     }
@@ -464,13 +460,13 @@ public class TestVectorLogicalExpressions {
     }
 
     @Override
-    public int getOutputColumn() {
+    public Descriptor getDescriptor() {
       // TODO Auto-generated method stub
-      return 0;
+      return null;
     }
 
     @Override
-    public Descriptor getDescriptor() {
+    public String vectorExpressionParameters() {
       // TODO Auto-generated method stub
       return null;
     }
@@ -501,13 +497,13 @@ public class TestVectorLogicalExpressions {
     }
 
     @Override
-    public int getOutputColumn() {
+    public Descriptor getDescriptor() {
       // TODO Auto-generated method stub
-      return 0;
+      return null;
     }
 
     @Override
-    public Descriptor getDescriptor() {
+    public String vectorExpressionParameters() {
       // TODO Auto-generated method stub
       return null;
     }
@@ -541,13 +537,13 @@ public class TestVectorLogicalExpressions {
     }
 
     @Override
-    public int getOutputColumn() {
+    public Descriptor getDescriptor() {
       // TODO Auto-generated method stub
-      return 0;
+      return null;
     }
 
     @Override
-    public Descriptor getDescriptor() {
+    public String vectorExpressionParameters() {
       // TODO Auto-generated method stub
       return null;
     }

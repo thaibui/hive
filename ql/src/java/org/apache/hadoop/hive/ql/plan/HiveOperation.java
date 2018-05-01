@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -71,11 +71,11 @@ public enum HiveOperation {
   SHOW_CREATEDATABASE("SHOW_CREATEDATABASE", new Privilege[]{Privilege.SELECT}, null),
   SHOW_CREATETABLE("SHOW_CREATETABLE", new Privilege[]{Privilege.SELECT}, null),
   SHOWFUNCTIONS("SHOWFUNCTIONS", null, null, true, false),
-  SHOWINDEXES("SHOWINDEXES", null, null, true, false),
   SHOWPARTITIONS("SHOWPARTITIONS", null, null),
   SHOWLOCKS("SHOWLOCKS", null, null, true, false),
   SHOWCONF("SHOWCONF", null, null),
   SHOWVIEWS("SHOWVIEWS", null, null, true, false),
+  SHOWMATERIALIZEDVIEWS("SHOWMATERIALIZEDVIEWS", null, null, true, false),
   CREATEFUNCTION("CREATEFUNCTION", null, null),
   DROPFUNCTION("DROPFUNCTION", null, null),
   RELOADFUNCTION("RELOADFUNCTION", null, null),
@@ -86,9 +86,8 @@ public enum HiveOperation {
       Privilege[]{Privilege.CREATE}),
   DROPVIEW("DROPVIEW", null, new Privilege[]{Privilege.DROP}),
   DROP_MATERIALIZED_VIEW("DROP_MATERIALIZED_VIEW", null, new Privilege[]{Privilege.DROP}),
-  CREATEINDEX("CREATEINDEX", null, null),
-  DROPINDEX("DROPINDEX", null, null),
-  ALTERINDEX_REBUILD("ALTERINDEX_REBUILD", null, null),
+  ALTER_MATERIALIZED_VIEW_REWRITE("ALTER_MATERIALIZED_VIEW_REWRITE",
+      new Privilege[]{Privilege.ALTER_METADATA}, null),
   ALTERVIEW_PROPERTIES("ALTERVIEW_PROPERTIES", null, null),
   DROPVIEW_PROPERTIES("DROPVIEW_PROPERTIES", null, null),
   LOCKTABLE("LOCKTABLE",  new Privilege[]{Privilege.LOCK}, null),
@@ -111,7 +110,6 @@ public enum HiveOperation {
   TRUNCATETABLE("TRUNCATETABLE", null, new Privilege[]{Privilege.DROP}),
   CREATETABLE_AS_SELECT("CREATETABLE_AS_SELECT", new Privilege[]{Privilege.SELECT}, new Privilege[]{Privilege.CREATE}),
   QUERY("QUERY", new Privilege[]{Privilege.SELECT}, new Privilege[]{Privilege.ALTER_DATA, Privilege.CREATE}, true, false),
-  ALTERINDEX_PROPS("ALTERINDEX_PROPS",null, null),
   ALTERDATABASE("ALTERDATABASE", null, null),
   ALTERDATABASE_OWNER("ALTERDATABASE_OWNER", null, null),
   ALTERDATABASE_LOCATION("ALTERDATABASE_LOCATION", new Privilege[]{Privilege.ALTER_DATA}, null),
@@ -129,6 +127,8 @@ public enum HiveOperation {
       new Privilege[]{Privilege.ALTER_METADATA}, null),
   ALTERTABLE_ADDCONSTRAINT("ALTERTABLE_ADDCONSTRAINT",
       new Privilege[]{Privilege.ALTER_METADATA}, null),
+  ALTERTABLE_UPDATECOLUMNS("ALTERTABLE_UPDATECOLUMNS",
+      new Privilege[]{Privilege.ALTER_METADATA}, null),
   ALTERVIEW_RENAME("ALTERVIEW_RENAME", new Privilege[] {Privilege.ALTER_METADATA}, null),
   ALTERVIEW_AS("ALTERVIEW_AS", new Privilege[] {Privilege.ALTER_METADATA}, null),
   ALTERTABLE_COMPACT("ALTERTABLE_COMPACT", new Privilege[]{Privilege.SELECT}, new Privilege[]{Privilege.ALTER_DATA}),
@@ -138,7 +138,22 @@ public enum HiveOperation {
   COMMIT("COMMIT", null, null, true, true),
   ROLLBACK("ROLLBACK", null, null, true, true),
   SET_AUTOCOMMIT("SET AUTOCOMMIT", null, null, true, false),
-  ABORT_TRANSACTIONS("ABORT TRANSACTIONS", null, null, false, false);
+  ABORT_TRANSACTIONS("ABORT TRANSACTIONS", null, null, false, false),
+  KILL_QUERY("KILL QUERY", null, null),
+  CREATE_RESOURCEPLAN("CREATE RESOURCEPLAN", null, null, false, false),
+  SHOW_RESOURCEPLAN("SHOW RESOURCEPLAN", null, null, false, false),
+  ALTER_RESOURCEPLAN("ALTER RESOURCEPLAN", null, null, false, false),
+  DROP_RESOURCEPLAN("DROP RESOURCEPLAN", null, null, false, false),
+  CREATE_TRIGGER("CREATE TRIGGER", null, null, false, false),
+  ALTER_TRIGGER("ALTER TRIGGER", null, null, false, false),
+  DROP_TRIGGER("DROP TRIGGER", null, null, false, false),
+  CREATE_POOL("CREATE POOL", null, null, false, false),
+  ALTER_POOL("ALTER POOL", null, null, false, false),
+  DROP_POOL("DROP POOL", null, null, false, false),
+  CREATE_MAPPING("CREATE MAPPING", null, null, false, false),
+  ALTER_MAPPING("ALTER MAPPING", null, null, false, false),
+  DROP_MAPPING("DROP MAPPING", null, null, false, false);
+
 
   private String operationName;
 

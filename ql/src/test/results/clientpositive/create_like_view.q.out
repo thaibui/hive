@@ -37,7 +37,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table1
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -49,6 +48,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"a\":\"true\",\"b\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -100,7 +100,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table2
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table2
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -112,6 +111,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"a\":\"true\",\"b\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -159,7 +159,6 @@ POSTHOOK: query: DESCRIBE FORMATTED table3
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table3
 # col_name            	data_type           	comment             
-	 	 
 a                   	string              	                    
 b                   	string              	                    
 	 	 
@@ -172,6 +171,7 @@ Table Type:         	EXTERNAL_TABLE
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"a\":\"true\",\"b\":\"true\"}}
 	EXTERNAL            	TRUE                
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -278,13 +278,11 @@ POSTHOOK: query: describe formatted table1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@table1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -296,6 +294,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numPartitions       	0                   
 	numRows             	0                   

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -94,6 +94,8 @@ public class VectorMapJoinFastTableContainer implements VectorMapJoinTableContai
   private VectorMapJoinFastHashTable createHashTable(int newThreshold) {
 
     boolean isOuterJoin = !desc.isNoOuterJoin();
+
+    // UNDONE
     VectorMapJoinDesc vectorDesc = (VectorMapJoinDesc) desc.getVectorDesc();
     HashTableImplementationType hashTableImplementationType = vectorDesc.getHashTableImplementationType();
     HashTableKind hashTableKind = vectorDesc.getHashTableKind();

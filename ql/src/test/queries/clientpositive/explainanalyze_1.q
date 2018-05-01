@@ -1,3 +1,5 @@
+--! qt:dataset:src
+SET hive.vectorized.execution.enabled=false;
 set hive.map.aggr=false;
 set hive.mapred.mode=nonstrict;
 
@@ -37,3 +39,11 @@ set hive.auto.convert.join.noconditionaltask.size=10000;
 EXPLAIN analyze 
 SELECT x.key, y.value
 FROM src x JOIN src y ON (x.key = y.key);
+
+set hive.entity.capture.transform=true;
+explain analyze
+SELECT
+TRANSFORM(a.key, a.value) USING 'cat' AS (tkey, tvalue)
+FROM src a join src b
+on a.key = b.key;
+

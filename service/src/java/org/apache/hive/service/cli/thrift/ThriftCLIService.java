@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,15 +20,16 @@ package org.apache.hive.service.cli.thrift;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import org.apache.hive.service.rpc.thrift.TSetClientInfoReq;
+import org.apache.hive.service.rpc.thrift.TSetClientInfoResp;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.security.auth.login.LoginException;
-
 import org.apache.hadoop.hive.common.ServerUtils;
 import org.apache.hadoop.hive.common.log.ProgressMonitor;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -88,6 +89,8 @@ import org.apache.hive.service.rpc.thrift.TGetOperationStatusReq;
 import org.apache.hive.service.rpc.thrift.TGetOperationStatusResp;
 import org.apache.hive.service.rpc.thrift.TGetPrimaryKeysReq;
 import org.apache.hive.service.rpc.thrift.TGetPrimaryKeysResp;
+import org.apache.hive.service.rpc.thrift.TGetQueryIdReq;
+import org.apache.hive.service.rpc.thrift.TGetQueryIdResp;
 import org.apache.hive.service.rpc.thrift.TGetResultSetMetadataReq;
 import org.apache.hive.service.rpc.thrift.TGetResultSetMetadataResp;
 import org.apache.hive.service.rpc.thrift.TGetSchemasReq;
@@ -318,8 +321,6 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
     LOG.info("Client protocol version: " + req.getClient_protocol());
     TOpenSessionResp resp = new TOpenSessionResp();
     try {
-      Map<String, String> openConf = req.getConfiguration();
-
       SessionHandle sessionHandle = getSessionHandle(req, resp);
       resp.setSessionHandle(sessionHandle.toTSessionHandle());
       Map<String, String> configurationMap = new HashMap<String, String>();
@@ -342,6 +343,38 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
       resp.setStatus(HiveSQLException.toTStatus(e));
     }
     return resp;
+  }
+
+  @Override
+  public TSetClientInfoResp SetClientInfo(TSetClientInfoReq req) throws TException {
+    // TODO: We don't do anything for now, just log this for debugging.
+    //       We may be able to make use of this later, e.g. for workload management.
+    TSetClientInfoResp resp = null;
+    if (req.isSetConfiguration()) {
+      StringBuilder sb = null;
+      SessionHandle sh = null;
+      for (Map.Entry<String, String> e : req.getConfiguration().entrySet()) {
+        if (sb == null) {
+          sh = new SessionHandle(req.getSessionHandle());
+          sb = new StringBuilder("Client information for ").append(sh).append(": ");
+        } else {
+          sb.append(", ");
+        }
+        sb.append(e.getKey()).append(" = ").append(e.getValue());
+        if ("ApplicationName".equals(e.getKey())) {
+          try {
+            cliService.setApplicationName(sh, e.getValue());
+          } catch (Exception ex) {
+            LOG.warn("Error setting application name", ex);
+            resp = new TSetClientInfoResp(HiveSQLException.toTStatus(ex));
+          }
+        }
+      }
+      if (sb != null) {
+        LOG.info("{}", sb);
+      }
+    }
+    return resp == null ? new TSetClientInfoResp(OK_STATUS) : resp;
   }
 
   private String getIpAddress() {
@@ -659,6 +692,7 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
       OperationStatus operationStatus =
           cliService.getOperationStatus(operationHandle, req.isGetProgressUpdate());
       resp.setOperationState(operationStatus.getState().toTOperationState());
+      resp.setErrorMessage(operationStatus.getState().getErrorMessage());
       HiveSQLException opException = operationStatus.getOperationException();
       resp.setTaskStatus(operationStatus.getTaskStatus());
       resp.setOperationStarted(operationStatus.getOperationStarted());
@@ -799,6 +833,15 @@ public abstract class ThriftCLIService extends AbstractService implements TCLISe
 	  resp.setStatus(HiveSQLException.toTStatus(e));
 	}
     return resp;
+  }
+
+  @Override
+  public TGetQueryIdResp GetQueryId(TGetQueryIdReq req) throws TException {
+    try {
+      return new TGetQueryIdResp(cliService.getQueryId(req.getOperationHandle()));
+    } catch (HiveSQLException e) {
+      throw new TException(e);
+    }
   }
 
   @Override

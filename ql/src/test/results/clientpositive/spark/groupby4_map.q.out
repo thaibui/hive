@@ -40,7 +40,9 @@ STAGE PLANS:
                         sort order: 
                         Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
                         value expressions: _col0 (type: bigint)
+            Execution mode: vectorized
         Reducer 2 
+            Execution mode: vectorized
             Reduce Operator Tree:
               Group By Operator
                 aggregations: count(VALUE._col0)
@@ -71,7 +73,8 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM src INSERT OVERWRITE TABLE dest1 SELECT count(1)
 PREHOOK: type: QUERY

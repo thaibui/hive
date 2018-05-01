@@ -14,8 +14,8 @@ POSTHOOK: Input: default@srcpart@ds=2008-04-08/hr=12
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=11
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=12
 #### A masked pattern was here ####
-2008-04-08
 2008-04-09
+2008-04-08
 PREHOOK: query: select distinct hr from srcpart
 PREHOOK: type: QUERY
 PREHOOK: Input: default@srcpart
@@ -81,7 +81,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -91,7 +93,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -127,7 +128,8 @@ STAGE PLANS:
           name: default.srcpart_date
 
   Stage: Stage-3
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-0
     Move Operator
@@ -258,7 +260,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -301,7 +305,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -330,7 +335,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -414,7 +418,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -442,7 +448,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -471,7 +478,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -571,7 +577,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -614,7 +622,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -623,10 +632,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 736 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -657,10 +666,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -702,7 +712,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -794,7 +803,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -822,7 +833,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -831,10 +843,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 736 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -850,10 +862,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -895,7 +908,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -993,7 +1005,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -1002,10 +1016,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (date = '2008-04-08') and ds is not null and hr is not null) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -1051,10 +1065,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -1080,7 +1095,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1164,7 +1178,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -1173,10 +1189,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (date = '2008-04-08') and ds is not null and hr is not null) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -1192,10 +1208,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -1221,7 +1238,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1316,7 +1332,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -1359,7 +1377,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -1388,7 +1407,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1472,7 +1490,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -1500,7 +1520,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -1529,7 +1550,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1622,31 +1642,33 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
                       outputColumnNames: _col0
                       Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
-                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         sort order: +
-                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                       Select Operator
-                        expressions: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        expressions: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         outputColumnNames: _col0
                         Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                         Group By Operator
@@ -1665,10 +1687,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -1678,7 +1701,7 @@ STAGE PLANS:
                      Inner Join 0 to 1
                 keys:
                   0 UDFToDouble(_col0) (type: double)
-                  1 UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                  1 UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                 Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
                 Group By Operator
                   aggregations: count()
@@ -1694,7 +1717,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1769,28 +1791,30 @@ STAGE PLANS:
                     outputColumnNames: _col0
                     Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
                     Reduce Output Operator
-                      key expressions: (UDFToDouble(_col0) * 2.0) (type: double)
+                      key expressions: (UDFToDouble(_col0) * 2.0D) (type: double)
                       sort order: +
-                      Map-reduce partition columns: (UDFToDouble(_col0) * 2.0) (type: double)
+                      Map-reduce partition columns: (UDFToDouble(_col0) * 2.0D) (type: double)
                       Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
             Execution mode: vectorized, llap
             LLAP IO: no inputs
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
@@ -1813,7 +1837,7 @@ STAGE PLANS:
                           Dynamic Partitioning Event Operator
                             Target column: hr (string)
                             Target Input: srcpart
-                            Partition key expr: (UDFToDouble(hr) * 2.0)
+                            Partition key expr: (UDFToDouble(hr) * 2.0D)
                             Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                             Target Vertex: Map 1
             Execution mode: vectorized, llap
@@ -1821,10 +1845,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -1833,7 +1858,7 @@ STAGE PLANS:
                 condition map:
                      Inner Join 0 to 1
                 keys:
-                  0 (UDFToDouble(_col0) * 2.0) (type: double)
+                  0 (UDFToDouble(_col0) * 2.0D) (type: double)
                   1 _col0 (type: double)
                 Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
                 Group By Operator
@@ -1850,7 +1875,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -1934,38 +1958,41 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
                       outputColumnNames: _col0
                       Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
-                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         sort order: +
-                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
             Execution mode: vectorized, llap
             LLAP IO: all inputs
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -1975,7 +2002,7 @@ STAGE PLANS:
                      Inner Join 0 to 1
                 keys:
                   0 UDFToDouble(_col0) (type: double)
-                  1 UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                  1 UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                 Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
                 Group By Operator
                   aggregations: count()
@@ -1991,7 +2018,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2066,28 +2092,30 @@ STAGE PLANS:
                     outputColumnNames: _col0
                     Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
                     Reduce Output Operator
-                      key expressions: (UDFToDouble(_col0) * 2.0) (type: double)
+                      key expressions: (UDFToDouble(_col0) * 2.0D) (type: double)
                       sort order: +
-                      Map-reduce partition columns: (UDFToDouble(_col0) * 2.0) (type: double)
+                      Map-reduce partition columns: (UDFToDouble(_col0) * 2.0D) (type: double)
                       Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
             Execution mode: vectorized, llap
             LLAP IO: no inputs
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
@@ -2103,10 +2131,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -2115,7 +2144,7 @@ STAGE PLANS:
                 condition map:
                      Inner Join 0 to 1
                 keys:
-                  0 (UDFToDouble(_col0) * 2.0) (type: double)
+                  0 (UDFToDouble(_col0) * 2.0D) (type: double)
                   1 _col0 (type: double)
                 Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
                 Group By Operator
@@ -2132,7 +2161,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2220,28 +2248,30 @@ STAGE PLANS:
                     outputColumnNames: _col0
                     Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
                     Reduce Output Operator
-                      key expressions: UDFToString((UDFToDouble(_col0) * 2.0)) (type: string)
+                      key expressions: UDFToString((UDFToDouble(_col0) * 2.0D)) (type: string)
                       sort order: +
-                      Map-reduce partition columns: UDFToString((UDFToDouble(_col0) * 2.0)) (type: string)
+                      Map-reduce partition columns: UDFToString((UDFToDouble(_col0) * 2.0D)) (type: string)
                       Statistics: Num rows: 2000 Data size: 368000 Basic stats: COMPLETE Column stats: COMPLETE
             Execution mode: vectorized, llap
             LLAP IO: no inputs
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 4 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
@@ -2264,7 +2294,7 @@ STAGE PLANS:
                           Dynamic Partitioning Event Operator
                             Target column: hr (string)
                             Target Input: srcpart
-                            Partition key expr: UDFToString((UDFToDouble(hr) * 2.0))
+                            Partition key expr: UDFToString((UDFToDouble(hr) * 2.0D))
                             Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                             Target Vertex: Map 1
             Execution mode: vectorized, llap
@@ -2272,10 +2302,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -2284,7 +2315,7 @@ STAGE PLANS:
                 condition map:
                      Inner Join 0 to 1
                 keys:
-                  0 UDFToString((UDFToDouble(_col0) * 2.0)) (type: string)
+                  0 UDFToString((UDFToDouble(_col0) * 2.0D)) (type: string)
                   1 UDFToString(_col0) (type: string)
                 Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
                 Group By Operator
@@ -2301,7 +2332,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2375,7 +2405,7 @@ STAGE PLANS:
     Tez
 #### A masked pattern was here ####
       Edges:
-        Reducer 2 <- Map 1 (CUSTOM_SIMPLE_EDGE), Reducer 4 (CUSTOM_SIMPLE_EDGE)
+        Reducer 2 <- Map 1 (XPROD_EDGE), Reducer 4 (XPROD_EDGE)
         Reducer 3 <- Reducer 2 (CUSTOM_SIMPLE_EDGE)
         Reducer 4 <- Map 1 (SIMPLE_EDGE)
 #### A masked pattern was here ####
@@ -2406,7 +2436,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -2435,7 +2467,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2457,7 +2488,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2524,7 +2554,7 @@ STAGE PLANS:
     Tez
 #### A masked pattern was here ####
       Edges:
-        Reducer 2 <- Map 1 (CUSTOM_SIMPLE_EDGE), Map 4 (CUSTOM_SIMPLE_EDGE)
+        Reducer 2 <- Map 1 (XPROD_EDGE), Map 4 (XPROD_EDGE)
         Reducer 3 <- Reducer 2 (CUSTOM_SIMPLE_EDGE)
 #### A masked pattern was here ####
       Vertices:
@@ -2546,7 +2576,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -2555,10 +2587,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0)) (type: boolean)
+                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0D)) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0)) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (date = '2008-04-08')) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -2573,10 +2605,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -2606,7 +2639,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2690,7 +2722,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -2699,10 +2733,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (date = '2008-04-08') and ds is not null and hr is not null) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -2748,10 +2782,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -2777,7 +2812,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -2861,7 +2895,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -2904,7 +2940,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -2933,7 +2970,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3016,7 +3052,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3040,7 +3077,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3069,7 +3108,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3133,7 +3171,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3176,7 +3216,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3205,7 +3246,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3273,7 +3313,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3316,7 +3358,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3325,10 +3368,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and (UDFToDouble(hr) = 11.0)) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and (UDFToDouble(hr) = 11.0D)) (type: boolean)
                   Statistics: Num rows: 2 Data size: 736 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and (UDFToDouble(hr) = 11.0)) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (UDFToDouble(hr) = 11.0D)) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -3359,10 +3402,11 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: llap
@@ -3404,7 +3448,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3475,10 +3518,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: (UDFToDouble(hr) = 13.0) (type: boolean)
+                  filterExpr: (UDFToDouble(hr) = 13.0D) (type: boolean)
                   Statistics: Num rows: 2 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (UDFToDouble(hr) = 13.0) (type: boolean)
+                    predicate: (UDFToDouble(hr) = 13.0D) (type: boolean)
                     Statistics: Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -3494,19 +3537,20 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 5 
             Map Operator Tree:
                 TableScan
                   alias: srcpart
-                  filterExpr: ((UDFToDouble(hr) = 13.0) and ds is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hr) = 13.0D) and ds is not null) (type: boolean)
                   Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: COMPLETE
                   Filter Operator
-                    predicate: ((UDFToDouble(hr) = 13.0) and ds is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hr) = 13.0D) and ds is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: COMPLETE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -3522,9 +3566,10 @@ STAGE PLANS:
             LLAP IO: unknown
             Map Vectorization:
                 enabled: true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 6 
             Map Operator Tree:
@@ -3549,7 +3594,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3594,7 +3640,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3676,7 +3721,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3704,7 +3751,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3732,7 +3781,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3761,7 +3812,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3783,7 +3833,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3826,7 +3875,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -3933,7 +3981,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -3961,7 +4011,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -3989,7 +4041,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4020,7 +4074,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4042,7 +4095,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4085,7 +4137,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4148,8 +4199,8 @@ POSTHOOK: Input: default@srcpart@ds=2008-04-08/hr=12
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=11
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=12
 #### A masked pattern was here ####
-2008-04-08
 2008-04-09
+2008-04-08
 PREHOOK: query: EXPLAIN VECTORIZATION select ds from (select distinct(ds) as ds from srcpart union all select distinct(ds) as ds from srcpart) s where s.ds in (select max(srcpart.ds) from srcpart union all select min(srcpart.ds) from srcpart)
 PREHOOK: type: QUERY
 POSTHOOK: query: EXPLAIN VECTORIZATION select ds from (select distinct(ds) as ds from srcpart union all select distinct(ds) as ds from srcpart) s where s.ds in (select max(srcpart.ds) from srcpart union all select min(srcpart.ds) from srcpart)
@@ -4195,7 +4246,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4223,7 +4276,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4249,7 +4304,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4277,7 +4334,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4287,7 +4346,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4345,7 +4403,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4383,7 +4440,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4403,7 +4459,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4541,7 +4596,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4584,7 +4641,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4594,7 +4652,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4715,7 +4772,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4758,7 +4817,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4767,10 +4827,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 736 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -4801,17 +4861,17 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -4922,7 +4982,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -4931,10 +4993,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                  filterExpr: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((date = '2008-04-08') and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (date = '2008-04-08') and ds is not null and hr is not null) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -4980,17 +5042,17 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5098,7 +5160,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -5141,7 +5205,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -5151,7 +5216,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5230,7 +5294,7 @@ STAGE PLANS:
                            Inner Join 0 to 1
                       keys:
                         0 UDFToDouble(_col0) (type: double)
-                        1 UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        1 UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                       input vertices:
                         1 Map 3
                       Statistics: Num rows: 2200 Data size: 404800 Basic stats: COMPLETE Column stats: NONE
@@ -5248,31 +5312,33 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 3 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
                       outputColumnNames: _col0
                       Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                       Reduce Output Operator
-                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        key expressions: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         sort order: +
-                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        Map-reduce partition columns: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                       Select Operator
-                        expressions: UDFToDouble(UDFToInteger((_col0 / 2.0))) (type: double)
+                        expressions: UDFToDouble(UDFToInteger((_col0 / 2.0D))) (type: double)
                         outputColumnNames: _col0
                         Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                         Group By Operator
@@ -5291,17 +5357,17 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5379,7 +5445,7 @@ STAGE PLANS:
                       condition map:
                            Inner Join 0 to 1
                       keys:
-                        0 (UDFToDouble(_col0) * 2.0) (type: double)
+                        0 (UDFToDouble(_col0) * 2.0D) (type: double)
                         1 _col0 (type: double)
                       input vertices:
                         1 Map 3
@@ -5398,19 +5464,21 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 3 
             Map Operator Tree:
                 TableScan
                   alias: srcpart_double_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                   Statistics: Num rows: 2 Data size: 384 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and hr is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and hr is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: double)
@@ -5433,7 +5501,7 @@ STAGE PLANS:
                           Dynamic Partitioning Event Operator
                             Target column: hr (string)
                             Target Input: srcpart
-                            Partition key expr: (UDFToDouble(hr) * 2.0)
+                            Partition key expr: (UDFToDouble(hr) * 2.0D)
                             Statistics: Num rows: 1 Data size: 192 Basic stats: COMPLETE Column stats: NONE
                             Target Vertex: Map 1
             Execution mode: vectorized, llap
@@ -5441,17 +5509,17 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5507,7 +5575,7 @@ POSTHOOK: Input: default@srcpart@ds=2008-04-08/hr=11
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=11
 #### A masked pattern was here ####
 1000
-Warning: Map Join MAPJOIN[22][bigTable=?] in task 'Reducer 3' is a cross product
+Warning: Shuffle Join MERGEJOIN[22][tables = [$hdt$_0, $hdt$_1]] in Stage 'Reducer 2' is a cross product
 PREHOOK: query: EXPLAIN VECTORIZATION select count(*) from srcpart join (select ds as ds, ds as `date` from srcpart group by ds) s on (srcpart.ds = s.ds) where s.`date` = '2008-04-08'
 PREHOOK: type: QUERY
 POSTHOOK: query: EXPLAIN VECTORIZATION select count(*) from srcpart join (select ds as ds, ds as `date` from srcpart group by ds) s on (srcpart.ds = s.ds) where s.`date` = '2008-04-08'
@@ -5525,8 +5593,9 @@ STAGE PLANS:
     Tez
 #### A masked pattern was here ####
       Edges:
-        Reducer 3 <- Map 1 (BROADCAST_EDGE), Map 2 (SIMPLE_EDGE)
-        Reducer 4 <- Reducer 3 (CUSTOM_SIMPLE_EDGE)
+        Reducer 2 <- Map 1 (XPROD_EDGE), Reducer 4 (XPROD_EDGE)
+        Reducer 3 <- Reducer 2 (CUSTOM_SIMPLE_EDGE)
+        Reducer 4 <- Map 1 (SIMPLE_EDGE)
 #### A masked pattern was here ####
       Vertices:
         Map 1 
@@ -5540,24 +5609,6 @@ STAGE PLANS:
                     Reduce Output Operator
                       sort order: 
                       Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
-            Execution mode: vectorized, llap
-            LLAP IO: no inputs
-            Map Vectorization:
-                enabled: true
-                enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
-                inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
-                allNative: true
-                usesVectorUDFAdaptor: false
-                vectorized: true
-        Map 2 
-            Map Operator Tree:
-                TableScan
-                  alias: srcpart
-                  filterExpr: (ds = '2008-04-08') (type: boolean)
-                  Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
-                  Select Operator
-                    Statistics: Num rows: 1000 Data size: 10624 Basic stats: COMPLETE Column stats: NONE
                     Group By Operator
                       keys: '2008-04-08' (type: string)
                       mode: hash
@@ -5573,52 +5624,37 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
+        Reducer 2 
+            Execution mode: llap
+            Reduce Operator Tree:
+              Merge Join Operator
+                condition map:
+                     Inner Join 0 to 1
+                keys:
+                  0 
+                  1 
+                Statistics: Num rows: 500000 Data size: 11124000 Basic stats: COMPLETE Column stats: NONE
+                Group By Operator
+                  aggregations: count()
+                  mode: hash
+                  outputColumnNames: _col0
+                  Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE
+                  Reduce Output Operator
+                    sort order: 
+                    Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE
+                    value expressions: _col0 (type: bigint)
         Reducer 3 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
-                allNative: false
-                usesVectorUDFAdaptor: false
-                vectorized: true
-            Reduce Operator Tree:
-              Group By Operator
-                keys: KEY._col0 (type: string)
-                mode: mergepartial
-                outputColumnNames: _col0
-                Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
-                Select Operator
-                  Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
-                  Map Join Operator
-                    condition map:
-                         Inner Join 0 to 1
-                    keys:
-                      0 
-                      1 
-                    input vertices:
-                      0 Map 1
-                    Statistics: Num rows: 500000 Data size: 11124000 Basic stats: COMPLETE Column stats: NONE
-                    Group By Operator
-                      aggregations: count()
-                      mode: hash
-                      outputColumnNames: _col0
-                      Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE
-                      Reduce Output Operator
-                        sort order: 
-                        Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: NONE
-                        value expressions: _col0 (type: bigint)
-        Reducer 4 
-            Execution mode: vectorized, llap
-            Reduce Vectorization:
-                enabled: true
-                enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5635,6 +5671,25 @@ STAGE PLANS:
                       input format: org.apache.hadoop.mapred.SequenceFileInputFormat
                       output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat
                       serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
+        Reducer 4 
+            Execution mode: vectorized, llap
+            Reduce Vectorization:
+                enabled: true
+                enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
+                allNative: false
+                usesVectorUDFAdaptor: false
+                vectorized: true
+            Reduce Operator Tree:
+              Group By Operator
+                keys: KEY._col0 (type: string)
+                mode: mergepartial
+                outputColumnNames: _col0
+                Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+                Select Operator
+                  Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+                  Reduce Output Operator
+                    sort order: 
+                    Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
 
   Stage: Stage-0
     Fetch Operator
@@ -5642,7 +5697,7 @@ STAGE PLANS:
       Processor Tree:
         ListSink
 
-Warning: Map Join MAPJOIN[22][bigTable=?] in task 'Reducer 3' is a cross product
+Warning: Shuffle Join MERGEJOIN[22][tables = [$hdt$_0, $hdt$_1]] in Stage 'Reducer 2' is a cross product
 PREHOOK: query: select count(*) from srcpart join (select ds as ds, ds as `date` from srcpart group by ds) s on (srcpart.ds = s.ds) where s.`date` = '2008-04-08'
 PREHOOK: type: QUERY
 PREHOOK: Input: default@srcpart
@@ -5723,7 +5778,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -5766,7 +5823,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -5776,7 +5834,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5857,7 +5914,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -5881,7 +5939,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -5891,7 +5951,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -5955,7 +6014,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: true
                 usesVectorUDFAdaptor: false
@@ -5996,7 +6057,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6006,7 +6068,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6095,7 +6156,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6138,7 +6201,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6147,10 +6211,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: ((UDFToDouble(hour) = 11.0) and (UDFToDouble(hr) = 11.0)) (type: boolean)
+                  filterExpr: ((UDFToDouble(hour) = 11.0D) and (UDFToDouble(hr) = 11.0D)) (type: boolean)
                   Statistics: Num rows: 2 Data size: 736 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: ((UDFToDouble(hour) = 11.0) and (UDFToDouble(hr) = 11.0)) (type: boolean)
+                    predicate: ((UDFToDouble(hour) = 11.0D) and (UDFToDouble(hr) = 11.0D)) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -6181,17 +6245,17 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Reducer 2 
             Execution mode: vectorized, llap
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6262,10 +6326,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_hour
-                  filterExpr: (UDFToDouble(hr) = 13.0) (type: boolean)
+                  filterExpr: (UDFToDouble(hr) = 13.0D) (type: boolean)
                   Statistics: Num rows: 2 Data size: 368 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (UDFToDouble(hr) = 13.0) (type: boolean)
+                    predicate: (UDFToDouble(hr) = 13.0D) (type: boolean)
                     Statistics: Num rows: 1 Data size: 184 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: hr (type: string)
@@ -6291,19 +6355,20 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 2 
             Map Operator Tree:
                 TableScan
                   alias: srcpart
-                  filterExpr: ((UDFToDouble(hr) = 13.0) and ds is not null) (type: boolean)
+                  filterExpr: ((UDFToDouble(hr) = 13.0D) and ds is not null) (type: boolean)
                   Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: COMPLETE
                   Filter Operator
-                    predicate: ((UDFToDouble(hr) = 13.0) and ds is not null) (type: boolean)
+                    predicate: ((UDFToDouble(hr) = 13.0D) and ds is not null) (type: boolean)
                     Statistics: Num rows: 1 Data size: 368 Basic stats: COMPLETE Column stats: COMPLETE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)
@@ -6319,9 +6384,10 @@ STAGE PLANS:
             LLAP IO: unknown
             Map Vectorization:
                 enabled: true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 allNative: true
-                usesVectorUDFAdaptor: true
+                usesVectorUDFAdaptor: false
                 vectorized: true
         Map 3 
             Map Operator Tree:
@@ -6359,7 +6425,8 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vectorized.input.format IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: []
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.hive.ql.io.orc.OrcInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6369,7 +6436,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6466,7 +6532,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6494,7 +6562,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6522,7 +6592,9 @@ STAGE PLANS:
             Map Vectorization:
                 enabled: true
                 enabledConditionsMet: hive.vectorized.use.vector.serde.deserialize IS true
-                groupByVectorOutput: true
+                inputFormatFeatureSupport: [DECIMAL_64]
+                vectorizationSupportRemovedReasons: [DECIMAL_64 disabled because LLAP is enabled]
+                featureSupportInUse: []
                 inputFileFormats: org.apache.hadoop.mapred.TextInputFormat
                 allNative: false
                 usesVectorUDFAdaptor: false
@@ -6532,7 +6604,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6554,7 +6625,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6597,7 +6667,6 @@ STAGE PLANS:
             Reduce Vectorization:
                 enabled: true
                 enableConditionsMet: hive.vectorized.execution.reduce.enabled IS true, hive.execution.engine tez IN [tez, spark] IS true
-                groupByVectorOutput: true
                 allNative: false
                 usesVectorUDFAdaptor: false
                 vectorized: true
@@ -6660,8 +6729,8 @@ POSTHOOK: Input: default@srcpart@ds=2008-04-08/hr=12
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=11
 POSTHOOK: Input: default@srcpart@ds=2008-04-09/hr=12
 #### A masked pattern was here ####
-2008-04-08
 2008-04-09
+2008-04-08
 PREHOOK: query: create table srcpart_orc (key int, value string) partitioned by (ds string, hr int) stored as orc
 PREHOOK: type: CREATETABLE
 PREHOOK: Output: database:default
@@ -6751,10 +6820,10 @@ STAGE PLANS:
             Map Operator Tree:
                 TableScan
                   alias: srcpart_date_hour
-                  filterExpr: (((date = '2008-04-08') or (date = '2008-04-09')) and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                  filterExpr: (((date = '2008-04-08') or (date = '2008-04-09')) and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                   Statistics: Num rows: 4 Data size: 2944 Basic stats: COMPLETE Column stats: NONE
                   Filter Operator
-                    predicate: (((date = '2008-04-08') or (date = '2008-04-09')) and (UDFToDouble(hour) = 11.0) and ds is not null and hr is not null) (type: boolean)
+                    predicate: (((date = '2008-04-08') or (date = '2008-04-09')) and (UDFToDouble(hour) = 11.0D) and ds is not null and hr is not null) (type: boolean)
                     Statistics: Num rows: 2 Data size: 1472 Basic stats: COMPLETE Column stats: NONE
                     Select Operator
                       expressions: ds (type: string), hr (type: string)

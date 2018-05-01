@@ -1,3 +1,6 @@
+--! qt:dataset:srcpart
+--! qt:dataset:src1
+--! qt:dataset:src
 set hive.strict.checks.bucketing=false;
 
 set hive.stats.column.autogather=true;
@@ -60,6 +63,8 @@ drop table nzhang_part14;
 create table if not exists nzhang_part14 (key string)
   partitioned by (value string);
 
+desc formatted nzhang_part14;
+
 insert overwrite table nzhang_part14 partition(value) 
 select key, value from (
   select * from (select 'k1' as key, cast(null as string) as value from src limit 2)a 
@@ -68,6 +73,8 @@ select key, value from (
   union all 
   select * from (select 'k3' as key, ' ' as value from src limit 2)c
 ) T;
+
+desc formatted nzhang_part14 partition (value=' ');
 
 explain select key from nzhang_part14;
 
@@ -115,13 +122,13 @@ CREATE TABLE tab_part (key int, value string) PARTITIONED BY(ds STRING) CLUSTERE
 drop table srcbucket_mapjoin_part;
 CREATE TABLE srcbucket_mapjoin_part (key int, value string) partitioned by (ds string) CLUSTERED BY (key) INTO 4 BUCKETS STORED AS TEXTFILE;
 
-load data local inpath '../../data/files/srcbucket20.txt' INTO TABLE srcbucket_mapjoin partition(ds='2008-04-08');
-load data local inpath '../../data/files/srcbucket22.txt' INTO TABLE srcbucket_mapjoin partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj/000000_0' INTO TABLE srcbucket_mapjoin partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj1/000001_0' INTO TABLE srcbucket_mapjoin partition(ds='2008-04-08');
 
-load data local inpath '../../data/files/srcbucket20.txt' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
-load data local inpath '../../data/files/srcbucket21.txt' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
-load data local inpath '../../data/files/srcbucket22.txt' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
-load data local inpath '../../data/files/srcbucket23.txt' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj/000000_0' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj/000001_0' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj/000002_0' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
+load data local inpath '../../data/files/bmj/000003_0' INTO TABLE srcbucket_mapjoin_part partition(ds='2008-04-08');
 
 insert overwrite table tab_part partition (ds='2008-04-08')
 select key,value from srcbucket_mapjoin_part;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,11 +24,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.UUID;
 
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
-
 import org.apache.hive.hcatalog.HcatTestUtils;
-import org.apache.hive.hcatalog.mapreduce.HCatBaseTest;
 
+import org.apache.hive.hcatalog.mapreduce.HCatBaseTest;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
 
@@ -47,7 +45,7 @@ public class TestHCatStorerWrapper extends HCatBaseTest {
   private static final String INPUT_FILE_NAME = TEST_DATA_DIR + "/input.data";
 
   @Test
-  public void testStoreExternalTableWithExternalDir() throws IOException, CommandNeedRetryException{
+  public void testStoreExternalTableWithExternalDir() throws Exception {
 
     File tmpExternalDir = new File(TEST_DATA_DIR, UUID.randomUUID().toString());
     tmpExternalDir.deleteOnExit();

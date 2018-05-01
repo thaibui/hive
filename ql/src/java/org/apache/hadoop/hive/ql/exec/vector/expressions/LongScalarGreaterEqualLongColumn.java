@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,25 +18,30 @@
 
 package org.apache.hadoop.hive.ql.exec.vector.expressions;
 
+import java.util.Arrays;
+
 import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.ql.exec.vector.VectorExpressionDescriptor;
 
 public class LongScalarGreaterEqualLongColumn extends VectorExpression {
-
   private static final long serialVersionUID = 1L;
 
-  private int colNum;
-  private long value;
-  private int outputColumn;
+  protected final int colNum;
+  protected final long value;
 
-  public LongScalarGreaterEqualLongColumn(long value, int colNum, int outputColumn) {
+  public LongScalarGreaterEqualLongColumn(long value, int colNum, int outputColumnNum) {
+    super(outputColumnNum);
     this.colNum = colNum;
     this.value = value;
-    this.outputColumn = outputColumn;
   }
 
   public LongScalarGreaterEqualLongColumn() {
+    super();
+
+    // Dummy final assignments.
+    colNum = -1;
+    value = 0;
   }
 
   @Override
@@ -47,10 +52,10 @@ public class LongScalarGreaterEqualLongColumn extends VectorExpression {
     }
 
     LongColumnVector inputColVector = (LongColumnVector) batch.cols[colNum];
-    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumn];
+    LongColumnVector outputColVector = (LongColumnVector) batch.cols[outputColumnNum];
     int[] sel = batch.selected;
-    boolean[] nullPos = inputColVector.isNull;
-    boolean[] outNulls = outputColVector.isNull;
+    boolean[] inputIsNull = inputColVector.isNull;
+    boolean[] outputIsNull = outputColVector.isNull;
     int n = batch.size;
     long[] vector = inputColVector.vector;
     long[] outputVector = outputColVector.vector;
@@ -60,44 +65,72 @@ public class LongScalarGreaterEqualLongColumn extends VectorExpression {
       return;
     }
 
+    // We do not need to do a column reset since we are carefully changing the output.
     outputColVector.isRepeating = false;
-    outputColVector.noNulls = inputColVector.noNulls;
-    if (inputColVector.noNulls) {
-      if (inputColVector.isRepeating) {
-        //All must be selected otherwise size would be zero
-        //Repeating property will not change.
+
+    if (inputColVector.isRepeating) {
+      if (inputColVector.noNulls || !inputIsNull[0]) {
+        outputIsNull[0] = false;
         outputVector[0] = value >= vector[0] ? 1 : 0;
-        outputColVector.isRepeating = true;
-      } else if (batch.selectedInUse) {
-        for(int j=0; j != n; j++) {
-          int i = sel[j];
-          outputVector[i] = value >= vector[i] ? 1 : 0;
+      } else {
+        outputIsNull[0] = true;
+        outputColVector.noNulls = false;
+      }
+      outputColVector.isRepeating = true;
+      return;
+    }
+
+    if (inputColVector.noNulls) {
+      if (batch.selectedInUse) {
+
+        // CONSIDER: For large n, fill n or all of isNull array and use the tighter ELSE loop.
+
+        if (!outputColVector.noNulls) {
+          for(int j = 0; j != n; j++) {
+           final int i = sel[j];
+           // Set isNull before call in case it changes it mind.
+           outputIsNull[i] = false;
+           // The SIMD optimized form of "a >= b" is "((a - b) >>> 63) ^ 1"
+           outputVector[i] = ((value - vector[i]) >>> 63) ^ 1;
+         }
+        } else {
+          for(int j = 0; j != n; j++) {
+            final int i = sel[j];
+            // The SIMD optimized form of "a >= b" is "((a - b) >>> 63) ^ 1"
+            outputVector[i] = ((value - vector[i]) >>> 63) ^ 1;
+          }
         }
       } else {
+        if (!outputColVector.noNulls) {
+
+          // Assume it is almost always a performance win to fill all of isNull so we can
+          // safely reset noNulls.
+          Arrays.fill(outputIsNull, false);
+          outputColVector.noNulls = true;
+        }
         for(int i = 0; i != n; i++) {
           // The SIMD optimized form of "a >= b" is "((a - b) >>> 63) ^ 1"
           outputVector[i] = ((value - vector[i]) >>> 63) ^ 1;
         }
       }
-    } else {
-      if (inputColVector.isRepeating) {
-        //All must be selected otherwise size would be zero
-        //Repeating property will not change.
-        if (!nullPos[0]) {
-          outputVector[0] = value >= vector[0] ? 1 : 0;
-          outNulls[0] = false;
-        } else {
-          outNulls[0] = true;
-        }
-        outputColVector.isRepeating = true;
-      } else if (batch.selectedInUse) {
+    } else /* there are nulls in the inputColVector */ {
+
+      // Carefully handle NULLs...
+
+      /*
+       * For better performance on LONG/DOUBLE we don't want the conditional
+       * statements inside the for loop.
+       */
+      outputColVector.noNulls = false;
+
+      if (batch.selectedInUse) {
         for(int j=0; j != n; j++) {
           int i = sel[j];
-          outputVector[i] = value >= vector[i] ? 1 : 0;
-          outNulls[i] = nullPos[i];
+          outputIsNull[i] = inputIsNull[i];
+          outputVector[i] = ((value - vector[i]) >>> 63) ^ 1;
         }
       } else {
-        System.arraycopy(nullPos, 0, outNulls, 0, n);
+        System.arraycopy(inputIsNull, 0, outputIsNull, 0, n);
         for(int i = 0; i != n; i++) {
           outputVector[i] = ((value - vector[i]) >>> 63) ^ 1;
         }
@@ -106,38 +139,8 @@ public class LongScalarGreaterEqualLongColumn extends VectorExpression {
   }
 
   @Override
-  public int getOutputColumn() {
-    return outputColumn;
-  }
-
-  @Override
-  public String getOutputType() {
-    return "long";
-  }
-
-  public int getColNum() {
-    return colNum;
-  }
-
-  public void setColNum(int colNum) {
-    this.colNum = colNum;
-  }
-
-  public long getValue() {
-    return value;
-  }
-
-  public void setValue(long value) {
-    this.value = value;
-  }
-
-  public void setOutputColumn(int outputColumn) {
-    this.outputColumn = outputColumn;
-  }
-
-  @Override
   public String vectorExpressionParameters() {
-    return "val " + value + ", col " + colNum;
+    return "val " + value + ", " + getColumnParamString(1, colNum);
   }
 
   @Override

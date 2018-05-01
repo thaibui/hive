@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -269,7 +269,7 @@ public class ATSHook implements ExecuteWithHookContext {
                   null// cboInfo
               );
                 @SuppressWarnings("unchecked")
-                ExplainTask explain = (ExplainTask) TaskFactory.get(work, conf);
+                ExplainTask explain = (ExplainTask) TaskFactory.get(work);
                 explain.initialize(queryState, plan, null, null);
                 String query = plan.getQueryStr();
                 JSONObject explainPlan = explain.getJSONPlan(null, work);
@@ -314,7 +314,7 @@ public class ATSHook implements ExecuteWithHookContext {
     List<String> tableNames = new ArrayList<String>();
     for (Entity entity : entities) {
       if (entity.getType() == Entity.Type.TABLE) {
-        tableNames.add(entity.getTable().getDbName() + "." + entity.getTable().getTableName());
+        tableNames.add(entity.getTable().getFullyQualifiedName());
       }
     }
     return tableNames;

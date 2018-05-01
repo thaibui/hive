@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,7 +31,7 @@ import org.apache.hadoop.hive.conf.HiveVariableSource;
 import org.apache.hadoop.hive.conf.VariableSubstitution;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Schema;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HiveOperationType;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.session.SessionState.LogHelper;
@@ -57,10 +57,6 @@ public class DfsProcessor implements CommandProcessor {
     dfs = new FsShell(conf);
     dfsSchema = new Schema();
     dfsSchema.addToFieldSchemas(new FieldSchema(DFS_RESULT_HEADER, "string", ""));
-  }
-
-  @Override
-  public void init() {
   }
 
   @Override
@@ -106,7 +102,7 @@ public class DfsProcessor implements CommandProcessor {
     }
   }
 
-  private String[] splitCmd(String command) throws CommandNeedRetryException {
+  private String[] splitCmd(String command) throws HiveException {
 
     ArrayList<String> paras = new ArrayList<String>();
     int cmdLng = command.length();
@@ -118,7 +114,7 @@ public class DfsProcessor implements CommandProcessor {
 
       switch(x) {
         case ' ':
-          if ((int) y == 0) {
+          if (y == 0) {
             String str = command.substring(start, i).trim();
             if (!str.equals("")) {
               paras.add(str);
@@ -127,7 +123,7 @@ public class DfsProcessor implements CommandProcessor {
           }
           break;
         case '"':
-          if ((int) y == 0) {
+          if (y == 0) {
             y = x;
             start = i + 1;
           } else if ('"' == y) {
@@ -137,7 +133,7 @@ public class DfsProcessor implements CommandProcessor {
           }
           break;
         case '\'':
-          if ((int) y == 0) {
+          if (y == 0) {
             y = x;
             start = i + 1;
           } else if ('\'' == y) {
@@ -154,12 +150,16 @@ public class DfsProcessor implements CommandProcessor {
       }
     }
 
-    if ((int) y != 0) {
-      console.printError("Syntax error on hadoop options: dfs " + command);
-      throw new CommandNeedRetryException();
+    if (y != 0) {
+      String message = "Syntax error on hadoop options: dfs " + command;
+      console.printError(message);
+      throw new HiveException(message);
     }
 
     return paras.toArray(new String[paras.size()]);
   }
 
+  @Override
+  public void close() throws Exception {
+  }
 }

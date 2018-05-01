@@ -47,13 +47,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2010')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -86,13 +84,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2011')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -161,13 +157,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2010')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -176,7 +170,7 @@ Database:           	default
 Table:              	t1                  	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -200,13 +194,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2011')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -215,7 +207,7 @@ Database:           	default
 Table:              	t1                  	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -271,7 +263,6 @@ POSTHOOK: query: describe formatted t1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -283,6 +274,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -332,7 +324,6 @@ POSTHOOK: query: describe formatted t1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -343,7 +334,8 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -410,13 +402,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2008-04-08',hr='11')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -426,7 +416,7 @@ Database:           	default
 Table:              	t1                  	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
@@ -450,13 +440,11 @@ POSTHOOK: query: describe formatted t1 partition (ds='2008-04-09',hr='12')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 ds                  	string              	                    
 hr                  	string              	                    
 	 	 
@@ -466,7 +454,7 @@ Database:           	default
 Table:              	t1                  	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                

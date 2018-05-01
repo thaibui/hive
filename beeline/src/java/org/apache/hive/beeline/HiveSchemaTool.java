@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,6 +38,7 @@ import org.apache.hadoop.hive.metastore.IMetaStoreSchemaInfo;
 import org.apache.hadoop.hive.metastore.MetaStoreSchemaInfoFactory;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.conf.MetastoreConf;
 import org.apache.hadoop.hive.metastore.tools.HiveSchemaHelper;
 import org.apache.hadoop.hive.metastore.tools.HiveSchemaHelper.MetaStoreConnectionInfo;
 import org.apache.hadoop.hive.metastore.tools.HiveSchemaHelper.NestedScriptParser;
@@ -60,6 +61,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,7 +100,7 @@ public class HiveSchemaTool {
     this.hiveConf = hiveConf;
     this.dbType = dbType;
     this.metaDbType = metaDbType;
-    this.needsQuotedIdentifier = getDbCommandParser(dbType).needsQuotedIdentifier();
+    this.needsQuotedIdentifier = getDbCommandParser(dbType, metaDbType).needsQuotedIdentifier();
     this.metaStoreSchemaInfo = MetaStoreSchemaInfoFactory.get(hiveConf, hiveHome, dbType);
   }
 
@@ -150,20 +152,14 @@ public class HiveSchemaTool {
     System.exit(1);
   }
 
-  Connection getConnectionToMetastore(boolean printInfo)
-      throws HiveMetaException {
-    return HiveSchemaHelper.getConnectionToMetastore(userName,
-        passWord, url, driver, printInfo, hiveConf);
+  Connection getConnectionToMetastore(boolean printInfo) throws HiveMetaException {
+    return HiveSchemaHelper.getConnectionToMetastore(userName, passWord, url, driver, printInfo, hiveConf,
+        null);
   }
 
   private NestedScriptParser getDbCommandParser(String dbType, String metaDbType) {
-    return HiveSchemaHelper.getDbCommandParser(dbType, dbOpts, userName,
-	passWord, hiveConf, metaDbType);
-  }
-
-  private NestedScriptParser getDbCommandParser(String dbType) {
-    return HiveSchemaHelper.getDbCommandParser(dbType, dbOpts, userName,
-	passWord, hiveConf, null);
+    return HiveSchemaHelper.getDbCommandParser(dbType, dbOpts, userName, passWord, hiveConf,
+        metaDbType, false);
   }
 
   /***
@@ -336,7 +332,7 @@ public class HiveSchemaTool {
       }
       pStmt.close();
     } catch (SQLException e) {
-      throw new HiveMetaException("Failed to get Partiton Location Info.", e);
+      throw new HiveMetaException("Failed to get Partition Location Info.", e);
     }
     if (numOfInvalid > 0) {
       isValid = false;
@@ -510,7 +506,7 @@ public class HiveSchemaTool {
 
   private MetaStoreConnectionInfo getConnectionInfo(boolean printInfo) {
     return new MetaStoreConnectionInfo(userName, passWord, url, driver, printInfo, hiveConf,
-        dbType);
+        dbType, metaDbType);
   }
   /**
    * Perform metastore schema upgrade
@@ -592,7 +588,7 @@ public class HiveSchemaTool {
     Connection conn = getConnectionToMetastore(false);
     boolean success = true;
     try {
-      if (validateSchemaVersions(conn)) {
+      if (validateSchemaVersions()) {
         System.out.println("[SUCCESS]\n");
       } else {
         success = false;
@@ -613,14 +609,12 @@ public class HiveSchemaTool {
       if (validateLocations(conn, this.validationServers)) {
         System.out.println("[SUCCESS]\n");
       } else {
-        success = false;
-        System.out.println("[FAIL]\n");
+        System.out.println("[WARN]\n");
       }
       if (validateColumnNullValues(conn)) {
         System.out.println("[SUCCESS]\n");
       } else {
-        success = false;
-        System.out.println("[FAIL]\n");
+        System.out.println("[WARN]\n");
       }
     } finally {
       if (conn != null) {
@@ -668,27 +662,31 @@ public class HiveSchemaTool {
       for (String seqName : seqNameToTable.keySet()) {
         String tableName = seqNameToTable.get(seqName).getLeft();
         String tableKey = seqNameToTable.get(seqName).getRight();
+        String fullSequenceName = "org.apache.hadoop.hive.metastore.model." + seqName;
         String seqQuery = needsQuotedIdentifier ?
-            ("select t.\"NEXT_VAL\" from \"SEQUENCE_TABLE\" t WHERE t.\"SEQUENCE_NAME\"='org.apache.hadoop.hive.metastore.model." + seqName + "' order by t.\"SEQUENCE_NAME\" ")
-            : ("select t.NEXT_VAL from SEQUENCE_TABLE t WHERE t.SEQUENCE_NAME='org.apache.hadoop.hive.metastore.model." + seqName + "' order by t.SEQUENCE_NAME ");
+            ("select t.\"NEXT_VAL\" from \"SEQUENCE_TABLE\" t WHERE t.\"SEQUENCE_NAME\"=? order by t.\"SEQUENCE_NAME\" ")
+            : ("select t.NEXT_VAL from SEQUENCE_TABLE t WHERE t.SEQUENCE_NAME=? order by t.SEQUENCE_NAME ");
         String maxIdQuery = needsQuotedIdentifier ?
             ("select max(\"" + tableKey + "\") from \"" + tableName + "\"")
             : ("select max(" + tableKey + ") from " + tableName);
 
-          ResultSet res = stmt.executeQuery(maxIdQuery);
-          if (res.next()) {
-             long maxId = res.getLong(1);
-             if (maxId > 0) {
-               ResultSet resSeq = stmt.executeQuery(seqQuery);
-               if (!resSeq.next()) {
-                 isValid = false;
-                 System.err.println("Missing SEQUENCE_NAME " + seqName + " from SEQUENCE_TABLE");
-               } else if (resSeq.getLong(1) < maxId) {
-                 isValid = false;
-                 System.err.println("NEXT_VAL for " + seqName + " in SEQUENCE_TABLE < max("+ tableKey + ") in " + tableName);
-               }
-             }
+        ResultSet res = stmt.executeQuery(maxIdQuery);
+        if (res.next()) {
+          long maxId = res.getLong(1);
+          if (maxId > 0) {
+            PreparedStatement pStmt = conn.prepareStatement(seqQuery);
+            pStmt.setString(1, fullSequenceName);
+            ResultSet resSeq = pStmt.executeQuery();
+            if (!resSeq.next()) {
+              isValid = false;
+              System.err.println("Missing SEQUENCE_NAME " + seqName + " from SEQUENCE_TABLE");
+            } else if (resSeq.getLong(1) < maxId) {
+              isValid = false;
+              System.err.println("NEXT_VAL for " + seqName + " in SEQUENCE_TABLE < max(" +
+                  tableKey + ") in " + tableName);
+            }
           }
+        }
       }
 
       System.out.println((isValid ? "Succeeded" :"Failed") + " in sequence number validation for SEQUENCE_TABLE.");
@@ -698,7 +696,7 @@ public class HiveSchemaTool {
     }
   }
 
-  boolean validateSchemaVersions(Connection conn) throws HiveMetaException {
+  boolean validateSchemaVersions() throws HiveMetaException {
     System.out.println("Validating schema version");
     try {
       String newSchemaVersion = metaStoreSchemaInfo.getMetaStoreSchemaVersion(getConnectionInfo(false));
@@ -742,9 +740,16 @@ public class HiveSchemaTool {
 
     LOG.debug("Validating tables in the schema for version " + version);
     try {
+      String schema = null;
+      try {
+        schema = hmsConn.getSchema();
+      } catch (SQLFeatureNotSupportedException e) {
+        LOG.debug("schema is not supported");
+      }
+      
       metadata       = conn.getMetaData();
       String[] types = {"TABLE"};
-      rs             = metadata.getTables(null, hmsConn.getSchema(), "%", types);
+      rs             = metadata.getTables(null, schema, "%", types);
       String table   = null;
 
       while (rs.next()) {
@@ -753,7 +758,7 @@ public class HiveSchemaTool {
         LOG.debug("Found table " + table + " in HMS dbstore");
       }
     } catch (SQLException e) {
-      throw new HiveMetaException("Failed to retrieve schema tables from Hive Metastore DB," + e.getMessage());
+      throw new HiveMetaException("Failed to retrieve schema tables from Hive Metastore DB", e);
     } finally {
       if (rs != null) {
         try {
@@ -801,43 +806,13 @@ public class HiveSchemaTool {
 
   private List<String> findCreateTable(String path, List<String> tableList)
       throws Exception {
-    NestedScriptParser sp           = HiveSchemaHelper.getDbCommandParser(dbType);
+    NestedScriptParser sp           = HiveSchemaHelper.getDbCommandParser(dbType, false);
     Matcher matcher                 = null;
     Pattern regexp                  = null;
     List<String> subs               = new ArrayList<String>();
-    int groupNo                     = 0;
+    int groupNo                     = 2;
 
-    switch (dbType) {
-      case HiveSchemaHelper.DB_ORACLE:
-        regexp = Pattern.compile("(CREATE TABLE(IF NOT EXISTS)*) (\\S+).*");
-        groupNo = 3;
-        break;
-
-      case HiveSchemaHelper.DB_MYSQL:
-        regexp = Pattern.compile("(CREATE TABLE) (\\S+).*");
-        groupNo = 2;
-        break;
-
-      case HiveSchemaHelper.DB_MSSQL:
-        regexp = Pattern.compile("(CREATE TABLE) (\\S+).*");
-        groupNo = 2;
-        break;
-
-      case HiveSchemaHelper.DB_DERBY:
-        regexp = Pattern.compile("(CREATE TABLE(IF NOT EXISTS)*) (\\S+).*");
-        groupNo = 3;
-        break;
-
-      case HiveSchemaHelper.DB_POSTGRACE:
-        regexp = Pattern.compile("(CREATE TABLE(IF NOT EXISTS)*) (\\S+).*");
-        groupNo = 3;
-        break;
-
-      default:
-        regexp = Pattern.compile("(CREATE TABLE(IF NOT EXISTS)*) (\\S+).*");
-        groupNo = 3;
-        break;
-    }
+    regexp = Pattern.compile("CREATE TABLE(\\s+IF NOT EXISTS)?\\s+(\\S+).*");
 
     if (!(new File(path)).exists()) {
       throw new Exception(path + " does not exist. Potentially incorrect version in the metastore VERSION table");
@@ -866,7 +841,7 @@ public class HiveSchemaTool {
         if (matcher.find()) {
           String table = matcher.group(groupNo);
           if (dbType.equals("derby"))
-            table  = table.replaceAll("APP.","");
+            table  = table.replaceAll("APP\\.","");
           tableList.add(table.toLowerCase());
           LOG.debug("Found table " + table + " in the schema");
         }
@@ -1016,8 +991,8 @@ public class HiveSchemaTool {
     private String[] argsWith(String password) throws IOException {
       return new String[]
         {
-          "-u", url == null ? HiveSchemaHelper.getValidConfVar(ConfVars.METASTORECONNECTURLKEY, hiveConf) : url,
-          "-d", driver == null ? HiveSchemaHelper.getValidConfVar(ConfVars.METASTORE_CONNECTION_DRIVER, hiveConf) : driver,
+          "-u", url == null ? HiveSchemaHelper.getValidConfVar(MetastoreConf.ConfVars.CONNECT_URL_KEY, hiveConf) : url,
+          "-d", driver == null ? HiveSchemaHelper.getValidConfVar(MetastoreConf.ConfVars.CONNECTION_DRIVER, hiveConf) : driver,
           "-n", userName,
           "-p", password,
           "-f", sqlScriptFile

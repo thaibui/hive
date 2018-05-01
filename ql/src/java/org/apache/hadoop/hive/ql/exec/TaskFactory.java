@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -33,20 +33,17 @@ import org.apache.hadoop.hive.ql.exec.repl.bootstrap.ReplLoadTask;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.ReplLoadWork;
 import org.apache.hadoop.hive.ql.exec.spark.SparkTask;
 import org.apache.hadoop.hive.ql.exec.tez.TezTask;
-import org.apache.hadoop.hive.ql.index.IndexMetadataChangeTask;
-import org.apache.hadoop.hive.ql.index.IndexMetadataChangeWork;
 import org.apache.hadoop.hive.ql.io.merge.MergeFileTask;
 import org.apache.hadoop.hive.ql.io.merge.MergeFileWork;
-import org.apache.hadoop.hive.ql.io.rcfile.stats.PartialScanTask;
-import org.apache.hadoop.hive.ql.io.rcfile.stats.PartialScanWork;
 import org.apache.hadoop.hive.ql.plan.ColumnStatsUpdateWork;
-import org.apache.hadoop.hive.ql.plan.ColumnStatsWork;
+import org.apache.hadoop.hive.ql.plan.StatsWork;
 import org.apache.hadoop.hive.ql.plan.ConditionalWork;
 import org.apache.hadoop.hive.ql.plan.CopyWork;
 import org.apache.hadoop.hive.ql.plan.DDLWork;
 import org.apache.hadoop.hive.ql.plan.DependencyCollectionWork;
 import org.apache.hadoop.hive.ql.plan.ExplainSQRewriteWork;
 import org.apache.hadoop.hive.ql.plan.ExplainWork;
+import org.apache.hadoop.hive.ql.plan.ExportWork;
 import org.apache.hadoop.hive.ql.plan.FetchWork;
 import org.apache.hadoop.hive.ql.plan.FunctionWork;
 import org.apache.hadoop.hive.ql.plan.MapredLocalWork;
@@ -54,9 +51,9 @@ import org.apache.hadoop.hive.ql.plan.MapredWork;
 import org.apache.hadoop.hive.ql.plan.MoveWork;
 import org.apache.hadoop.hive.ql.plan.ReplCopyWork;
 import org.apache.hadoop.hive.ql.plan.SparkWork;
-import org.apache.hadoop.hive.ql.plan.StatsNoJobWork;
-import org.apache.hadoop.hive.ql.plan.StatsWork;
 import org.apache.hadoop.hive.ql.plan.TezWork;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * TaskFactory implementation.
@@ -86,6 +83,9 @@ public final class TaskFactory {
     taskvec.add(new TaskTuple<CopyWork>(CopyWork.class, CopyTask.class));
     taskvec.add(new TaskTuple<ReplCopyWork>(ReplCopyWork.class, ReplCopyTask.class));
     taskvec.add(new TaskTuple<DDLWork>(DDLWork.class, DDLTask.class));
+    taskvec.add(new TaskTuple<MaterializedViewDesc>(
+        MaterializedViewDesc.class,
+        MaterializedViewTask.class));
     taskvec.add(new TaskTuple<FunctionWork>(FunctionWork.class,
         FunctionTask.class));
     taskvec
@@ -99,24 +99,19 @@ public final class TaskFactory {
 
     taskvec.add(new TaskTuple<MapredLocalWork>(MapredLocalWork.class,
         MapredLocalTask.class));
-    taskvec.add(new TaskTuple<StatsWork>(StatsWork.class,
-        StatsTask.class));
-    taskvec.add(new TaskTuple<StatsNoJobWork>(StatsNoJobWork.class, StatsNoJobTask.class));
-    taskvec.add(new TaskTuple<ColumnStatsWork>(ColumnStatsWork.class, ColumnStatsTask.class));
+    taskvec.add(new TaskTuple<StatsWork>(StatsWork.class, StatsTask.class));
     taskvec.add(new TaskTuple<ColumnStatsUpdateWork>(ColumnStatsUpdateWork.class, ColumnStatsUpdateTask.class));
     taskvec.add(new TaskTuple<MergeFileWork>(MergeFileWork.class,
         MergeFileTask.class));
     taskvec.add(new TaskTuple<DependencyCollectionWork>(DependencyCollectionWork.class,
         DependencyCollectionTask.class));
-    taskvec.add(new TaskTuple<PartialScanWork>(PartialScanWork.class,
-        PartialScanTask.class));
-    taskvec.add(new TaskTuple<IndexMetadataChangeWork>(IndexMetadataChangeWork.class,
-        IndexMetadataChangeTask.class));
     taskvec.add(new TaskTuple<TezWork>(TezWork.class, TezTask.class));
     taskvec.add(new TaskTuple<SparkWork>(SparkWork.class, SparkTask.class));
     taskvec.add(new TaskTuple<>(ReplDumpWork.class, ReplDumpTask.class));
     taskvec.add(new TaskTuple<>(ReplLoadWork.class, ReplLoadTask.class));
     taskvec.add(new TaskTuple<>(ReplStateLogWork.class, ReplStateLogTask.class));
+    taskvec.add(new TaskTuple<ExportWork>(ExportWork.class, ExportTask.class));
+    taskvec.add(new TaskTuple<ReplTxnWork>(ReplTxnWork.class, ReplTxnTask.class));
   }
 
   private static ThreadLocal<Integer> tid = new ThreadLocal<Integer>() {
@@ -137,8 +132,8 @@ public final class TaskFactory {
   }
 
   @SuppressWarnings("unchecked")
-  public static <T extends Serializable> Task<T> get(Class<T> workClass,
-      HiveConf conf) {
+  @VisibleForTesting
+  static <T extends Serializable> Task<T> get(Class<T> workClass) {
 
     for (TaskTuple<? extends Serializable> t : taskvec) {
       if (t.workClass == workClass) {
@@ -155,27 +150,24 @@ public final class TaskFactory {
     throw new RuntimeException("No task for work class " + workClass.getName());
   }
 
-  @SafeVarargs
-  public static <T extends Serializable> Task<T> get(T work, HiveConf conf,
-      Task<? extends Serializable>... tasklist) {
-    Task<T> ret = get((Class<T>) work.getClass(), conf);
+  public static <T extends Serializable> Task<T> get(T work, HiveConf conf) {
+    @SuppressWarnings("unchecked")
+    Task<T> ret = get((Class<T>) work.getClass());
     ret.setWork(work);
-    if (tasklist.length == 0) {
-      return (ret);
+    if (null != conf) {
+      ret.setConf(conf);
     }
-
-    ArrayList<Task<? extends Serializable>> clist = new ArrayList<Task<? extends Serializable>>();
-    for (Task<? extends Serializable> tsk : tasklist) {
-      clist.add(tsk);
-    }
-    ret.setChildTasks(clist);
-    return (ret);
+    return ret;
   }
 
+  public static <T extends Serializable> Task<T> get(T work) {
+    return get(work, null);
+  }
+
+  @SafeVarargs
   public static <T extends Serializable> Task<T> getAndMakeChild(T work,
       HiveConf conf, Task<? extends Serializable>... tasklist) {
-    Task<T> ret = get((Class<T>) work.getClass(), conf);
-    ret.setWork(work);
+    Task<T> ret = get(work);
     if (tasklist.length == 0) {
       return (ret);
     }
@@ -186,6 +178,7 @@ public final class TaskFactory {
   }
 
 
+  @SafeVarargs
   public static  void makeChild(Task<?> ret,
       Task<? extends Serializable>... tasklist) {
     // Add the new task as child of each of the passed in tasks

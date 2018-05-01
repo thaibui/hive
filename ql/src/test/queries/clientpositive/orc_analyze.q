@@ -1,3 +1,4 @@
+set hive.vectorized.execution.enabled=false;
 set hive.mapred.mode=nonstrict;
 set hive.exec.submitviachild=false;
 set hive.exec.submit.local.task.via.child=false;
@@ -32,9 +33,6 @@ INSERT OVERWRITE TABLE orc_create_people SELECT * FROM orc_create_people_staging
 
 set hive.stats.autogather = true;
 analyze table orc_create_people compute statistics;
-desc formatted orc_create_people;
-
-analyze table orc_create_people compute statistics partialscan;
 desc formatted orc_create_people;
 
 analyze table orc_create_people compute statistics noscan;
@@ -77,10 +75,6 @@ INSERT OVERWRITE TABLE orc_create_people PARTITION (state)
 
 set hive.stats.autogather = true;
 analyze table orc_create_people partition(state) compute statistics;
-desc formatted orc_create_people partition(state="Ca");
-desc formatted orc_create_people partition(state="Or");
-
-analyze table orc_create_people partition(state) compute statistics partialscan;
 desc formatted orc_create_people partition(state="Ca");
 desc formatted orc_create_people partition(state="Or");
 
@@ -133,10 +127,6 @@ analyze table orc_create_people partition(state) compute statistics;
 desc formatted orc_create_people partition(state="Ca");
 desc formatted orc_create_people partition(state="Or");
 
-analyze table orc_create_people partition(state) compute statistics partialscan;
-desc formatted orc_create_people partition(state="Ca");
-desc formatted orc_create_people partition(state="Or");
-
 analyze table orc_create_people partition(state) compute statistics noscan;
 desc formatted orc_create_people partition(state="Ca");
 desc formatted orc_create_people partition(state="Or");
@@ -184,9 +174,6 @@ INSERT OVERWRITE TABLE orc_create_people PARTITION (state)
 
 set hive.stats.autogather = true;
 analyze table orc_create_people partition(state) compute statistics;
-desc formatted orc_create_people partition(state="Ca");
-
-analyze table orc_create_people partition(state) compute statistics partialscan;
 desc formatted orc_create_people partition(state="Ca");
 
 analyze table orc_create_people partition(state) compute statistics noscan;

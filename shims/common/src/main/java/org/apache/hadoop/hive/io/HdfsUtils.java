@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -38,7 +38,6 @@ import org.apache.hadoop.fs.permission.AclEntryType;
 import org.apache.hadoop.fs.permission.AclStatus;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,17 +49,6 @@ import com.google.common.collect.Iterables;
 
 public class HdfsUtils {
   private static final Logger LOG = LoggerFactory.getLogger("shims.HdfsUtils");
-
-  // TODO: this relies on HDFS not changing the format; we assume if we could get inode ID, this
-  //       is still going to work. Otherwise, file IDs can be turned off. Later, we should use
-  //       as public utility method in HDFS to obtain the inode-based path.
-  private static final String HDFS_ID_PATH_PREFIX = "/.reserved/.inodes/";
-
-  public static Path getFileIdPath(
-      FileSystem fileSystem, Path path, long fileId) {
-    return (fileSystem instanceof DistributedFileSystem)
-        ? new Path(HDFS_ID_PATH_PREFIX + fileId) : path;
-  }
 
   /**
    * Copy the permissions, group, and ACLs from a source {@link HadoopFileStatus} to a target {@link Path}. This method

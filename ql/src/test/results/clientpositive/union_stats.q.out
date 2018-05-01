@@ -90,6 +90,7 @@ STAGE PLANS:
             properties:
               COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
               bucket_count -1
+              bucketing_version 2
               column.name.delimiter ,
               columns key,value
               columns.comments 'default','default'
@@ -111,6 +112,7 @@ STAGE PLANS:
               properties:
                 COLUMN_STATS_ACCURATE {"BASIC_STATS":"true","COLUMN_STATS":{"key":"true","value":"true"}}
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -156,7 +158,8 @@ STAGE PLANS:
           name: default.t
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 #### A masked pattern was here ####
 
   Stage: Stage-3
@@ -301,7 +304,6 @@ POSTHOOK: query: desc formatted t
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -313,6 +315,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	1000                
 	rawDataSize         	10624               
@@ -350,7 +353,6 @@ POSTHOOK: query: desc formatted tt
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tt
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -362,6 +364,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	1500                
 	rawDataSize         	15936               
@@ -407,7 +410,6 @@ POSTHOOK: query: desc formatted tt
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@tt
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -419,6 +421,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	1500                
 	rawDataSize         	15936               
@@ -476,7 +479,6 @@ POSTHOOK: query: desc formatted t1
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t1
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	default             
 value               	string              	default             
 	 	 
@@ -487,7 +489,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	1000                
 	rawDataSize         	10624               
@@ -511,7 +513,6 @@ POSTHOOK: query: desc formatted t2
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@t2
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	default             
 value               	string              	default             
 	 	 
@@ -522,7 +523,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	1000                
 	rawDataSize         	10624               

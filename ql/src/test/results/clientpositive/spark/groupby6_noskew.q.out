@@ -40,7 +40,9 @@ STAGE PLANS:
                       sort order: +
                       Map-reduce partition columns: _col0 (type: string)
                       Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
+            Execution mode: vectorized
         Reducer 2 
+            Execution mode: vectorized
             Reduce Operator Tree:
               Group By Operator
                 keys: KEY._col0 (type: string)
@@ -67,7 +69,8 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM src
 INSERT OVERWRITE TABLE dest1 SELECT DISTINCT substr(src.value,5,1)

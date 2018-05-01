@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,6 +19,7 @@ package org.apache.hadoop.hive.ql.optimizer.calcite.stats;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,7 +71,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -202,7 +202,7 @@ public class HiveRelMdPredicates implements MetadataHandler<BuiltInMetadata.Pred
     final RelNode input = agg.getInput();
     final RelOptPredicateList inputInfo = mq.getPulledUpPredicates(input);
     final List<RexNode> aggPullUpPredicates = new ArrayList<>();
-    final RexBuilder rexBuilder = agg.getCluster().getRexBuilder(); 
+    final RexBuilder rexBuilder = agg.getCluster().getRexBuilder();
 
     ImmutableBitSet groupKeys = agg.getGroupSet();
     Mapping m = Mappings.create(MappingType.PARTIAL_FUNCTION,
@@ -480,10 +480,10 @@ public class HiveRelMdPredicates implements MetadataHandler<BuiltInMetadata.Pred
         }
         return RelOptPredicateList.of(rexBuilder,
           pulledUpPredicates, leftInferredPredicates, rightInferredPredicates);
-      case LEFT:    
-        return RelOptPredicateList.of(rexBuilder, 
+      case LEFT:
+        return RelOptPredicateList.of(rexBuilder,
           leftPreds, EMPTY_LIST, rightInferredPredicates);
-      case RIGHT:   
+      case RIGHT:
         return RelOptPredicateList.of(rexBuilder,
           rightPreds, leftInferredPredicates, EMPTY_LIST);
       default:
@@ -534,7 +534,7 @@ public class HiveRelMdPredicates implements MetadataHandler<BuiltInMetadata.Pred
         public Iterator<Mapping> iterator() {
           ImmutableBitSet fields = exprFields.get(predicate.toString());
           if (fields.cardinality() == 0) {
-            return Iterators.emptyIterator();
+            return Collections.emptyIterator();
           }
           return new ExprsItr(fields);
         }

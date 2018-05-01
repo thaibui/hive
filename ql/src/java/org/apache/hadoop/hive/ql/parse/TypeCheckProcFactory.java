@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -37,6 +37,7 @@ import org.apache.hadoop.hive.common.type.HiveChar;
 import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.common.type.HiveIntervalDayTime;
 import org.apache.hadoop.hive.common.type.HiveIntervalYearMonth;
+import org.apache.hadoop.hive.common.type.TimestampTZUtil;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.exec.ColumnInfo;
@@ -47,6 +48,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.lib.DefaultRuleDispatcher;
 import org.apache.hadoop.hive.ql.lib.Dispatcher;
+import org.apache.hadoop.hive.ql.lib.ExpressionWalker;
 import org.apache.hadoop.hive.ql.lib.GraphWalker;
 import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.lib.NodeProcessor;
@@ -55,7 +57,6 @@ import org.apache.hadoop.hive.ql.lib.Rule;
 import org.apache.hadoop.hive.ql.lib.RuleRegExp;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.ql.lib.ExpressionWalker;
 import org.apache.hadoop.hive.ql.optimizer.ConstantPropagateProcFactory;
 import org.apache.hadoop.hive.ql.optimizer.calcite.CalciteSubquerySemanticException;
 import org.apache.hadoop.hive.ql.optimizer.calcite.translator.TypeConverter;
@@ -78,9 +79,13 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPOr;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFWhen;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.objectinspector.ConstantObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.MapObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector.Category;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.CharTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.DecimalTypeInfo;
@@ -207,7 +212,8 @@ public class TypeCheckProcFactory {
     opRules.put(new RuleRegExp("R4", HiveParser.KW_TRUE + "%|"
         + HiveParser.KW_FALSE + "%"), tf.getBoolExprProcessor());
     opRules.put(new RuleRegExp("R5", HiveParser.TOK_DATELITERAL + "%|"
-        + HiveParser.TOK_TIMESTAMPLITERAL + "%"), tf.getDateTimeExprProcessor());
+        + HiveParser.TOK_TIMESTAMPLITERAL + "%|"
+        + HiveParser.TOK_TIMESTAMPLOCALTZLITERAL + "%"), tf.getDateTimeExprProcessor());
     opRules.put(new RuleRegExp("R6", HiveParser.TOK_INTERVAL_YEAR_MONTH_LITERAL + "%|"
         + HiveParser.TOK_INTERVAL_DAY_TIME_LITERAL + "%|"
         + HiveParser.TOK_INTERVAL_YEAR_LITERAL + "%|"
@@ -510,6 +516,16 @@ public class TypeCheckProcFactory {
           return new ExprNodeConstantDesc(TypeInfoFactory.timestampTypeInfo,
               Timestamp.valueOf(timeString));
         }
+        if (expr.getType() == HiveParser.TOK_TIMESTAMPLOCALTZLITERAL) {
+          HiveConf conf;
+          try {
+            conf = Hive.get().getConf();
+          } catch (HiveException e) {
+            throw new SemanticException(e);
+          }
+          return new ExprNodeConstantDesc(TypeInfoFactory.getTimestampTZTypeInfo(conf.getLocalTimeZone()),
+              TimestampTZUtil.parse(timeString));
+        }
         throw new IllegalArgumentException("Invalid time literal type " + expr.getType());
       } catch (Exception err) {
         throw new SemanticException(
@@ -622,6 +638,10 @@ public class TypeCheckProcFactory {
       ASTNode expr = (ASTNode) nd;
       ASTNode parent = stack.size() > 1 ? (ASTNode) stack.get(stack.size() - 2) : null;
       RowResolver input = ctx.getInputRR();
+      if(input == null) {
+        ctx.setError(ErrorMsg.INVALID_COLUMN.getMsg(expr), expr);
+        return null;
+      }
 
       if (expr.getType() != HiveParser.TOK_TABLE_OR_COL) {
         ctx.setError(ErrorMsg.INVALID_COLUMN.getMsg(expr), expr);
@@ -689,18 +709,91 @@ public class TypeCheckProcFactory {
 
   }
 
-  private static ExprNodeDesc toExprNodeDesc(ColumnInfo colInfo) {
+  static ExprNodeDesc toExprNodeDesc(ColumnInfo colInfo) {
     ObjectInspector inspector = colInfo.getObjectInspector();
-    if (inspector instanceof ConstantObjectInspector &&
-        inspector instanceof PrimitiveObjectInspector) {
-      PrimitiveObjectInspector poi = (PrimitiveObjectInspector) inspector;
-      Object constant = ((ConstantObjectInspector) inspector).getWritableConstantValue();
-      return new ExprNodeConstantDesc(colInfo.getType(), poi.getPrimitiveJavaObject(constant));
+    if (inspector instanceof ConstantObjectInspector && inspector instanceof PrimitiveObjectInspector) {
+      return toPrimitiveConstDesc(colInfo, inspector);
+    }
+    if (inspector instanceof ConstantObjectInspector && inspector instanceof ListObjectInspector) {
+      ObjectInspector listElementOI = ((ListObjectInspector)inspector).getListElementObjectInspector();
+      if (listElementOI instanceof PrimitiveObjectInspector) {
+        return toListConstDesc(colInfo, inspector, listElementOI);
+      }
+    }
+    if (inspector instanceof ConstantObjectInspector && inspector instanceof MapObjectInspector) {
+      ObjectInspector keyOI = ((MapObjectInspector)inspector).getMapKeyObjectInspector();
+      ObjectInspector valueOI = ((MapObjectInspector)inspector).getMapValueObjectInspector();
+      if (keyOI instanceof PrimitiveObjectInspector && valueOI instanceof PrimitiveObjectInspector) {
+        return toMapConstDesc(colInfo, inspector, keyOI, valueOI);
+      }
+    }
+    if (inspector instanceof ConstantObjectInspector && inspector instanceof StructObjectInspector) {
+      boolean allPrimitive = true;
+      List<? extends StructField> fields = ((StructObjectInspector)inspector).getAllStructFieldRefs();
+      for (StructField field : fields) {
+        allPrimitive &= field.getFieldObjectInspector() instanceof PrimitiveObjectInspector;
+      }
+      if (allPrimitive) {
+        return toStructConstDesc(colInfo, inspector, fields);
+      }
     }
     // non-constant or non-primitive constants
     ExprNodeColumnDesc column = new ExprNodeColumnDesc(colInfo);
     column.setSkewedCol(colInfo.isSkewedCol());
     return column;
+  }
+
+  private static ExprNodeConstantDesc toPrimitiveConstDesc(ColumnInfo colInfo, ObjectInspector inspector) {
+    PrimitiveObjectInspector poi = (PrimitiveObjectInspector) inspector;
+    Object constant = ((ConstantObjectInspector) inspector).getWritableConstantValue();
+    ExprNodeConstantDesc constantExpr =
+        new ExprNodeConstantDesc(colInfo.getType(), poi.getPrimitiveJavaObject(constant));
+    constantExpr.setFoldedFromCol(colInfo.getInternalName());
+    return constantExpr;
+  }
+  
+  private static ExprNodeConstantDesc toListConstDesc(ColumnInfo colInfo, ObjectInspector inspector,
+      ObjectInspector listElementOI) {
+    PrimitiveObjectInspector poi = (PrimitiveObjectInspector)listElementOI;
+    List<?> values = (List<?>)((ConstantObjectInspector) inspector).getWritableConstantValue();
+    List<Object> constant = new ArrayList<Object>();
+    for (Object o : values) {
+      constant.add(poi.getPrimitiveJavaObject(o));
+    }
+    
+    ExprNodeConstantDesc constantExpr = new ExprNodeConstantDesc(colInfo.getType(), constant);
+    constantExpr.setFoldedFromCol(colInfo.getInternalName());
+    return constantExpr;
+  }
+  
+  private static ExprNodeConstantDesc toMapConstDesc(ColumnInfo colInfo, ObjectInspector inspector,
+      ObjectInspector keyOI, ObjectInspector valueOI) {
+    PrimitiveObjectInspector keyPoi = (PrimitiveObjectInspector)keyOI;
+    PrimitiveObjectInspector valuePoi = (PrimitiveObjectInspector)valueOI;
+    Map<?,?> values = (Map<?,?>)((ConstantObjectInspector) inspector).getWritableConstantValue();
+    Map<Object, Object> constant = new LinkedHashMap<Object, Object>();
+    for (Map.Entry<?, ?> e : values.entrySet()) {
+      constant.put(keyPoi.getPrimitiveJavaObject(e.getKey()), valuePoi.getPrimitiveJavaObject(e.getValue()));
+    }
+    
+    ExprNodeConstantDesc constantExpr = new ExprNodeConstantDesc(colInfo.getType(), constant);
+    constantExpr.setFoldedFromCol(colInfo.getInternalName());
+    return constantExpr;
+  }
+
+  private static ExprNodeConstantDesc toStructConstDesc(ColumnInfo colInfo, ObjectInspector inspector,
+      List<? extends StructField> fields) {
+    List<?> values = (List<?>)((ConstantObjectInspector) inspector).getWritableConstantValue();
+    List<Object> constant =  new ArrayList<Object>();
+    for (int i = 0; i < values.size(); i++) {
+      Object value = values.get(i);
+      PrimitiveObjectInspector fieldPoi = (PrimitiveObjectInspector) fields.get(i).getFieldObjectInspector();
+      constant.add(fieldPoi.getPrimitiveJavaObject(value));
+    }
+    
+    ExprNodeConstantDesc constantExpr = new ExprNodeConstantDesc(colInfo.getType(), constant);
+    constantExpr.setFoldedFromCol(colInfo.getInternalName());
+    return constantExpr;
   }
 
   /**
@@ -1122,7 +1215,7 @@ public class TypeCheckProcFactory {
         // If the function is deterministic and the children are constants,
         // we try to fold the expression to remove e.g. cast on constant
         if (ctx.isFoldExpr() && desc instanceof ExprNodeGenericFuncDesc &&
-                FunctionRegistry.isDeterministic(genericUDF) &&
+                FunctionRegistry.isConsistentWithinQuery(genericUDF) &&
                 ExprNodeDescUtils.isAllConstants(children)) {
           ExprNodeDesc constantExpr = ConstantPropagateProcFactory.foldExpr((ExprNodeGenericFuncDesc)desc);
           if (constantExpr != null) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,6 +20,8 @@ package org.apache.hadoop.hive.ql.parse;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.shims.Utils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 public class TestExportImport {
 
@@ -46,10 +49,15 @@ public class TestExportImport {
   public static void classLevelSetup() throws Exception {
     Configuration conf = new Configuration();
     conf.set("dfs.client.use.datanode.hostname", "true");
+    conf.set("hadoop.proxyuser." + Utils.getUGI().getShortUserName() + ".hosts", "*");
     MiniDFSCluster miniDFSCluster =
         new MiniDFSCluster.Builder(conf).numDataNodes(1).format(true).build();
-    srcHiveWarehouse = new WarehouseInstance(LOG, miniDFSCluster, false);
-    destHiveWarehouse = new WarehouseInstance(LOG, miniDFSCluster, false);
+    HashMap<String, String> overridesForHiveConf = new HashMap<String, String>() {{
+      put(HiveConf.ConfVars.HIVE_IN_TEST.varname, "false");
+    }};
+    srcHiveWarehouse =
+        new WarehouseInstance(LOG, miniDFSCluster, overridesForHiveConf);
+    destHiveWarehouse = new WarehouseInstance(LOG, miniDFSCluster, overridesForHiveConf);
   }
 
   @AfterClass
@@ -88,13 +96,30 @@ public class TestExportImport {
     String exportMDPath = "'" + path + "1/'";
     String exportDataPath = "'" + path + "2/'";
     srcHiveWarehouse.run("create table " + dbName + ".t1 (i int)")
-            .run("insert into table " + dbName + ".t1 values (1),(2)")
-            .run("export table " + dbName + ".t1 to " + exportMDPath + " for metadata replication('1')")
-            .run("export table " + dbName + ".t1 to " + exportDataPath + " for replication('2')");
+        .run("insert into table " + dbName + ".t1 values (1),(2)")
+        .run("export table " + dbName + ".t1 to " + exportMDPath + " for metadata replication('1')")
+        .run("export table " + dbName + ".t1 to " + exportDataPath + " for replication('2')");
 
     destHiveWarehouse.run("import table " + replDbName + ".t1 from " + exportMDPath)
-            .run("import table " + replDbName + ".t1 from " + exportDataPath)
-            .run("select * from " + replDbName + ".t1")
-            .verifyResults(new String[] { "1", "2" });
+        .run("import table " + replDbName + ".t1 from " + exportDataPath)
+        .run("select * from " + replDbName + ".t1")
+        .verifyResults(new String[] { "1", "2" });
+  }
+
+  @Test
+  public void databaseTheTableIsImportedIntoShouldBeParsedFromCommandLine() throws Throwable {
+    String path = "hdfs:///tmp/" + dbName + "/";
+    String exportPath = "'" + path + "1/'";
+
+    srcHiveWarehouse.run("create table " + dbName + ".t1 (i int)")
+        .run("insert into table " + dbName + ".t1 values (1),(2)")
+        .run("export table " + dbName + ".t1 to " + exportPath);
+
+    destHiveWarehouse.run("create database test1")
+        .run("use default")
+        .run("import table test1.t1 from " + exportPath)
+        .run("select * from test1.t1")
+        .verifyResults(new String[] { "1", "2" });
+
   }
 }

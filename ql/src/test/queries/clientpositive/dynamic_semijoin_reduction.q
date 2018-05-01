@@ -1,3 +1,5 @@
+--! qt:dataset:srcpart
+--! qt:dataset:alltypesorc
 set hive.compute.query.using.stats=false;
 set hive.mapred.mode=nonstrict;
 set hive.explain.user=false;
@@ -11,6 +13,7 @@ set hive.stats.autogather=true;
 set hive.tez.bigtable.minsize.semijoin.reduction=1;
 set hive.tez.min.bloom.filter.entries=1;
 set hive.stats.fetch.column.stats=true;
+set hive.tez.bloom.filter.factor=1.0f; 
 
 -- Create Tables
 create table alltypesorc_int ( cint int, cstring string ) stored as ORC;
@@ -120,8 +123,16 @@ set hive.tez.dynamic.semijoin.reduction=false;
 EXPLAIN select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
 select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
 set hive.tez.dynamic.semijoin.reduction=true;
+set hive.llap.object.cache.enabled=false;
 EXPLAIN select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
 select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
+
+-- HIVE-17936
+set hive.tez.dynamic.semijoin.reduction.for.dpp.factor = 0.75;
+EXPLAIN select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
+-- semijoin branch should be removed.
+set hive.tez.dynamic.semijoin.reduction.for.dpp.factor = 0.4;
+EXPLAIN select count(*) from srcpart_small10, srcpart_small, srcpart_date where srcpart_small.key1 = srcpart_small10.key1 and srcpart_date.ds = srcpart_small.ds;
 
 -- With unions
 explain select * from alltypesorc_int join

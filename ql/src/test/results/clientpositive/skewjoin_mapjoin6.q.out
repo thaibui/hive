@@ -61,10 +61,10 @@ STAGE PLANS:
         i:a 
           TableScan
             alias: a
-            Statistics: Num rows: 1 Data size: 30 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 300 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: (key is not null and (key = '8')) (type: boolean)
-              Statistics: Num rows: 1 Data size: 30 Basic stats: COMPLETE Column stats: NONE
+              predicate: ((key = '8') and key is not null) (type: boolean)
+              Statistics: Num rows: 1 Data size: 300 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 keys:
                   0 key (type: string)
@@ -72,10 +72,10 @@ STAGE PLANS:
         subquery1:a 
           TableScan
             alias: a
-            Statistics: Num rows: 1 Data size: 30 Basic stats: COMPLETE Column stats: NONE
+            Statistics: Num rows: 1 Data size: 300 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: (key is not null and (not (key = '8'))) (type: boolean)
-              Statistics: Num rows: 1 Data size: 30 Basic stats: COMPLETE Column stats: NONE
+              predicate: ((not (key = '8')) and key is not null) (type: boolean)
+              Statistics: Num rows: 1 Data size: 300 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 keys:
                   0 key (type: string)
@@ -88,7 +88,7 @@ STAGE PLANS:
             alias: b
             Statistics: Num rows: 6 Data size: 24 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: (key is not null and (key = '8')) (type: boolean)
+              predicate: ((key = '8') and key is not null) (type: boolean)
               Statistics: Num rows: 3 Data size: 12 Basic stats: COMPLETE Column stats: NONE
               Map Join Operator
                 condition map:
@@ -141,7 +141,7 @@ STAGE PLANS:
             alias: b
             Statistics: Num rows: 6 Data size: 24 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: (key is not null and (not (key = '8'))) (type: boolean)
+              predicate: ((not (key = '8')) and key is not null) (type: boolean)
               Statistics: Num rows: 3 Data size: 12 Basic stats: COMPLETE Column stats: NONE
               Map Join Operator
                 condition map:

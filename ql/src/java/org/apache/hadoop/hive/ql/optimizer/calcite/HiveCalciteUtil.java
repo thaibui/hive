@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexPatternFieldRef;
+import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
@@ -89,7 +90,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.calcite.rex.RexTableInputRef;
 
 /**
  * Generic utility functions needed for Calcite based Hive CBO.
@@ -964,7 +964,45 @@ public class HiveCalciteUtil {
         aggArgRelDTBldr.build(), aggFnRetType);
     List<Integer> argList = new ArrayList<Integer>();
     argList.add(pos);
-    return new AggregateCall(aggFunction, false, argList, aggFnRetType, null);
+    return AggregateCall.create(aggFunction, false, argList, -1, aggFnRetType, null);
+  }
+
+  /**
+   * Is the expression usable for query materialization.
+   */
+  public static boolean isMaterializable(RexNode expr) {
+    return (checkMaterializable(expr) == null);
+  }
+
+  /**
+   * Check if the expression is usable for query materialization, returning the first failing expression.
+   */
+  public static RexCall checkMaterializable(RexNode expr) {
+    boolean deterministic = true;
+    RexCall failingCall = null;
+
+    if (expr == null) {
+      return null;
+    }
+
+    RexVisitor<Void> visitor = new RexVisitorImpl<Void>(true) {
+      @Override
+      public Void visitCall(org.apache.calcite.rex.RexCall call) {
+        // non-deterministic functions as well as runtime constants are not materializable.
+        if (!call.getOperator().isDeterministic() || call.getOperator().isDynamicFunction()) {
+          throw new Util.FoundOne(call);
+        }
+        return super.visitCall(call);
+      }
+    };
+
+    try {
+      expr.accept(visitor);
+    } catch (Util.FoundOne e) {
+      failingCall = (RexCall) e.getNode();
+    }
+
+    return failingCall;
   }
 
   public static HiveTableFunctionScan createUDTFForSetOp(RelOptCluster cluster, RelNode input)
@@ -1034,6 +1072,11 @@ public class HiveCalciteUtil {
     }
 
     @Override
+    public Boolean visitTableInputRef(RexTableInputRef inputRef) {
+      return false;
+    }
+
+    @Override
     public Boolean visitLocalRef(RexLocalRef localRef) {
       throw new RuntimeException("Not expected to be called.");
     }
@@ -1080,11 +1123,6 @@ public class HiveCalciteUtil {
 
     @Override
     public Boolean visitPatternFieldRef(RexPatternFieldRef fieldRef) {
-      return false;
-    }
-
-    @Override
-    public Boolean visitTableInputRef(RexTableInputRef fieldRef) {
       return false;
     }
   }

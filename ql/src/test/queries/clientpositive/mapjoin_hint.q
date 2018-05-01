@@ -1,3 +1,5 @@
+--! qt:dataset:srcpart
+--! qt:dataset:part
 set hive.compute.query.using.stats=false;
 set hive.mapred.mode=nonstrict;
 set hive.explain.user=false;
@@ -11,6 +13,7 @@ set hive.stats.autogather=true;
 set hive.tez.bigtable.minsize.semijoin.reduction=1;
 set hive.tez.min.bloom.filter.entries=1;
 set hive.stats.fetch.column.stats=true;
+set hive.tez.bloom.filter.factor=1.0f;
 
 -- Create Tables
 create table srcpart_date (key string, value string) partitioned by (ds string ) stored as ORC;

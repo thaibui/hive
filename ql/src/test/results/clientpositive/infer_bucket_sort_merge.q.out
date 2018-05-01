@@ -25,13 +25,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -40,7 +38,7 @@ Database:           	default
 Table:              	test_table          	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	1                   
 	numRows             	1028                
 	rawDataSize         	10968               
@@ -76,13 +74,11 @@ POSTHOOK: query: DESCRIBE FORMATTED test_table PARTITION (part = '1')
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@test_table
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 part                	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -91,7 +87,7 @@ Database:           	default
 Table:              	test_table          	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"key\":\"true\",\"value\":\"true\"}}
 	numFiles            	2                   
 	numRows             	1028                
 	rawDataSize         	10968               

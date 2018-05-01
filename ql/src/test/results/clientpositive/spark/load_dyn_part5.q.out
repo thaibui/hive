@@ -17,7 +17,6 @@ value               	string
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 value               	string              	                    
 	 	 
 #### A masked pattern was here ####
@@ -54,6 +53,7 @@ STAGE PLANS:
                           output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
                           serde: org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe
                           name: default.nzhang_part5
+            Execution mode: vectorized
 
   Stage: Stage-0
     Move Operator
@@ -68,7 +68,8 @@ STAGE PLANS:
               name: default.nzhang_part5
 
   Stage: Stage-2
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: insert overwrite table nzhang_part5 partition (value) select key, value from src
 PREHOOK: type: QUERY

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,11 +26,12 @@ import junit.framework.TestCase;
 import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
+import org.apache.hadoop.hive.metastore.MetaStoreTestUtils;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.security.HadoopThriftAuthBridge;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.security.authorization.DefaultHiveAuthorizationProvider;
 import org.apache.hadoop.hive.ql.session.SessionState;
@@ -44,7 +45,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 public class TestClientSideAuthorizationProvider extends TestCase {
   protected HiveConf clientHiveConf;
   protected HiveMetaStoreClient msc;
-  protected Driver driver;
+  protected IDriver driver;
   protected UserGroupInformation ugi;
 
 
@@ -58,13 +59,11 @@ public class TestClientSideAuthorizationProvider extends TestCase {
 
     super.setUp();
 
-    int port = MetaStoreUtils.findFreePort();
-
     // Turn off metastore-side authorization
     System.setProperty(HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname,
         "");
 
-    MetaStoreUtils.startMetaStore(port, HadoopThriftAuthBridge.getBridge());
+    int port = MetaStoreTestUtils.startMetaStoreWithRetry();
 
     clientHiveConf = new HiveConf(this.getClass());
 
@@ -87,7 +86,7 @@ public class TestClientSideAuthorizationProvider extends TestCase {
 
     SessionState.start(new CliSessionState(clientHiveConf));
     msc = new HiveMetaStoreClient(clientHiveConf);
-    driver = new Driver(clientHiveConf);
+    driver = DriverFactory.newDriver(clientHiveConf);
   }
 
   @Override

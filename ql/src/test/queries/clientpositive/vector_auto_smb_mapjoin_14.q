@@ -1,3 +1,7 @@
+--! qt:dataset:src1
+--! qt:dataset:src
+--! qt:dataset:part
+set hive.stats.column.autogather=false;
 set hive.mapred.mode=nonstrict;
 set hive.explain.user=false;
 SET hive.vectorized.execution.enabled=true;

@@ -1,19 +1,19 @@
 /*
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.hadoop.hive.ql.exec.repl;
 
@@ -25,7 +25,12 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.Function;
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.NotificationEvent;
+import org.apache.hadoop.hive.metastore.api.SQLForeignKey;
+import org.apache.hadoop.hive.metastore.api.SQLNotNullConstraint;
+import org.apache.hadoop.hive.metastore.api.SQLPrimaryKey;
+import org.apache.hadoop.hive.metastore.api.SQLUniqueConstraint;
 import org.apache.hadoop.hive.metastore.messaging.EventUtils;
 import org.apache.hadoop.hive.metastore.messaging.MessageFactory;
 import org.apache.hadoop.hive.metastore.messaging.event.filters.AndFilter;
@@ -49,6 +54,7 @@ import org.apache.hadoop.hive.ql.parse.repl.dump.TableExport;
 import org.apache.hadoop.hive.ql.parse.repl.dump.Utils;
 import org.apache.hadoop.hive.ql.parse.repl.dump.events.EventHandler;
 import org.apache.hadoop.hive.ql.parse.repl.dump.events.EventHandlerFactory;
+import org.apache.hadoop.hive.ql.parse.repl.dump.io.ConstraintsSerializer;
 import org.apache.hadoop.hive.ql.parse.repl.dump.io.FunctionSerializer;
 import org.apache.hadoop.hive.ql.parse.repl.dump.io.JsonWriter;
 import org.apache.hadoop.hive.ql.parse.repl.dump.log.BootstrapDumpLogger;
@@ -66,7 +72,23 @@ import java.util.UUID;
 public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
   private static final String dumpSchema = "dump_dir,last_repl_id#string,string";
   private static final String FUNCTIONS_ROOT_DIR_NAME = "_functions";
+  private static final String CONSTRAINTS_ROOT_DIR_NAME = "_constraints";
   private static final String FUNCTION_METADATA_FILE_NAME = "_metadata";
+  public enum ConstraintFileType {COMMON("common", "c_"), FOREIGNKEY("fk", "f_");
+    private final String name;
+    private final String prefix;
+    private ConstraintFileType(String name, String prefix) {
+      this.name = name;
+      this.prefix = prefix;
+    }
+    public String getName() {
+      return this.name;
+    }
+
+    public String getPrefix() {
+      return prefix;
+    }
+  }
 
   private Logger LOG = LoggerFactory.getLogger(ReplDumpTask.class);
   private ReplLogger replLogger;
@@ -170,8 +192,10 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
     replLogger.eventLog(String.valueOf(ev.getEventId()), eventHandler.dumpType().toString());
   }
 
-  private ReplicationSpec getNewEventOnlyReplicationSpec(Long eventId) throws SemanticException {
-    ReplicationSpec rspec = getNewReplicationSpec(eventId.toString(), eventId.toString());
+  private ReplicationSpec getNewEventOnlyReplicationSpec(Long eventId) {
+    ReplicationSpec rspec =
+        getNewReplicationSpec(eventId.toString(), eventId.toString(), conf.getBoolean(
+            HiveConf.ConfVars.REPL_DUMP_METADATA_ONLY.varname, false));
     rspec.setReplSpecType(ReplicationSpec.Type.INCREMENTAL_DUMP);
     return rspec;
   }
@@ -194,6 +218,7 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
         LOG.debug(
             "analyzeReplDump dumping table: " + tblName + " to db root " + dbRoot.toUri());
         dumpTable(dbName, tblName, dbRoot);
+        dumpConstraintMetadata(dbName, tblName, dbRoot);
       }
       Utils.resetDbBootstrapDumpState(hiveDb, dbName, uniqueKey);
       replLogger.endLog(bootDumpBeginReplId.toString());
@@ -248,7 +273,7 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
       HiveWrapper.Tuple<Table> tuple = new HiveWrapper(db, dbName).table(tblName);
       TableSpec tableSpec = new TableSpec(tuple.object);
       TableExport.Paths exportPaths =
-          new TableExport.Paths(work.astRepresentationForErrorMsg, dbRoot, tblName, conf);
+          new TableExport.Paths(work.astRepresentationForErrorMsg, dbRoot, tblName, conf, true);
       String distCpDoAsUser = conf.getVar(HiveConf.ConfVars.HIVE_DISTCP_DOAS_USER);
       tuple.replicationSpec.setIsReplace(true);  // by default for all other objects this is false
       new TableExport(exportPaths, tableSpec, tuple.replicationSpec, db, distCpDoAsUser, conf).write();
@@ -261,8 +286,9 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
     }
   }
 
-  private ReplicationSpec getNewReplicationSpec(String evState, String objState) {
-    return new ReplicationSpec(true, false, evState, objState, false, true, true);
+  private ReplicationSpec getNewReplicationSpec(String evState, String objState,
+      boolean isMetadataOnly) {
+    return new ReplicationSpec(true, isMetadataOnly, evState, objState, false, true, true);
   }
 
   private String getNextDumpDir() {
@@ -302,6 +328,38 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
     }
   }
 
+  private void dumpConstraintMetadata(String dbName, String tblName, Path dbRoot) throws Exception {
+    try {
+      Path constraintsRoot = new Path(dbRoot, CONSTRAINTS_ROOT_DIR_NAME);
+      Path commonConstraintsFile = new Path(constraintsRoot, ConstraintFileType.COMMON.getPrefix() + tblName);
+      Path fkConstraintsFile = new Path(constraintsRoot, ConstraintFileType.FOREIGNKEY.getPrefix() + tblName);
+      Hive db = getHive();
+      List<SQLPrimaryKey> pks = db.getPrimaryKeyList(dbName, tblName);
+      List<SQLForeignKey> fks = db.getForeignKeyList(dbName, tblName);
+      List<SQLUniqueConstraint> uks = db.getUniqueConstraintList(dbName, tblName);
+      List<SQLNotNullConstraint> nns = db.getNotNullConstraintList(dbName, tblName);
+      if ((pks != null && !pks.isEmpty()) || (uks != null && !uks.isEmpty())
+          || (nns != null && !nns.isEmpty())) {
+        try (JsonWriter jsonWriter =
+            new JsonWriter(commonConstraintsFile.getFileSystem(conf), commonConstraintsFile)) {
+          ConstraintsSerializer serializer = new ConstraintsSerializer(pks, null, uks, nns, conf);
+          serializer.writeTo(jsonWriter, null);
+        }
+      }
+      if (fks != null && !fks.isEmpty()) {
+        try (JsonWriter jsonWriter =
+            new JsonWriter(fkConstraintsFile.getFileSystem(conf), fkConstraintsFile)) {
+          ConstraintsSerializer serializer = new ConstraintsSerializer(null, fks, null, null, conf);
+          serializer.writeTo(jsonWriter, null);
+        }
+      }
+    } catch (NoSuchObjectException e) {
+      // Bootstrap constraint dump shouldn't fail if the table is dropped/renamed while dumping it.
+      // Just log a debug message and skip it.
+      LOG.debug(e.getMessage());
+    }
+  }
+
   private HiveWrapper.Tuple<Function> functionTuple(String functionName, String dbName) {
     try {
       HiveWrapper.Tuple<Function> tuple = new HiveWrapper(getHive(), dbName).function(functionName);
@@ -323,5 +381,10 @@ public class ReplDumpTask extends Task<ReplDumpWork> implements Serializable {
   @Override
   public StageType getType() {
     return StageType.REPL_DUMP;
+  }
+
+  @Override
+  public boolean canExecuteInParallel() {
+    return false;
   }
 }

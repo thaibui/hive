@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,10 +18,16 @@
 
 package org.apache.hadoop.hive.ql.exec.spark;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.hive.ql.exec.DagUtils;
+import org.apache.hive.spark.client.SparkClientUtilities;
+import org.apache.spark.util.CallSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -66,9 +72,10 @@ public class LocalHiveSparkClient implements HiveSparkClient {
 
   private static LocalHiveSparkClient client;
 
-  public static synchronized LocalHiveSparkClient getInstance(SparkConf sparkConf) {
+  public static synchronized LocalHiveSparkClient getInstance(
+      SparkConf sparkConf, HiveConf hiveConf) throws FileNotFoundException, MalformedURLException {
     if (client == null) {
-      client = new LocalHiveSparkClient(sparkConf);
+      client = new LocalHiveSparkClient(sparkConf, hiveConf);
     }
     return client;
   }
@@ -81,10 +88,23 @@ public class LocalHiveSparkClient implements HiveSparkClient {
 
   private final JobMetricsListener jobMetricsListener;
 
-  private LocalHiveSparkClient(SparkConf sparkConf) {
+  private LocalHiveSparkClient(SparkConf sparkConf, HiveConf hiveConf)
+      throws FileNotFoundException, MalformedURLException {
+    String regJar = null;
+    // the registrator jar should already be in CP when not in test mode
+    if (HiveConf.getBoolVar(hiveConf, HiveConf.ConfVars.HIVE_IN_TEST)) {
+      String kryoReg = sparkConf.get("spark.kryo.registrator", "");
+      if (SparkClientUtilities.HIVE_KRYO_REG_NAME.equals(kryoReg)) {
+        regJar = SparkClientUtilities.findKryoRegistratorJar(hiveConf);
+        SparkClientUtilities.addJarToContextLoader(new File(regJar));
+      }
+    }
     sc = new JavaSparkContext(sparkConf);
+    if (regJar != null) {
+      sc.addJar(regJar);
+    }
     jobMetricsListener = new JobMetricsListener();
-    sc.sc().listenerBus().addListener(jobMetricsListener);
+    sc.sc().addSparkListener(jobMetricsListener);
   }
 
   @Override
@@ -142,8 +162,12 @@ public class LocalHiveSparkClient implements HiveSparkClient {
 
     // Execute generated plan.
     JavaPairRDD<HiveKey, BytesWritable> finalRDD = plan.generateGraph();
+
+    sc.setJobGroup("queryId = " + sparkWork.getQueryId(), DagUtils.getQueryName(jobConf));
+
     // We use Spark RDD async action to submit job as it's the only way to get jobId now.
     JavaFutureAction<Void> future = finalRDD.foreachAsync(HiveVoidFunction.getInstance());
+
     // As we always use foreach action to submit RDD graph, it would only trigger one job.
     int jobId = future.jobIds().get(0);
     LocalSparkJobStatus sparkJobStatus = new LocalSparkJobStatus(

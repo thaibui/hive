@@ -1,3 +1,4 @@
+--! qt:dataset:alltypesorc
 set hive.mapred.mode=nonstrict;
 SET hive.vectorized.execution.enabled=true;
 
@@ -53,12 +54,15 @@ set hive.cbo.enable=false;
 SET hive.llap.io.enabled=true;
 SET hive.vectorized.execution.enabled=true;
 
-explain
+explain vectorization detail
 SELECT oft.ctinyint, oft.cint, oft.cchar1, oft.cvchar1 FROM orc_llap_part oft
   INNER JOIN orc_llap_dim_part od ON oft.ctinyint = od.ctinyint;
 create table llap_temp_table as
 SELECT oft.ctinyint, oft.cint, oft.cchar1, oft.cvchar1 FROM orc_llap_part oft
   INNER JOIN orc_llap_dim_part od ON oft.ctinyint = od.ctinyint;
+
+explain vectorization detail
+select sum(hash(*)) from llap_temp_table;
 select sum(hash(*)) from llap_temp_table;
 drop table llap_temp_table;
 

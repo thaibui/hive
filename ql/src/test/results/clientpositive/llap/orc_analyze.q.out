@@ -82,7 +82,6 @@ POSTHOOK: query: desc formatted orc_create_people
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -99,54 +98,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	1                   
-	numRows             	100                 
-	rawDataSize         	52600               
-	totalSize           	3200                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	-1                  	 
-Bucket Columns:     	[]                  	 
-Sort Columns:       	[]                  	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: analyze table orc_create_people compute statistics partialscan
-PREHOOK: type: QUERY
-PREHOOK: Input: default@orc_create_people
-PREHOOK: Output: default@orc_create_people
-POSTHOOK: query: analyze table orc_create_people compute statistics partialscan
-POSTHOOK: type: QUERY
-POSTHOOK: Input: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people
-PREHOOK: query: desc formatted orc_create_people
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-state               	string              	                    
-	 	 
-# Detailed Table Information	 	 
-Database:           	default             	 
-#### A masked pattern was here ####
-Retention:          	0                   	 
-#### A masked pattern was here ####
-Table Type:         	MANAGED_TABLE       	 
-Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	100                 
 	rawDataSize         	52600               
@@ -178,7 +130,6 @@ POSTHOOK: query: desc formatted orc_create_people
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -195,6 +146,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	100                 
 	rawDataSize         	52600               
@@ -265,7 +217,6 @@ POSTHOOK: query: desc formatted orc_create_people
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -281,7 +232,8 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"address\":\"true\",\"first_name\":\"true\",\"id\":\"true\",\"last_name\":\"true\",\"salary\":\"true\",\"start_date\":\"true\",\"state\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	100                 
 	rawDataSize         	52600               
@@ -372,7 +324,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -382,7 +333,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -415,7 +365,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -425,105 +374,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
-state               	string              	                    
-	 	 
-# Detailed Partition Information	 	 
-Partition Value:    	[Or]                	 
-Database:           	default             	 
-Table:              	orc_create_people   	 
-#### A masked pattern was here ####
-Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	1                   
-	numRows             	50                  
-	rawDataSize         	22050               
-	totalSize           	2114                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	-1                  	 
-Bucket Columns:     	[]                  	 
-Sort Columns:       	[]                  	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-PREHOOK: type: QUERY
-PREHOOK: Input: default@orc_create_people
-PREHOOK: Output: default@orc_create_people
-PREHOOK: Output: default@orc_create_people@state=Ca
-PREHOOK: Output: default@orc_create_people@state=Or
-POSTHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-POSTHOOK: type: QUERY
-POSTHOOK: Input: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people@state=Ca
-POSTHOOK: Output: default@orc_create_people@state=Or
-PREHOOK: query: desc formatted orc_create_people partition(state="Ca")
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-	 	 
-# Partition Information	 	 
-# col_name            	data_type           	comment             
-	 	 
-state               	string              	                    
-	 	 
-# Detailed Partition Information	 	 
-Partition Value:    	[Ca]                	 
-Database:           	default             	 
-Table:              	orc_create_people   	 
-#### A masked pattern was here ####
-Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	1                   
-	numRows             	50                  
-	rawDataSize         	21950               
-	totalSize           	2099                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	-1                  	 
-Bucket Columns:     	[]                  	 
-Sort Columns:       	[]                  	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: desc formatted orc_create_people partition(state="Or")
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-	 	 
-# Partition Information	 	 
-# col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -568,7 +418,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -578,7 +427,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -611,7 +459,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -621,7 +468,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -709,7 +555,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -719,7 +564,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -728,7 +572,7 @@ Database:           	default
 Table:              	orc_create_people   	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"address\":\"true\",\"first_name\":\"true\",\"id\":\"true\",\"last_name\":\"true\",\"salary\":\"true\",\"start_date\":\"true\"}}
 	numFiles            	1                   
 	numRows             	50                  
 	rawDataSize         	21950               
@@ -752,7 +596,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -762,7 +605,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -771,7 +613,7 @@ Database:           	default
 Table:              	orc_create_people   	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"address\":\"true\",\"first_name\":\"true\",\"id\":\"true\",\"last_name\":\"true\",\"salary\":\"true\",\"start_date\":\"true\"}}
 	numFiles            	1                   
 	numRows             	50                  
 	rawDataSize         	22050               
@@ -868,7 +710,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -878,7 +719,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -890,8 +730,8 @@ Partition Parameters:
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
 	numFiles            	4                   
 	numRows             	50                  
-	rawDataSize         	21975               
-	totalSize           	5260                
+	rawDataSize         	21955               
+	totalSize           	5322                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -911,7 +751,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -921,7 +760,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -934,105 +772,7 @@ Partition Parameters:
 	numFiles            	4                   
 	numRows             	50                  
 	rawDataSize         	22043               
-	totalSize           	5331                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	4                   	 
-Bucket Columns:     	[first_name]        	 
-Sort Columns:       	[Order(col:last_name, order:1)]	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-PREHOOK: type: QUERY
-PREHOOK: Input: default@orc_create_people
-PREHOOK: Output: default@orc_create_people
-PREHOOK: Output: default@orc_create_people@state=Ca
-PREHOOK: Output: default@orc_create_people@state=Or
-POSTHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-POSTHOOK: type: QUERY
-POSTHOOK: Input: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people@state=Ca
-POSTHOOK: Output: default@orc_create_people@state=Or
-PREHOOK: query: desc formatted orc_create_people partition(state="Ca")
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-	 	 
-# Partition Information	 	 
-# col_name            	data_type           	comment             
-	 	 
-state               	string              	                    
-	 	 
-# Detailed Partition Information	 	 
-Partition Value:    	[Ca]                	 
-Database:           	default             	 
-Table:              	orc_create_people   	 
-#### A masked pattern was here ####
-Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	4                   
-	numRows             	50                  
-	rawDataSize         	21975               
-	totalSize           	5260                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	4                   	 
-Bucket Columns:     	[first_name]        	 
-Sort Columns:       	[Order(col:last_name, order:1)]	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: desc formatted orc_create_people partition(state="Or")
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-	 	 
-# Partition Information	 	 
-# col_name            	data_type           	comment             
-	 	 
-state               	string              	                    
-	 	 
-# Detailed Partition Information	 	 
-Partition Value:    	[Or]                	 
-Database:           	default             	 
-Table:              	orc_create_people   	 
-#### A masked pattern was here ####
-Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	4                   
-	numRows             	50                  
-	rawDataSize         	22043               
-	totalSize           	5331                
+	totalSize           	5314                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -1064,7 +804,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1074,7 +813,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -1086,8 +824,8 @@ Partition Parameters:
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
 	numFiles            	4                   
 	numRows             	50                  
-	rawDataSize         	21975               
-	totalSize           	5260                
+	rawDataSize         	21955               
+	totalSize           	5322                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -1107,7 +845,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1117,7 +854,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -1130,7 +866,7 @@ Partition Parameters:
 	numFiles            	4                   
 	numRows             	50                  
 	rawDataSize         	22043               
-	totalSize           	5331                
+	totalSize           	5314                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -1211,7 +947,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1221,7 +956,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -1230,11 +964,11 @@ Database:           	default
 Table:              	orc_create_people   	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"address\":\"true\",\"first_name\":\"true\",\"id\":\"true\",\"last_name\":\"true\",\"salary\":\"true\",\"start_date\":\"true\"}}
 	numFiles            	4                   
 	numRows             	50                  
-	rawDataSize         	21975               
-	totalSize           	5260                
+	rawDataSize         	21955               
+	totalSize           	5322                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -1254,7 +988,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Or")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1264,7 +997,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -1273,11 +1005,11 @@ Database:           	default
 Table:              	orc_create_people   	 
 #### A masked pattern was here ####
 Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"address\":\"true\",\"first_name\":\"true\",\"id\":\"true\",\"last_name\":\"true\",\"salary\":\"true\",\"start_date\":\"true\"}}
 	numFiles            	4                   
 	numRows             	50                  
 	rawDataSize         	22043               
-	totalSize           	5331                
+	totalSize           	5314                
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -1364,7 +1096,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1374,62 +1105,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
-state               	string              	                    
-	 	 
-# Detailed Partition Information	 	 
-Partition Value:    	[Ca]                	 
-Database:           	default             	 
-Table:              	orc_create_people   	 
-#### A masked pattern was here ####
-Partition Parameters:	 	 
-	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
-	numFiles            	1                   
-	numRows             	50                  
-	rawDataSize         	21950               
-	totalSize           	2099                
-#### A masked pattern was here ####
-	 	 
-# Storage Information	 	 
-SerDe Library:      	org.apache.hadoop.hive.ql.io.orc.OrcSerde	 
-InputFormat:        	org.apache.hadoop.hive.ql.io.orc.OrcInputFormat	 
-OutputFormat:       	org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat	 
-Compressed:         	No                  	 
-Num Buckets:        	-1                  	 
-Bucket Columns:     	[]                  	 
-Sort Columns:       	[]                  	 
-Storage Desc Params:	 	 
-	serialization.format	1                   
-PREHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-PREHOOK: type: QUERY
-PREHOOK: Input: default@orc_create_people
-PREHOOK: Output: default@orc_create_people
-PREHOOK: Output: default@orc_create_people@state=Ca
-PREHOOK: Output: default@orc_create_people@state=Or
-POSTHOOK: query: analyze table orc_create_people partition(state) compute statistics partialscan
-POSTHOOK: type: QUERY
-POSTHOOK: Input: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people
-POSTHOOK: Output: default@orc_create_people@state=Ca
-POSTHOOK: Output: default@orc_create_people@state=Or
-PREHOOK: query: desc formatted orc_create_people partition(state="Ca")
-PREHOOK: type: DESCTABLE
-PREHOOK: Input: default@orc_create_people
-POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
-POSTHOOK: type: DESCTABLE
-POSTHOOK: Input: default@orc_create_people
-# col_name            	data_type           	comment             
-	 	 
-id                  	int                 	                    
-first_name          	string              	                    
-last_name           	string              	                    
-address             	string              	                    
-salary              	decimal(10,0)       	                    
-start_date          	timestamp           	                    
-	 	 
-# Partition Information	 	 
-# col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 
@@ -1474,7 +1149,6 @@ POSTHOOK: query: desc formatted orc_create_people partition(state="Ca")
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@orc_create_people
 # col_name            	data_type           	comment             
-	 	 
 id                  	int                 	                    
 first_name          	string              	                    
 last_name           	string              	                    
@@ -1484,7 +1158,6 @@ start_date          	timestamp
 	 	 
 # Partition Information	 	 
 # col_name            	data_type           	comment             
-	 	 
 state               	string              	                    
 	 	 
 # Detailed Partition Information	 	 

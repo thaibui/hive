@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,6 +21,7 @@ package org.apache.hive.jdbc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -39,6 +40,7 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +48,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.SynchronousQueue;
@@ -63,9 +66,15 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.ObjectStore;
+import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.exec.FunctionRegistry;
+import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.LineageLogger;
+import org.apache.hadoop.hive.ql.optimizer.lineage.LineageCtx;
 import org.apache.hive.common.util.ReflectionUtil;
 import org.apache.hive.jdbc.miniHS2.MiniHS2;
+import org.apache.hive.service.cli.HiveSQLException;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
@@ -201,6 +210,10 @@ public class TestJdbcWithMiniHS2 {
   private static void startMiniHS2(HiveConf conf, boolean httpMode) throws Exception {
     conf.setBoolVar(ConfVars.HIVE_SUPPORT_CONCURRENCY, false);
     conf.setBoolVar(ConfVars.HIVE_SERVER2_LOGGING_OPERATION_ENABLED, false);
+    conf.setBoolVar(ConfVars.HIVESTATSCOLAUTOGATHER, false);
+    // store post-exec hooks calls so we can look at them later
+    conf.setVar(ConfVars.POSTEXECHOOKS, ReadableHook.class.getName() + "," +
+        LineageLogger.class.getName());
     MiniHS2.Builder builder = new MiniHS2.Builder().withConf(conf).cleanupLocalDirOnStartup(false);
     if (httpMode) {
       builder = builder.withHTTPTransport();
@@ -584,6 +597,18 @@ public class TestJdbcWithMiniHS2 {
     stmt.close();
   }
 
+
+  // Test that jdbc does not allow shell commands starting with "!".
+  @Test
+  public void testBangCommand() throws Exception {
+    try (Statement stmt = conTestDb.createStatement()) {
+      stmt.execute("!ls --l");
+      fail("statement should fail, allowing this would be bad security");
+    } catch (HiveSQLException e) {
+      assertTrue(e.getMessage().contains("cannot recognize input near '!'"));
+    }
+  }
+
   @Test
   public void testJoinThriftSerializeInTasks() throws Exception {
     Statement stmt = conTestDb.createStatement();
@@ -935,12 +960,14 @@ public class TestJdbcWithMiniHS2 {
     conf.setIntVar(HiveConf.ConfVars.HIVE_SERVER2_THRIFT_HTTP_RESPONSE_HEADER_SIZE, 1024);
     startMiniHS2(conf, true);
 
-    // Username is added to the request header
-    String userName = StringUtils.leftPad("*", 100);
+    // Username and password are added to the http request header.
+    // We will test the reconfiguration of the header size by changing the password length.
+    String userName = "userName";
+    String password = StringUtils.leftPad("*", 100);
     Connection conn = null;
     // This should go fine, since header should be less than the configured header size
     try {
-      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, "password");
+      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, password);
     } catch (Exception e) {
       fail("Not expecting exception: " + e);
     } finally {
@@ -951,11 +978,11 @@ public class TestJdbcWithMiniHS2 {
 
     // This should fail with given HTTP response code 413 in error message, since header is more
     // than the configured the header size
-    userName = StringUtils.leftPad("*", 2000);
+    password = StringUtils.leftPad("*", 2000);
     Exception headerException = null;
     try {
       conn = null;
-      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, "password");
+      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, password);
     } catch (Exception e) {
       headerException = e;
     } finally {
@@ -977,7 +1004,7 @@ public class TestJdbcWithMiniHS2 {
     // This should now go fine, since we increased the configured header size
     try {
       conn = null;
-      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, "password");
+      conn = getConnection(miniHS2.getJdbcURL(testDbName), userName, password);
     } catch (Exception e) {
       fail("Not expecting exception: " + e);
     } finally {
@@ -1378,6 +1405,86 @@ public class TestJdbcWithMiniHS2 {
     }
   }
 
+  public static class SleepMsUDF extends UDF {
+    public Integer evaluate(final Integer value, final Integer ms) {
+      try {
+        Thread.sleep(ms);
+      } catch (InterruptedException e) {
+        // No-op
+      }
+      return value;
+    }
+  }
+
+  /**
+   * Test CLI kill command of a query that is running.
+   * We spawn 2 threads - one running the query and
+   * the other attempting to cancel.
+   * We're using a dummy udf to simulate a query,
+   * that runs for a sufficiently long time.
+   * @throws Exception
+   */
+  @Test
+  public void testKillQuery() throws Exception {
+    Connection con = conTestDb;
+    Connection con2 = getConnection(testDbName);
+
+    String udfName = SleepMsUDF.class.getName();
+    Statement stmt1 = con.createStatement();
+    final Statement stmt2 = con2.createStatement();
+    stmt1.execute("create temporary function sleepMsUDF as '" + udfName + "'");
+    stmt1.close();
+    final Statement stmt = con.createStatement();
+    final ExceptionHolder tExecuteHolder = new ExceptionHolder();
+    final ExceptionHolder tKillHolder = new ExceptionHolder();
+
+    // Thread executing the query
+    Thread tExecute = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          System.out.println("Executing query: ");
+          // The test table has 500 rows, so total query time should be ~ 500*500ms
+          stmt.executeQuery("select sleepMsUDF(t1.int_col, 100), t1.int_col, t2.int_col " +
+              "from " + tableName + " t1 join " + tableName + " t2 on t1.int_col = t2.int_col");
+          fail("Expecting SQLException");
+        } catch (SQLException e) {
+          tExecuteHolder.throwable = e;
+        }
+      }
+    });
+    // Thread killing the query
+    Thread tKill = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(2000);
+          String queryId = ((HiveStatement) stmt).getQueryId();
+          System.out.println("Killing query: " + queryId);
+
+          stmt2.execute("kill query '" + queryId + "'");
+          stmt2.close();
+        } catch (Exception e) {
+          tKillHolder.throwable = e;
+        }
+      }
+    });
+
+    tExecute.start();
+    tKill.start();
+    tExecute.join();
+    tKill.join();
+    stmt.close();
+    con2.close();
+
+    assertNotNull("tExecute", tExecuteHolder.throwable);
+    assertNull("tCancel", tKillHolder.throwable);
+  }
+
+  private static class ExceptionHolder {
+    Throwable throwable;
+  }
+
   @Test
   public void testFetchSize() throws Exception {
     // Test setting fetch size below max
@@ -1406,5 +1513,158 @@ public class TestJdbcWithMiniHS2 {
       fetchSize);
     stmt.close();
     fsConn.close();
+  }
+
+  /**
+   * A test that checks that Lineage is correct when a multiple concurrent
+   * requests are make on a connection
+   */
+  @Test
+  public void testConcurrentLineage() throws Exception {
+    // setup to run concurrent operations
+    Statement stmt = conTestDb.createStatement();
+    setSerializeInTasksInConf(stmt);
+    stmt.execute("drop table if exists testConcurrentLineage1");
+    stmt.execute("drop table if exists testConcurrentLineage2");
+    stmt.execute("create table testConcurrentLineage1 (col1 int)");
+    stmt.execute("create table testConcurrentLineage2 (col2 int)");
+
+    // clear vertices list
+    ReadableHook.clear();
+
+    // run 5 sql inserts concurrently
+    int numThreads = 5;        // set to 1 for single threading
+    int concurrentCalls = 5;
+    ExecutorService pool = Executors.newFixedThreadPool(numThreads);
+    try {
+      List<InsertCallable> tasks = new ArrayList<>();
+      for (int i = 0; i < concurrentCalls; i++) {
+        InsertCallable runner = new InsertCallable(conTestDb);
+        tasks.add(runner);
+      }
+      List<Future<Void>> futures = pool.invokeAll(tasks);
+      for (Future<Void> future : futures) {
+        future.get(20, TimeUnit.SECONDS);
+      }
+      // check to see that the vertices are correct
+      checkVertices();
+    } finally {
+      // clean up
+      stmt.execute("drop table testConcurrentLineage1");
+      stmt.execute("drop table testConcurrentLineage2");
+      stmt.close();
+      pool.shutdownNow();
+    }
+  }
+
+  /**
+   * A Callable that does 2 inserts
+   */
+  private class InsertCallable implements Callable<Void> {
+    private Connection connection;
+
+    InsertCallable(Connection conn) {
+      this.connection = conn;
+    }
+
+    @Override public Void call() throws Exception {
+      doLineageInserts(connection);
+      return null;
+    }
+
+    private void doLineageInserts(Connection connection) throws SQLException {
+      Statement stmt = connection.createStatement();
+      stmt.execute("insert into testConcurrentLineage1 values (1)");
+      stmt.execute("insert into testConcurrentLineage2 values (2)");
+    }
+  }
+  /**
+   * check to see that the vertices derived from the HookContexts are correct
+   */
+  private void checkVertices() {
+    List<Set<LineageLogger.Vertex>> verticesLists = getVerticesFromHooks();
+
+    assertEquals("5 runs of 2 inserts makes 10", 10, verticesLists.size());
+    for (Set<LineageLogger.Vertex> vertices : verticesLists) {
+      assertFalse("Each insert affects a column so should be some vertices",
+          vertices.isEmpty());
+      assertEquals("Each insert affects one column so should be one vertex",
+          1, vertices.size());
+      Iterator<LineageLogger.Vertex> iterator = vertices.iterator();
+      assertTrue(iterator.hasNext());
+      LineageLogger.Vertex vertex = iterator.next();
+      assertEquals(0, vertex.getId());
+      assertEquals(LineageLogger.Vertex.Type.COLUMN, vertex.getType());
+      String label = vertex.getLabel();
+      System.out.println("vertex.getLabel() = " + label);
+      assertTrue("did not see one of the 2 expected column names",
+          label.equals("testjdbcminihs2.testconcurrentlineage1.col1") ||
+              label.equals("testjdbcminihs2.testconcurrentlineage2.col2"));
+    }
+  }
+
+  /**
+   * Use the logic in LineageLogger to get vertices from Hook Contexts
+   */
+  private List<Set<LineageLogger.Vertex>>  getVerticesFromHooks() {
+    List<Set<LineageLogger.Vertex>> verticesLists = new ArrayList<>();
+    List<HookContext> hookList = ReadableHook.getHookList();
+    for (HookContext hookContext : hookList) {
+      QueryPlan plan = hookContext.getQueryPlan();
+      LineageCtx.Index index = hookContext.getIndex();
+      assertNotNull(index);
+      List<LineageLogger.Edge> edges = LineageLogger.getEdges(plan, index);
+      Set<LineageLogger.Vertex> vertices = LineageLogger.getVertices(edges);
+      verticesLists.add(vertices);
+    }
+    return verticesLists;
+  }
+
+  /**
+   * Test 'describe extended' on tables that have special white space characters in the row format.
+   */
+  @Test
+  public void testDescribe() throws Exception {
+    try (Statement stmt = conTestDb.createStatement()) {
+      String table = "testDescribe";
+      stmt.execute("drop table if exists " + table);
+      stmt.execute("create table " + table + " (orderid int, orderdate string, customerid int)"
+          + " ROW FORMAT DELIMITED FIELDS terminated by '\\t' LINES terminated by '\\n'");
+      String extendedDescription = getDetailedTableDescription(stmt, table);
+      assertNotNull("could not get Detailed Table Information", extendedDescription);
+      assertTrue("description appears truncated: " + extendedDescription,
+          extendedDescription.endsWith(")"));
+      assertTrue("bad line delimiter: " + extendedDescription,
+          extendedDescription.contains("line.delim=\\n"));
+      assertTrue("bad field delimiter: " + extendedDescription,
+          extendedDescription.contains("field.delim=\\t"));
+
+      String view = "testDescribeView";
+      stmt.execute("create view " + view + " as select * from " + table);
+      String extendedViewDescription = getDetailedTableDescription(stmt, view);
+      assertTrue("bad view text: " + extendedViewDescription,
+          extendedViewDescription.contains("viewOriginalText:select * from " + table));
+      assertTrue("bad expanded view text: " + extendedViewDescription,
+          extendedViewDescription.contains(
+              "viewExpandedText:select `testdescribe`.`orderid`, `testdescribe`.`orderdate`, "
+                  + "`testdescribe`.`customerid` from `testjdbcminihs2`"));
+    }
+  }
+
+  /**
+   * Get Detailed Table Information via jdbc
+   */
+  private String getDetailedTableDescription(Statement stmt, String table) throws SQLException {
+    String extendedDescription = null;
+    try (ResultSet rs = stmt.executeQuery("describe extended " + table)) {
+      while (rs.next()) {
+        String out = rs.getString(1);
+        String tableInfo = rs.getString(2);
+        if ("Detailed Table Information".equals(out)) { // from TextMetaDataFormatter
+          extendedDescription = tableInfo;
+        }
+      }
+    }
+    return extendedDescription;
   }
 }

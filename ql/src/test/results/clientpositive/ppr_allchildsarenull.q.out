@@ -58,6 +58,7 @@ STAGE PLANS:
                   TotalFiles: 1
                   GatherStats: false
                   MultiFileSpray: false
+      Execution mode: vectorized
       Path -> Alias:
 #### A masked pattern was here ####
       Path -> Partition:
@@ -94,6 +95,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -142,6 +144,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -223,7 +226,7 @@ STAGE PLANS:
             GatherStats: false
             Filter Operator
               isSamplingPred: false
-              predicate: ((ds = '2008-04-08') and ((value like 'aaa%') or (value like 'vvv%'))) (type: boolean)
+              predicate: (((value like 'aaa%') or (value like 'vvv%')) and (ds = '2008-04-08')) (type: boolean)
               Statistics: Num rows: 2000 Data size: 21248 Basic stats: COMPLETE Column stats: NONE
               Select Operator
                 expressions: UDFToInteger(key) (type: int), value (type: string)
@@ -251,6 +254,7 @@ STAGE PLANS:
                   TotalFiles: 1
                   GatherStats: false
                   MultiFileSpray: false
+      Execution mode: vectorized
       Path -> Alias:
 #### A masked pattern was here ####
       Path -> Partition:
@@ -287,6 +291,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -335,6 +340,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -383,6 +389,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'
@@ -431,6 +438,7 @@ STAGE PLANS:
               output format: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
               properties:
                 bucket_count -1
+                bucketing_version 2
                 column.name.delimiter ,
                 columns key,value
                 columns.comments 'default','default'

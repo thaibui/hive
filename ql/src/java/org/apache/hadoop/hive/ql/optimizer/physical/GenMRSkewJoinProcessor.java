@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -256,7 +256,7 @@ public final class GenMRSkewJoinProcessor {
         Operator<? extends OperatorDesc> ts =
             GenMapRedUtils.createTemporaryTableScanOperator(
                 joinOp.getCompilationOpContext(), rowSchemaList.get((byte)k));
-        ((TableScanOperator)ts).setTableDesc(tableDescList.get((byte)k));
+        ((TableScanOperator)ts).setTableDescSkewJoin(tableDescList.get((byte)k));
         parentOps[k] = ts;
       }
       Operator<? extends OperatorDesc> tblScan_op = parentOps[i];
@@ -286,6 +286,7 @@ public final class GenMRSkewJoinProcessor {
       mapJoinDescriptor.setTagOrder(tags);
       mapJoinDescriptor.setHandleSkewJoin(false);
       mapJoinDescriptor.setNullSafes(joinDescriptor.getNullSafes());
+      mapJoinDescriptor.setColumnExprMap(joinDescriptor.getColumnExprMap());
 
       MapredLocalWork localPlan = new MapredLocalWork(
           new LinkedHashMap<String, Operator<? extends OperatorDesc>>(),
@@ -330,7 +331,7 @@ public final class GenMRSkewJoinProcessor {
       MapredWork w = new MapredWork();
       w.setMapWork(newPlan);
 
-      Task<? extends Serializable> skewJoinMapJoinTask = TaskFactory.get(w, jc);
+      Task<? extends Serializable> skewJoinMapJoinTask = TaskFactory.get(w);
       skewJoinMapJoinTask.setFetchSource(currTask.isFetchSource());
 
       bigKeysDirToTaskMap.put(bigKeyDirPath, skewJoinMapJoinTask);
@@ -353,7 +354,7 @@ public final class GenMRSkewJoinProcessor {
         new ConditionalResolverSkewJoinCtx(bigKeysDirToTaskMap, children);
 
     ConditionalWork cndWork = new ConditionalWork(listWorks);
-    ConditionalTask cndTsk = (ConditionalTask) TaskFactory.get(cndWork, parseCtx.getConf());
+    ConditionalTask cndTsk = (ConditionalTask) TaskFactory.get(cndWork);
     cndTsk.setListTasks(listTasks);
     cndTsk.setResolver(new ConditionalResolverSkewJoin());
     cndTsk.setResolverCtx(context);

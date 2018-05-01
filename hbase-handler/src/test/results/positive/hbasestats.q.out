@@ -25,7 +25,6 @@ POSTHOOK: query: desc formatted users
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@users
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 state               	string              	                    
 country             	string              	                    
@@ -39,6 +38,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"country\":\"true\",\"country_id\":\"true\",\"key\":\"true\",\"state\":\"true\"}}
+	bucketing_version   	2                   
 	numFiles            	0                   
 	numRows             	0                   
 	rawDataSize         	0                   
@@ -102,6 +102,7 @@ STAGE PLANS:
                     output format: org.apache.hadoop.hive.hbase.HiveHBaseTableOutputFormat
                     serde: org.apache.hadoop.hive.hbase.HBaseSerDe
                     name: default.users
+      Execution mode: vectorized
 
 PREHOOK: query: INSERT OVERWRITE TABLE users SELECT 'user1', 'IA', 'USA', 0 FROM src
 PREHOOK: type: QUERY
@@ -118,7 +119,6 @@ POSTHOOK: query: desc formatted users
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@users
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 state               	string              	                    
 country             	string              	                    
@@ -131,6 +131,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	0                   
 	numRows             	0                   
@@ -183,7 +184,6 @@ POSTHOOK: query: desc formatted users
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@users
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 state               	string              	                    
 country             	string              	                    
@@ -196,6 +196,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	0                   
 	numRows             	0                   
@@ -239,7 +240,6 @@ POSTHOOK: query: desc formatted users
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@users
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 state               	string              	                    
 country             	string              	                    
@@ -253,6 +253,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	0                   
 	numRows             	2                   
@@ -310,7 +311,6 @@ POSTHOOK: query: desc formatted users
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@users
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 state               	string              	                    
 country             	string              	                    
@@ -323,6 +323,7 @@ Retention:          	0
 #### A masked pattern was here ####
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	numFiles            	0                   
 	numRows             	2                   
@@ -363,20 +364,21 @@ STAGE PLANS:
                 aggregations: count()
                 mode: hash
                 outputColumnNames: _col0
-                Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
+                Statistics: Num rows: 1 Data size: 8 Basic stats: PARTIAL Column stats: COMPLETE
                 Reduce Output Operator
                   sort order: 
-                  Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
+                  Statistics: Num rows: 1 Data size: 8 Basic stats: PARTIAL Column stats: COMPLETE
                   value expressions: _col0 (type: bigint)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           aggregations: count(VALUE._col0)
           mode: mergepartial
           outputColumnNames: _col0
-          Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
+          Statistics: Num rows: 1 Data size: 8 Basic stats: PARTIAL Column stats: COMPLETE
           File Output Operator
             compressed: false
-            Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
+            Statistics: Num rows: 1 Data size: 8 Basic stats: PARTIAL Column stats: COMPLETE
             table:
                 input format: org.apache.hadoop.mapred.SequenceFileInputFormat
                 output format: org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat

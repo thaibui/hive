@@ -61,6 +61,7 @@ STAGE PLANS:
                         sort order: 
                         Statistics: Num rows: 1 Data size: 8 Basic stats: COMPLETE Column stats: COMPLETE
                         value expressions: _col0 (type: bigint)
+            Execution mode: vectorized
         Map 6 
             Map Operator Tree:
                 TableScan
@@ -197,7 +198,8 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-3
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-1
     Move Operator
@@ -210,7 +212,8 @@ STAGE PLANS:
               name: default.dest2
 
   Stage: Stage-4
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM (select 'tst1' as key, cast(count(1) as string) as value from src s1
                          UNION  ALL  

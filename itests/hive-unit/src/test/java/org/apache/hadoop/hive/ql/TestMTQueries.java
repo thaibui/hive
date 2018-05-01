@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -42,8 +42,10 @@ public class TestMTQueries extends BaseTestQueries {
       // derby fails creating multiple stats aggregator concurrently
       util.getConf().setBoolean("hive.exec.submitviachild", true);
       util.getConf().setBoolean("hive.exec.submit.local.task.via.child", true);
+      util.getConf().setBoolean("hive.vectorized.execution.enabled", false);
       util.getConf().set("hive.stats.dbclass", "fs");
       util.getConf().set("hive.mapred.mode", "nonstrict");
+      util.getConf().set("hive.stats.column.autogather", "false");
     }
     boolean success = QTestUtil.queryListRunnerMultiThreaded(qfiles, qts);
     if (!success) {

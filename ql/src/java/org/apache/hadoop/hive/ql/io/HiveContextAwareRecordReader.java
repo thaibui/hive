@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -326,7 +326,7 @@ public abstract class HiveContextAwareRecordReader<K, V> implements RecordReader
               .getMapWork(jobConf).getPathToPartitionInfo();
           }
           part = HiveFileFormatUtils
-              .getPartitionDescFromPathRecursively(pathToPartitionInfo,
+              .getFromPathRecursively(pathToPartitionInfo,
                   filePath, IOPrepareCache.get().getPartitionDescMap());
         } catch (AssertionError ae) {
           LOG.info("Cannot get partition description from " + this.ioCxtRef.getInputPath()

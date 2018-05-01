@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.antlr.runtime.TokenRewriteStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -34,23 +33,17 @@ import org.apache.hadoop.hive.common.FileUtils;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
 import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.QueryState;
 import org.apache.hadoop.hive.ql.exec.ExplainTask;
 import org.apache.hadoop.hive.ql.exec.FetchTask;
-import org.apache.hadoop.hive.ql.exec.StatsTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration.AnalyzeState;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration.VectorizationDetailLevel;
 import org.apache.hadoop.hive.ql.plan.ExplainWork;
-import org.apache.hadoop.hive.ql.processors.CommandProcessor;
-import org.apache.hadoop.hive.ql.processors.CommandProcessorFactory;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
-import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.ql.stats.StatsAggregator;
 import org.apache.hadoop.hive.ql.stats.StatsCollectionContext;
 import org.apache.hadoop.hive.ql.stats.fs.FSStatsAggregator;
@@ -140,7 +133,7 @@ public class ExplainSemanticAnalyzer extends BaseSemanticAnalyzer {
         runCtx = new Context(conf);
         // runCtx and ctx share the configuration, but not isExplainPlan()
         runCtx.setExplainConfig(config);
-        Driver driver = new Driver(conf, runCtx);
+        Driver driver = new Driver(conf, runCtx, queryState.getLineageState());
         CommandProcessorResponse ret = driver.run(query);
         if(ret.getResponseCode() == 0) {
           // Note that we need to call getResults for simple fetch optimization.
@@ -153,8 +146,6 @@ public class ExplainSemanticAnalyzer extends BaseSemanticAnalyzer {
         config.setOpIdToRuntimeNumRows(aggregateStats(config.getExplainRootPath()));
       } catch (IOException e1) {
         throw new SemanticException(e1);
-      } catch (CommandNeedRetryException e) {
-        throw new SemanticException(e);
       }
       ctx.resetOpContext();
       ctx.resetStream();
@@ -217,7 +208,7 @@ public class ExplainSemanticAnalyzer extends BaseSemanticAnalyzer {
     work.setAppendTaskType(
         HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVEEXPLAINDEPENDENCYAPPENDTASKTYPES));
 
-    ExplainTask explTask = (ExplainTask) TaskFactory.get(work, conf);
+    ExplainTask explTask = (ExplainTask) TaskFactory.get(work);
 
     fieldList = explTask.getResultSchema();
     rootTasks.add(explTask);

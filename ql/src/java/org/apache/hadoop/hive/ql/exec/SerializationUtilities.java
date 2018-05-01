@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -235,7 +235,7 @@ public class SerializationUtilities {
       ((Kryo.DefaultInstantiatorStrategy) kryo.getInstantiatorStrategy())
           .setFallbackInstantiatorStrategy(
               new StdInstantiatorStrategy());
-      removeField(kryo, Operator.class, "colExprMap");
+      removeField(kryo, AbstractOperatorDesc.class, "colExprMap");
       removeField(kryo, AbstractOperatorDesc.class, "statistics");
       kryo.register(MapWork.class);
       kryo.register(ReduceWork.class);

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,10 +20,10 @@ package org.apache.hadoop.hive.ql.security.authorization.plugin;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.hive.common.classification.InterfaceAudience.Private;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.DefaultMetaStoreFilterHookImpl;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.ql.security.authorization.plugin.HivePrivilegeObject.HivePrivilegeObjectType;
@@ -38,12 +38,13 @@ public class AuthorizationMetaStoreFilterHook extends DefaultMetaStoreFilterHook
 
   public static final Logger LOG = LoggerFactory.getLogger(AuthorizationMetaStoreFilterHook.class);
 
-  public AuthorizationMetaStoreFilterHook(HiveConf conf) {
+  public AuthorizationMetaStoreFilterHook(Configuration conf) {
     super(conf);
   }
 
   @Override
-  public List<String> filterTableNames(String dbName, List<String> tableList) throws MetaException {
+  public List<String> filterTableNames(String catName, String dbName, List<String> tableList)
+      throws MetaException {
     List<HivePrivilegeObject> listObjs = getHivePrivObjects(dbName, tableList);
     return getTableNames(getFilteredObjects(listObjs));
   }

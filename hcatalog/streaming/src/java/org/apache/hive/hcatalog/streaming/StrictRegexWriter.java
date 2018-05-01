@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,9 +25,9 @@ import java.util.Properties;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.RegexSerDe;
@@ -124,15 +124,15 @@ public class StrictRegexWriter extends AbstractRecordWriter {
 
 
   @Override
-  public void write(long transactionId, byte[] record)
+  public void write(long writeId, byte[] record)
           throws StreamingIOFailure, SerializationError {
     try {
       Object encodedRow = encode(record);
       int bucket = getBucket(encodedRow);
-      getRecordUpdater(bucket).insert(transactionId, encodedRow);
+      getRecordUpdater(bucket).insert(writeId, encodedRow);
     } catch (IOException e) {
-      throw new StreamingIOFailure("Error writing record in transaction("
-              + transactionId + ")", e);
+      throw new StreamingIOFailure("Error writing record in transaction write id("
+              + writeId + ")", e);
     }
   }
 

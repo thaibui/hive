@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * Pig {@link org.apache.pig.LoadFunc} to read data from HCat
  */
 @InterfaceAudience.Public
-@InterfaceStability.Evolving
+@InterfaceStability.Stable
 public class HCatLoader extends HCatBaseLoader {
   private static final Logger LOG = LoggerFactory.getLogger(HCatLoader.class);
 

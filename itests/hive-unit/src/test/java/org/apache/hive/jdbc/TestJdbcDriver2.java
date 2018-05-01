@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -28,6 +28,7 @@ import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.processors.DfsProcessor;
+import org.apache.hadoop.hive.ql.stats.StatsUtils;
 import org.apache.hive.common.util.HiveVersionInfo;
 import org.apache.hive.jdbc.Utils.JdbcConnectionParams;
 import org.apache.hive.service.cli.HiveSQLException;
@@ -45,6 +46,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.Exception;
 import java.lang.Object;
@@ -489,6 +491,25 @@ public class TestJdbcDriver2 {
     assertNotNull(
         "Setting to an unknown type should throw an exception",
         expectedException);
+  }
+
+  @Test
+  public void testPrepareStatementWithSetBinaryStream() throws SQLException {
+    PreparedStatement stmt = con.prepareStatement("select under_col from " + tableName + " where value=?");
+    stmt.setBinaryStream(1, new ByteArrayInputStream("'val_238' or under_col <> 0".getBytes()));
+    ResultSet res = stmt.executeQuery();
+    assertFalse(res.next());
+  }
+
+  @Test
+  public void testPrepareStatementWithSetString() throws SQLException {
+    PreparedStatement stmt = con.prepareStatement("select under_col from " + tableName + " where value=?");
+    stmt.setString(1, "val_238\\' or under_col <> 0 --");
+    ResultSet res = stmt.executeQuery();
+    assertFalse(res.next());
+    stmt.setString(1,  "anyStringHere\\' or 1=1 --");
+    res = stmt.executeQuery();
+    assertFalse(res.next());
   }
 
   private PreparedStatement createPreapredStatementUsingSetObject(String sql) throws SQLException {
@@ -1089,9 +1110,10 @@ public class TestJdbcDriver2 {
     assertNotNull("Statement is null", stmt);
 
     String tableNameInDbUnique = tableName + "_unique";
+    String fullTestTableName = StatsUtils.getFullyQualifiedTableName(testDbName, tableNameInDbUnique);
     // create a table with a unique name in testDb
-    stmt.execute("drop table if exists " + testDbName + "." + tableNameInDbUnique);
-    stmt.execute("create table " + testDbName + "." + tableNameInDbUnique
+    stmt.execute("drop table if exists " + fullTestTableName);
+    stmt.execute("create table " + fullTestTableName
         + " (under_col int comment 'the under column', value string) comment '" + tableComment
         + "'");
 
@@ -1106,7 +1128,7 @@ public class TestJdbcDriver2 {
     }
     assertTrue("table name " + tableNameInDbUnique
         + " not found in SHOW TABLES result set", testTableExists);
-    stmt.execute("drop table if exists " + testDbName + "." + tableNameInDbUnique);
+    stmt.execute("drop table if exists " + fullTestTableName);
     stmt.close();
   }
 
@@ -1226,11 +1248,11 @@ public class TestJdbcDriver2 {
     Set<String> viewOrTableArray = new HashSet<String>();
     viewOrTableArray.addAll(tableTypeNames);
     viewOrTableArray.add(viewTypeName);
-    String testTblWithDb = testDbName + "." + tableName;
-    String testPartTblWithDb = testDbName + "." + partitionedTableName;
-    String testDataTypeTblWithDb = testDbName + "." + dataTypeTableName;
-    String testViewWithDb = testDbName + "." + viewName;
-    String testExtTblWithDb = testDbName + "." + externalTableName;
+    String testTblWithDb = StatsUtils.getFullyQualifiedTableName(testDbName, tableName);
+    String testPartTblWithDb = StatsUtils.getFullyQualifiedTableName(testDbName, partitionedTableName);
+    String testDataTypeTblWithDb = StatsUtils.getFullyQualifiedTableName(testDbName, dataTypeTableName);
+    String testViewWithDb = StatsUtils.getFullyQualifiedTableName(testDbName, viewName);
+    String testExtTblWithDb = StatsUtils.getFullyQualifiedTableName(testDbName, externalTableName);
 
     Map<Object[], String[]> tests = new IdentityHashMap<Object[], String[]>();
     tests.put(new Object[] { null, "testjdbc%", ALL }, new String[] { testTblWithDb,
@@ -1273,8 +1295,9 @@ public class TestJdbcDriver2 {
       while (rs.next()) {
         String resultDbName = rs.getString("TABLE_SCHEM");
         String resultTableName = rs.getString("TABLE_NAME");
-        assertTrue("Invalid table " + resultDbName + "." + resultTableName + " for test "
-            + debugString, expectedTables.contains(resultDbName + "." + resultTableName));
+        String fullTableName = StatsUtils.getFullyQualifiedTableName(resultDbName, resultTableName);
+        assertTrue("Invalid table " + fullTableName + " for test " + debugString,
+            expectedTables.contains(fullTableName));
 
         String resultTableComment = rs.getString("REMARKS");
         assertTrue("Missing comment on the table.", resultTableComment.length() > 0);
@@ -1466,6 +1489,14 @@ public class TestJdbcDriver2 {
     DatabaseMetaData meta = con.getMetaData();
 
     assertEquals("Apache Hive", meta.getDatabaseProductName());
+    String[] keywords = meta.getSQLKeywords().toLowerCase().split(",");
+    // Check a random one. These can change w/Hive versions.
+    boolean found = false;
+    for (String keyword : keywords) {
+     found = "limit".equals(keyword);
+     if (found) break;
+    }
+    assertTrue(found);
     assertEquals(HiveVersionInfo.getVersion(), meta.getDatabaseProductVersion());
     assertEquals(System.getProperty("hive.version"), meta.getDatabaseProductVersion());
     assertTrue("verifying hive version pattern. got " + meta.getDatabaseProductVersion(),
@@ -1482,6 +1513,30 @@ public class TestJdbcDriver2 {
     // -1 indicates malformed version.
     assertTrue(meta.getDatabaseMajorVersion() > -1);
     assertTrue(meta.getDatabaseMinorVersion() > -1);
+  }
+
+  @Test
+  public void testClientInfo() throws SQLException {
+    DatabaseMetaData meta = con.getMetaData();
+    ResultSet res = meta.getClientInfoProperties();
+    try {
+      assertTrue(res.next());
+      assertEquals("ApplicationName", res.getString(1));
+      assertEquals(1000, res.getInt("MAX_LEN"));
+      assertFalse(res.next());
+    } catch (Exception e) {
+      String msg = "Unexpected exception: " + e;
+      LOG.info(msg, e);
+      fail(msg);
+    }
+
+    Connection conn = getConnection("");
+    try {
+      conn.setClientInfo("ApplicationName", "test");
+      assertEquals("test", conn.getClientInfo("ApplicationName"));
+    } finally {
+      conn.close();
+    }
   }
 
   @Test
@@ -1524,6 +1579,8 @@ public class TestJdbcDriver2 {
   @Test
   public void testResultSetMetaData() throws SQLException {
     Statement stmt = con.createStatement();
+
+    stmt.execute("set " + HiveConf.ConfVars.HIVE_VECTORIZATION_ENABLED.varname + "=false");
 
     ResultSet res =
         stmt.executeQuery("select c1, c2, c3, c4, c5 as a, c6, c7, c8, c9, c10, c11, c12, "

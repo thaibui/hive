@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -268,7 +268,7 @@ public final class HiveExpandDistinctAggregatesRule extends RelOptRule {
       aggregateCalls.add(aggregateCall);
     }
     Aggregate aggregate = new HiveAggregate(cluster, cluster.traitSetOf(HiveRelNode.CONVENTION), gbInputRel,
-        false, ImmutableBitSet.of(), null, aggregateCalls);
+        ImmutableBitSet.of(), null, aggregateCalls);
 
     // create the project after GB. For those repeated values, e.g., select
     // count(distinct x, y), count(distinct y, x), we find the correct mapping.
@@ -327,10 +327,10 @@ public final class HiveExpandDistinctAggregatesRule extends RelOptRule {
     // Create GroupingID column
     AggregateCall aggCall = AggregateCall.create(HiveGroupingID.INSTANCE, false,
         new ImmutableList.Builder<Integer>().build(), -1, this.cluster.getTypeFactory()
-            .createSqlType(SqlTypeName.INTEGER), HiveGroupingID.INSTANCE.getName());
+            .createSqlType(SqlTypeName.BIGINT), HiveGroupingID.INSTANCE.getName());
     aggregateCalls.add(aggCall);
     return new HiveAggregate(cluster, cluster.traitSetOf(HiveRelNode.CONVENTION),
-        aggregate.getInput(), true, groupSet, origGroupSets, aggregateCalls);
+        aggregate.getInput(), groupSet, origGroupSets, aggregateCalls);
   }
 
   /**

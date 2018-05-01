@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -209,7 +209,7 @@ public class HadoopJobExecHelper {
     }
     // check for number of created files
     Counters.Counter cntr = ctrs.findCounter(HiveConf.getVar(job, ConfVars.HIVECOUNTERGROUP),
-        Operator.HIVECOUNTERCREATEDFILES);
+        Operator.HIVE_COUNTER_CREATED_FILES);
     long numFiles = cntr != null ? cntr.getValue() : 0;
     long upperLimit = HiveConf.getLongVar(job, HiveConf.ConfVars.MAXCREATEDFILES);
     if (numFiles > upperLimit) {
@@ -450,7 +450,7 @@ public class HadoopJobExecHelper {
       }
       console.printInfo(getJobStartMsg(rj.getID()) + ", Tracking URL = "
           + rj.getTrackingURL());
-      console.printInfo("Kill Command = " + HiveConf.getVar(job, HiveConf.ConfVars.HADOOPBIN)
+      console.printInfo("Kill Command = " + HiveConf.getVar(job, ConfVars.MAPREDBIN)
           + " job  -kill " + rj.getID());
     }
   }

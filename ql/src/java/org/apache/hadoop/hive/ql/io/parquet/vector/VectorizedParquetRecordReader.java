@@ -1,9 +1,13 @@
-/**
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -11,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hive.ql.io.parquet.vector;
 
-import com.google.common.annotations.VisibleForTesting;
+package org.apache.hadoop.hive.ql.io.parquet.vector;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -22,10 +25,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DataCache;
 import org.apache.hadoop.hive.common.io.FileMetadataCache;
 import org.apache.hadoop.hive.common.io.encoded.MemoryBufferOrBuffers;
-
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.llap.LlapCacheAwareFs;
+import org.apache.hadoop.hive.llap.LlapUtil;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
 import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatchCtx;
@@ -36,6 +39,8 @@ import org.apache.hadoop.hive.ql.io.parquet.ProjectionPusher;
 import org.apache.hadoop.hive.ql.io.parquet.read.DataWritableReadSupport;
 import org.apache.hadoop.hive.serde2.ColumnProjectionUtils;
 import org.apache.hadoop.hive.serde2.SerDeStats;
+import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.StructTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.NullWritable;
@@ -59,8 +64,10 @@ import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.hadoop.util.HadoopStreams;
 import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.SeekableInputStream;
+import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.InvalidSchemaException;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,9 +100,9 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
   private List<String> columnNamesList;
   private List<TypeInfo> columnTypesList;
   private VectorizedRowBatchCtx rbCtx;
-  private List<Integer> indexColumnsWanted;
   private Object[] partitionValues;
   private Path cacheFsPath;
+  private static final int MAP_DEFINITION_LEVEL_MAX = 3;
 
   /**
    * For each request column, the reader to read this column. This is NULL if this column
@@ -119,22 +126,6 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
    */
   protected long totalRowCount = 0;
 
-  @VisibleForTesting
-  public VectorizedParquetRecordReader(
-    InputSplit inputSplit,
-    JobConf conf) {
-    try {
-      serDeStats = new SerDeStats();
-      projectionPusher = new ProjectionPusher();
-      initialize(inputSplit, conf);
-      colsToInclude = ColumnProjectionUtils.getReadColumnIDs(conf);
-      rbCtx = Utilities.getVectorizedRowBatchCtx(conf);
-    } catch (Throwable e) {
-      LOG.error("Failed to create the vectorized reader due to exception " + e);
-      throw new RuntimeException(e);
-    }
-  }
-
   public VectorizedParquetRecordReader(
       org.apache.hadoop.mapred.InputSplit oldInputSplit, JobConf conf) {
     this(oldInputSplit, conf, null, null, null);
@@ -149,12 +140,14 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
       this.cacheConf = cacheConf;
       serDeStats = new SerDeStats();
       projectionPusher = new ProjectionPusher();
+      colsToInclude = ColumnProjectionUtils.getReadColumnIDs(conf);
+      //initialize the rowbatchContext
+      jobConf = conf;
+      rbCtx = Utilities.getVectorizedRowBatchCtx(jobConf);
       ParquetInputSplit inputSplit = getSplit(oldInputSplit, conf);
       if (inputSplit != null) {
         initialize(inputSplit, conf);
       }
-      colsToInclude = ColumnProjectionUtils.getReadColumnIDs(conf);
-      rbCtx = Utilities.getVectorizedRowBatchCtx(conf);
       initPartitionValues((FileSplit) oldInputSplit, conf);
     } catch (Throwable e) {
       LOG.error("Failed to create the vectorized reader due to exception " + e);
@@ -180,7 +173,6 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
     if (oldSplit == null) {
       return;
     }
-    jobConf = configuration;
     ParquetMetadata footer;
     List<BlockMetaData> blocks;
     ParquetInputSplit split = (ParquetInputSplit) oldSplit;
@@ -196,6 +188,7 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
 
     // if task.side.metadata is set, rowGroupOffsets is null
     Object cacheKey = null;
+    String cacheTag = null;
     // TODO: also support fileKey in splits, like OrcSplit does
     if (metadataCache != null) {
       cacheKey = HdfsUtils.getFileId(file.getFileSystem(configuration), file,
@@ -203,6 +196,9 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
         HiveConf.getBoolVar(cacheConf, ConfVars.LLAP_CACHE_DEFAULT_FS_FILE_ID));
     }
     if (cacheKey != null) {
+      if (HiveConf.getBoolVar(cacheConf, ConfVars.LLAP_TRACK_CACHE_USAGE)) {
+        cacheTag = LlapUtil.getDbAndTableNameForMetrics(file, true);
+      }
       // If we are going to use cache, change the path to depend on file ID for extra consistency.
       FileSystem fs = file.getFileSystem(configuration);
       if (cacheKey instanceof Long && HiveConf.getBoolVar(
@@ -215,13 +211,13 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
       //TODO check whether rowGroupOffSets can be null
       // then we need to apply the predicate push down filter
       footer = readSplitFooter(
-          configuration, file, cacheKey, range(split.getStart(), split.getEnd()));
+          configuration, file, cacheKey, range(split.getStart(), split.getEnd()), cacheTag);
       MessageType fileSchema = footer.getFileMetaData().getSchema();
       FilterCompat.Filter filter = getFilter(configuration);
       blocks = filterRowGroups(filter, footer.getBlocks(), fileSchema);
     } else {
       // otherwise we find the row groups that were selected on the client
-      footer = readSplitFooter(configuration, file, cacheKey, NO_FILTER);
+      footer = readSplitFooter(configuration, file, cacheKey, NO_FILTER, cacheTag);
       Set<Long> offsets = new HashSet<>();
       for (long offset : rowGroupOffsets) {
         offsets.add(offset);
@@ -254,37 +250,17 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
     }
     this.fileSchema = footer.getFileMetaData().getSchema();
 
-    MessageType tableSchema;
-    if (indexAccess) {
-      List<Integer> indexSequence = new ArrayList<>();
-
-      // Generates a sequence list of indexes
-      for(int i = 0; i < columnNamesList.size(); i++) {
-        indexSequence.add(i);
-      }
-
-      tableSchema = DataWritableReadSupport.getSchemaByIndex(fileSchema, columnNamesList,
-        indexSequence);
-    } else {
-      tableSchema = DataWritableReadSupport.getSchemaByName(fileSchema, columnNamesList,
-        columnTypesList);
-    }
-
-    indexColumnsWanted = ColumnProjectionUtils.getReadColumnIDs(configuration);
-    if (!ColumnProjectionUtils.isReadAllColumns(configuration) && !indexColumnsWanted.isEmpty()) {
-      requestedSchema =
-        DataWritableReadSupport.getSchemaByIndex(tableSchema, columnNamesList, indexColumnsWanted);
-    } else {
-      requestedSchema = fileSchema;
-    }
-
-    Path path = wrapPathForCache(file, cacheKey, configuration, blocks);
+    colsToInclude = ColumnProjectionUtils.getReadColumnIDs(configuration);
+    requestedSchema = DataWritableReadSupport
+      .getRequestedSchema(indexAccess, columnNamesList, columnTypesList, fileSchema, configuration);
+ 
+    Path path = wrapPathForCache(file, cacheKey, configuration, blocks, cacheTag);
     this.reader = new ParquetFileReader(
       configuration, footer.getFileMetaData(), path, blocks, requestedSchema.getColumns());
   }
 
   private Path wrapPathForCache(Path path, Object fileKey, JobConf configuration,
-      List<BlockMetaData> blocks) throws IOException {
+      List<BlockMetaData> blocks, String tag) throws IOException {
     if (fileKey == null || cache == null) {
       return path;
     }
@@ -305,13 +281,13 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
     // Register the cache-aware path so that Parquet reader would go thru it.
     configuration.set("fs." + LlapCacheAwareFs.SCHEME + ".impl",
         LlapCacheAwareFs.class.getCanonicalName());
-    path = LlapCacheAwareFs.registerFile(cache, path, fileKey, chunkIndex, configuration);
+    path = LlapCacheAwareFs.registerFile(cache, path, fileKey, chunkIndex, configuration, tag);
     this.cacheFsPath = path;
     return path;
   }
 
-  private ParquetMetadata readSplitFooter(
-      JobConf configuration, final Path file, Object cacheKey, MetadataFilter filter) throws IOException {
+  private ParquetMetadata readSplitFooter(JobConf configuration, final Path file,
+      Object cacheKey, MetadataFilter filter, String tag) throws IOException {
     MemoryBufferOrBuffers footerData = (cacheKey == null || metadataCache == null) ? null
         : metadataCache.getFileMetadata(cacheKey);
     if (footerData != null) {
@@ -341,7 +317,7 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
       if (LOG.isInfoEnabled()) {
         LOG.info("Caching the footer of length " + footerLength + " for " + cacheKey);
       }
-      footerData = metadataCache.putFileMetadata(cacheKey, footerLength, stream);
+      footerData = metadataCache.putFileMetadata(cacheKey, footerLength, stream, tag);
       try {
         return ParquetFileReader.readFooter(new ParquetFooterInputFromCache(footerData), filter);
       } finally {
@@ -453,11 +429,17 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
     List<Type> types = requestedSchema.getFields();
     columnReaders = new VectorizedColumnReader[columns.size()];
 
-    if (!ColumnProjectionUtils.isReadAllColumns(jobConf) && !indexColumnsWanted.isEmpty()) {
-      for (int i = 0; i < types.size(); ++i) {
-        columnReaders[i] =
-          buildVectorizedParquetReader(columnTypesList.get(indexColumnsWanted.get(i)), types.get(i),
-            pages, requestedSchema.getColumns(), skipTimestampConversion, 0);
+    if (!ColumnProjectionUtils.isReadAllColumns(jobConf)) {
+      //certain queries like select count(*) from table do not have
+      //any projected columns and still have isReadAllColumns as false
+      //in such cases columnReaders are not needed
+      //However, if colsToInclude is not empty we should initialize each columnReader
+      if(!colsToInclude.isEmpty()) {
+        for (int i = 0; i < types.size(); ++i) {
+          columnReaders[i] =
+              buildVectorizedParquetReader(columnTypesList.get(colsToInclude.get(i)), types.get(i),
+                  pages, requestedSchema.getColumns(), skipTimestampConversion, 0);
+        }
       }
     } else {
       for (int i = 0; i < types.size(); ++i) {
@@ -485,6 +467,19 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
     return res;
   }
 
+  // TODO support only non nested case
+  private PrimitiveType getElementType(Type type) {
+    if (type.isPrimitive()) {
+      return type.asPrimitiveType();
+    }
+    if (type.asGroupType().getFields().size() > 1) {
+      throw new RuntimeException(
+          "Current Parquet Vectorization reader doesn't support nested type");
+    }
+    return type.asGroupType().getFields().get(0).asGroupType().getFields().get(0)
+        .asPrimitiveType();
+  }
+
   // Build VectorizedParquetColumnReader via Hive typeInfo and Parquet schema
   private VectorizedColumnReader buildVectorizedParquetReader(
     TypeInfo typeInfo,
@@ -500,9 +495,13 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
       if (columnDescriptors == null || columnDescriptors.isEmpty()) {
         throw new RuntimeException(
           "Failed to find related Parquet column descriptor with type " + type);
-      } else {
+      }
+      if (fileSchema.getColumns().contains(descriptors.get(0))) {
         return new VectorizedPrimitiveColumnReader(descriptors.get(0),
-          pages.getPageReader(descriptors.get(0)), skipTimestampConversion, type);
+          pages.getPageReader(descriptors.get(0)), skipTimestampConversion, type, typeInfo);
+      } else {
+        // Support for schema evolution
+        return new VectorizedDummyColumnReader();
       }
     case STRUCT:
       StructTypeInfo structTypeInfo = (StructTypeInfo) typeInfo;
@@ -523,10 +522,71 @@ public class VectorizedParquetRecordReader extends ParquetRecordReaderBase
       }
       return new VectorizedStructColumnReader(fieldReaders);
     case LIST:
+      checkListColumnSupport(((ListTypeInfo) typeInfo).getListElementTypeInfo());
+      if (columnDescriptors == null || columnDescriptors.isEmpty()) {
+        throw new RuntimeException(
+            "Failed to find related Parquet column descriptor with type " + type);
+      }
+
+      return new VectorizedListColumnReader(descriptors.get(0),
+          pages.getPageReader(descriptors.get(0)), skipTimestampConversion, getElementType(type),
+          typeInfo);
     case MAP:
+      if (columnDescriptors == null || columnDescriptors.isEmpty()) {
+        throw new RuntimeException(
+            "Failed to find related Parquet column descriptor with type " + type);
+      }
+
+      // to handle the different Map definition in Parquet, eg:
+      // definition has 1 group:
+      //   repeated group map (MAP_KEY_VALUE)
+      //     {required binary key (UTF8); optional binary value (UTF8);}
+      // definition has 2 groups:
+      //   optional group m1 (MAP) {
+      //     repeated group map (MAP_KEY_VALUE)
+      //       {required binary key (UTF8); optional binary value (UTF8);}
+      //   }
+      int nestGroup = 0;
+      GroupType groupType = type.asGroupType();
+      // if FieldCount == 2, get types for key & value,
+      // otherwise, continue to get the group type until MAP_DEFINITION_LEVEL_MAX.
+      while (groupType.getFieldCount() < 2) {
+        if (nestGroup > MAP_DEFINITION_LEVEL_MAX) {
+          throw new RuntimeException(
+              "More than " + MAP_DEFINITION_LEVEL_MAX + " level is found in Map definition, " +
+                  "Failed to get the field types for Map with type " + type);
+        }
+        groupType = groupType.getFields().get(0).asGroupType();
+        nestGroup++;
+      }
+      List<Type> kvTypes = groupType.getFields();
+      VectorizedListColumnReader keyListColumnReader = new VectorizedListColumnReader(
+          descriptors.get(0), pages.getPageReader(descriptors.get(0)), skipTimestampConversion,
+          kvTypes.get(0), typeInfo);
+      VectorizedListColumnReader valueListColumnReader = new VectorizedListColumnReader(
+          descriptors.get(1), pages.getPageReader(descriptors.get(1)), skipTimestampConversion,
+          kvTypes.get(1), typeInfo);
+      return new VectorizedMapColumnReader(keyListColumnReader, valueListColumnReader);
     case UNION:
     default:
       throw new RuntimeException("Unsupported category " + typeInfo.getCategory().name());
+    }
+  }
+
+  /**
+   * Check if the element type in list is supported by vectorization read.
+   * Supported type: INT, BYTE, SHORT, DATE, INTERVAL_YEAR_MONTH, LONG, BOOLEAN, DOUBLE, BINARY, STRING, CHAR, VARCHAR,
+   *                 FLOAT, DECIMAL
+   */
+  private void checkListColumnSupport(TypeInfo elementType) {
+    if (elementType instanceof PrimitiveTypeInfo) {
+      switch (((PrimitiveTypeInfo)elementType).getPrimitiveCategory()) {
+        case INTERVAL_DAY_TIME:
+        case TIMESTAMP:
+          throw new RuntimeException("Unsupported primitive type used in list:: " + elementType);
+      }
+    } else {
+      throw new RuntimeException("Unsupported type used in list:" + elementType);
     }
   }
 }

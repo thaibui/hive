@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -31,8 +31,8 @@ public class IfExprStringGroupColumnVarCharScalar extends IfExprStringGroupColum
 
   private static final long serialVersionUID = 1L;
 
-  public IfExprStringGroupColumnVarCharScalar(int arg1Column, int arg2Column, HiveVarchar arg3Scalar, int outputColumn) {
-    super(arg1Column, arg2Column, arg3Scalar.getValue().getBytes(), outputColumn);
+  public IfExprStringGroupColumnVarCharScalar(int arg1Column, int arg2Column, HiveVarchar arg3Scalar, int outputColumnNum) {
+    super(arg1Column, arg2Column, arg3Scalar.getValue().getBytes(), outputColumnNum);
   }
 
   public IfExprStringGroupColumnVarCharScalar() {

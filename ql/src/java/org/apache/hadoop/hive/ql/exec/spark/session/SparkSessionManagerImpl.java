@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -79,7 +79,7 @@ public class SparkSessionManagerImpl implements SparkSessionManager {
       synchronized (this) {
         if (!inited) {
           LOG.info("Setting up the session manager.");
-          Map<String, String> conf = HiveSparkClientFactory.initiateSparkConf(hiveConf);
+          Map<String, String> conf = HiveSparkClientFactory.initiateSparkConf(hiveConf, null);
           try {
             SparkClientFactory.initialize(conf);
             inited = true;

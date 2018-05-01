@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -207,7 +207,7 @@ public class TypeCheckCtx implements NodeProcessorCtx {
     if (LOG.isDebugEnabled()) {
       // Logger the callstack from which the error has been set.
       LOG.debug("Setting error: [" + error + "] from "
-          + ((errorSrcNode == null) ? "null" : errorSrcNode.toStringTree()), new Exception());
+          + ((errorSrcNode == null) ? "null" : errorSrcNode.toStringTree())/*, new Exception()*/);
     }
     this.error = error;
     this.errorSrcNode = errorSrcNode;

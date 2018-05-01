@@ -4,9 +4,13 @@ CREATE EXTERNAL TABLE druid_table_1
 STORED BY 'org.apache.hadoop.hive.druid.QTestDruidStorageHandler'
 TBLPROPERTIES ("druid.datasource" = "wikipedia");
 
-DESCRIBE FORMATTED druid_table_1;
+-- DESCRIBE FORMATTED druid_table_1;
 
 -- GRANULARITY: ALL
+EXPLAIN SELECT count(`__time`) from druid_table_1 where `__time` >= '2010-01-01 00:00:00 UTC' AND  `__time` <= '2012-03-01 00:00:00 UTC' OR  added <= 0;
+
+EXPLAIN SELECT count(`__time`) from druid_table_1 where `__time` <= '2010-01-01 00:00:00 UTC';
+
 EXPLAIN
 SELECT max(added), sum(variation)
 FROM druid_table_1;
@@ -23,6 +27,8 @@ SELECT floor_year(`__time`), max(added), sum(variation)
 FROM druid_table_1
 GROUP BY floor_year(`__time`);
 
+-- @TODO FIXME https://issues.apache.org/jira/browse/CALCITE-2222
+-- The current plan of this query is not optimal it can be planned as time series instead of scan
 -- GRANULARITY: QUARTER
 EXPLAIN
 SELECT floor_quarter(`__time`), max(added), sum(variation)
@@ -77,8 +83,8 @@ EXPLAIN
 SELECT floor_hour(`__time`), max(added), sum(variation)
 FROM druid_table_1
 WHERE floor_hour(`__time`)
-    BETWEEN CAST('2010-01-01 00:00:00' AS TIMESTAMP)
-        AND CAST('2014-01-01 00:00:00' AS TIMESTAMP)
+    BETWEEN CAST('2010-01-01 00:00:00' AS TIMESTAMP WITH LOCAL TIME ZONE)
+        AND CAST('2014-01-01 00:00:00' AS TIMESTAMP WITH LOCAL TIME ZONE)
 GROUP BY floor_hour(`__time`);
 
 -- WITH FILTER ON TIME
@@ -90,5 +96,16 @@ FROM
   FROM druid_table_1
   GROUP BY floor_hour(`__time`)
 ) subq
-WHERE subq.h BETWEEN CAST('2010-01-01 00:00:00' AS TIMESTAMP)
-        AND CAST('2014-01-01 00:00:00' AS TIMESTAMP);
+WHERE subq.h BETWEEN CAST('2010-01-01 00:00:00' AS TIMESTAMP WITH LOCAL TIME ZONE)
+        AND CAST('2014-01-01 00:00:00' AS TIMESTAMP WITH LOCAL TIME ZONE);
+
+-- Simplification of count(__time) as count(*) since time column is not null
+EXPLAIN SELECT count(`__time`) from druid_table_1;
+
+
+EXPLAIN SELECT count(`__time`) from druid_table_1 where `__time` <= '2010-01-01 00:00:00 UTC';
+
+EXPLAIN SELECT count(`__time`) from druid_table_1 where `__time` >= '2010-01-01 00:00:00';
+
+
+EXPLAIN SELECT count(`__time`) from druid_table_1 where `__time` <= '2010-01-01 00:00:00' OR  `__time` <= '2012-03-01 00:00:00';

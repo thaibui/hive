@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,7 +29,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
+import org.apache.hadoop.hive.metastore.MetaStoreTestUtils;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -38,7 +38,8 @@ import org.apache.hadoop.hive.metastore.api.SerDeInfo;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.metastore.security.HadoopThriftAuthBridge;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.io.HiveInputFormat;
 import org.apache.hadoop.hive.ql.io.HiveOutputFormat;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
@@ -48,6 +49,8 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.hadoop.hive.shims.Utils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TestHiveMetastoreAuthorizationProvider. Test case for
@@ -65,9 +68,11 @@ import org.apache.hadoop.security.UserGroupInformation;
  * authorization providers like StorageBasedAuthorizationProvider
  */
 public class TestMetastoreAuthorizationProvider extends TestCase {
+  private static final Logger LOG = LoggerFactory.getLogger(TestMetastoreAuthorizationProvider.class);
+
   protected HiveConf clientHiveConf;
   protected HiveMetaStoreClient msc;
-  protected Driver driver;
+  protected IDriver driver;
   protected UserGroupInformation ugi;
 
 
@@ -84,8 +89,6 @@ public class TestMetastoreAuthorizationProvider extends TestCase {
 
     super.setUp();
 
-    int port = MetaStoreUtils.findFreePort();
-
     // Turn on metastore-side authorization
     System.setProperty(HiveConf.ConfVars.METASTORE_PRE_EVENT_LISTENERS.varname,
         AuthorizationPreEventListener.class.getName());
@@ -98,8 +101,7 @@ public class TestMetastoreAuthorizationProvider extends TestCase {
         InjectableDummyAuthenticator.class.getName());
     System.setProperty(HiveConf.ConfVars.HIVE_AUTHORIZATION_TABLE_OWNER_GRANTS.varname, "");
 
-
-    MetaStoreUtils.startMetaStore(port, HadoopThriftAuthBridge.getBridge());
+    int port = MetaStoreTestUtils.startMetaStoreWithRetry();
 
     clientHiveConf = createHiveConf();
 
@@ -117,7 +119,7 @@ public class TestMetastoreAuthorizationProvider extends TestCase {
 
     SessionState.start(new CliSessionState(clientHiveConf));
     msc = new HiveMetaStoreClient(clientHiveConf);
-    driver = new Driver(clientHiveConf);
+    driver = DriverFactory.newDriver(clientHiveConf);
   }
 
   protected void setupMetaStoreReadAuthorization() {

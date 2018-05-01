@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -41,6 +41,7 @@ public class QueryDisplay {
   private String explainPlan;
   private String errorMessage;
   private String queryId;
+  private long queryStartTime = System.currentTimeMillis();
 
   private final Map<Phase, Map<String, Long>> hmsTimingMap = new HashMap<Phase, Map<String, Long>>();
   private final Map<Phase, Map<String, Long>> perfLogStartMap = new HashMap<Phase, Map<String, Long>>();
@@ -78,7 +79,6 @@ public class QueryDisplay {
     private StageType taskType;
     private String name;
     private boolean requireLock;
-    private boolean retryIfFail;
     private String statusMessage;
 
     // required for jackson
@@ -91,7 +91,6 @@ public class QueryDisplay {
       taskType = task.getType();
       name = task.getName();
       requireLock = task.requireLock();
-      retryIfFail = task.ifRetryCmdWhenFail();
     }
     @JsonIgnore
     public synchronized String getStatus() {
@@ -145,10 +144,6 @@ public class QueryDisplay {
     @JsonIgnore
     public synchronized boolean isRequireLock() {
       return requireLock;
-    }
-    @JsonIgnore
-    public synchronized boolean isRetryIfFail() {
-      return retryIfFail;
     }
 
     public synchronized String getExternalHandle() {
@@ -300,5 +295,9 @@ public class QueryDisplay {
 
   private String returnStringOrUnknown(String s) {
     return s == null ? "UNKNOWN" : s;
+  }
+
+  public long getQueryStartTime() {
+    return queryStartTime;
   }
 }

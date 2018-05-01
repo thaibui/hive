@@ -1,3 +1,4 @@
+--! qt:dataset:alltypesorc
 set hive.mapred.mode=nonstrict;
 SET hive.vectorized.execution.enabled=true;
 
@@ -23,18 +24,21 @@ partitioned by (csmallint smallint)
 clustered by (cint) into 2 buckets stored as orc;
 
 insert into table orc_llap partition (csmallint = 1)
-select cint, cbigint, cfloat, cdouble from alltypesorc order by cdouble asc limit 10;
+select cint, cbigint, cfloat, cdouble from alltypesorc
+where cdouble is not null order by cdouble asc limit 10;
 insert into table orc_llap partition (csmallint = 2)
-select cint, cbigint, cfloat, cdouble from alltypesorc order by cdouble asc limit 10;
+select cint, cbigint, cfloat, cdouble from alltypesorc
+where cdouble is not null order by cdouble asc limit 10;
 
 alter table orc_llap SET TBLPROPERTIES ('transactional'='true');
 
 insert into table orc_llap partition (csmallint = 3)
-select cint, cbigint, cfloat, cdouble from alltypesorc order by cdouble desc limit 10;
+select cint, cbigint, cfloat, cdouble from alltypesorc
+where cdouble is not null order by cdouble desc limit 10;
 
 SET hive.llap.io.enabled=true;
 
-explain
+explain vectorization only detail
 select cint, csmallint, cbigint from orc_llap where cint is not null order
 by csmallint, cint;
 select cint, csmallint, cbigint from orc_llap where cint is not null order
@@ -42,9 +46,11 @@ by csmallint, cint;
 
 insert into table orc_llap partition (csmallint = 1) values (1, 1, 1, 1);
 
+explain vectorization only detail
+update orc_llap set cbigint = 2 where cint = 1;
 update orc_llap set cbigint = 2 where cint = 1;
 
-explain
+explain vectorization only detail
 select cint, csmallint, cbigint from orc_llap where cint is not null order
 by csmallint, cint;
 select cint, csmallint, cbigint from orc_llap where cint is not null order

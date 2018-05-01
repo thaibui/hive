@@ -32,6 +32,26 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("setMetaConf\n");
   }
 
+  void create_catalog(const CreateCatalogRequest& catalog) {
+    // Your implementation goes here
+    printf("create_catalog\n");
+  }
+
+  void get_catalog(GetCatalogResponse& _return, const GetCatalogRequest& catName) {
+    // Your implementation goes here
+    printf("get_catalog\n");
+  }
+
+  void get_catalogs(GetCatalogsResponse& _return) {
+    // Your implementation goes here
+    printf("get_catalogs\n");
+  }
+
+  void drop_catalog(const DropCatalogRequest& catName) {
+    // Your implementation goes here
+    printf("drop_catalog\n");
+  }
+
   void create_database(const Database& database) {
     // Your implementation goes here
     printf("create_database\n");
@@ -112,7 +132,7 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("create_table_with_environment_context\n");
   }
 
-  void create_table_with_constraints(const Table& tbl, const std::vector<SQLPrimaryKey> & primaryKeys, const std::vector<SQLForeignKey> & foreignKeys, const std::vector<SQLUniqueConstraint> & uniqueConstraints, const std::vector<SQLNotNullConstraint> & notNullConstraints) {
+  void create_table_with_constraints(const Table& tbl, const std::vector<SQLPrimaryKey> & primaryKeys, const std::vector<SQLForeignKey> & foreignKeys, const std::vector<SQLUniqueConstraint> & uniqueConstraints, const std::vector<SQLNotNullConstraint> & notNullConstraints, const std::vector<SQLDefaultConstraint> & defaultConstraints, const std::vector<SQLCheckConstraint> & checkConstraints) {
     // Your implementation goes here
     printf("create_table_with_constraints\n");
   }
@@ -142,6 +162,16 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("add_not_null_constraint\n");
   }
 
+  void add_default_constraint(const AddDefaultConstraintRequest& req) {
+    // Your implementation goes here
+    printf("add_default_constraint\n");
+  }
+
+  void add_check_constraint(const AddCheckConstraintRequest& req) {
+    // Your implementation goes here
+    printf("add_check_constraint\n");
+  }
+
   void drop_table(const std::string& dbname, const std::string& name, const bool deleteData) {
     // Your implementation goes here
     printf("drop_table\n");
@@ -165,6 +195,11 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
   void get_tables_by_type(std::vector<std::string> & _return, const std::string& db_name, const std::string& pattern, const std::string& tableType) {
     // Your implementation goes here
     printf("get_tables_by_type\n");
+  }
+
+  void get_materialized_views_for_rewriting(std::vector<std::string> & _return, const std::string& db_name) {
+    // Your implementation goes here
+    printf("get_materialized_views_for_rewriting\n");
   }
 
   void get_table_meta(std::vector<TableMeta> & _return, const std::string& db_patterns, const std::string& tbl_patterns, const std::vector<std::string> & tbl_types) {
@@ -195,6 +230,16 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
   void get_table_objects_by_name_req(GetTablesResult& _return, const GetTablesRequest& req) {
     // Your implementation goes here
     printf("get_table_objects_by_name_req\n");
+  }
+
+  void get_materialization_invalidation_info(std::map<std::string, Materialization> & _return, const std::string& dbname, const std::vector<std::string> & tbl_names) {
+    // Your implementation goes here
+    printf("get_materialization_invalidation_info\n");
+  }
+
+  void update_creation_metadata(const std::string& catName, const std::string& dbname, const std::string& tbl_name, const CreationMetadata& creation_metadata) {
+    // Your implementation goes here
+    printf("update_creation_metadata\n");
   }
 
   void get_table_names_by_filter(std::vector<std::string> & _return, const std::string& dbname, const std::string& filter, const int16_t max_tables) {
@@ -332,6 +377,11 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("get_partition_names\n");
   }
 
+  void get_partition_values(PartitionValuesResponse& _return, const PartitionValuesRequest& request) {
+    // Your implementation goes here
+    printf("get_partition_values\n");
+  }
+
   void get_partitions_ps(std::vector<Partition> & _return, const std::string& db_name, const std::string& tbl_name, const std::vector<std::string> & part_vals, const int16_t max_parts) {
     // Your implementation goes here
     printf("get_partitions_ps\n");
@@ -427,36 +477,6 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("isPartitionMarkedForEvent\n");
   }
 
-  void add_index(Index& _return, const Index& new_index, const Table& index_table) {
-    // Your implementation goes here
-    printf("add_index\n");
-  }
-
-  void alter_index(const std::string& dbname, const std::string& base_tbl_name, const std::string& idx_name, const Index& new_idx) {
-    // Your implementation goes here
-    printf("alter_index\n");
-  }
-
-  bool drop_index_by_name(const std::string& db_name, const std::string& tbl_name, const std::string& index_name, const bool deleteData) {
-    // Your implementation goes here
-    printf("drop_index_by_name\n");
-  }
-
-  void get_index_by_name(Index& _return, const std::string& db_name, const std::string& tbl_name, const std::string& index_name) {
-    // Your implementation goes here
-    printf("get_index_by_name\n");
-  }
-
-  void get_indexes(std::vector<Index> & _return, const std::string& db_name, const std::string& tbl_name, const int16_t max_indexes) {
-    // Your implementation goes here
-    printf("get_indexes\n");
-  }
-
-  void get_index_names(std::vector<std::string> & _return, const std::string& db_name, const std::string& tbl_name, const int16_t max_indexes) {
-    // Your implementation goes here
-    printf("get_index_names\n");
-  }
-
   void get_primary_keys(PrimaryKeysResponse& _return, const PrimaryKeysRequest& request) {
     // Your implementation goes here
     printf("get_primary_keys\n");
@@ -475,6 +495,16 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
   void get_not_null_constraints(NotNullConstraintsResponse& _return, const NotNullConstraintsRequest& request) {
     // Your implementation goes here
     printf("get_not_null_constraints\n");
+  }
+
+  void get_default_constraints(DefaultConstraintsResponse& _return, const DefaultConstraintsRequest& request) {
+    // Your implementation goes here
+    printf("get_default_constraints\n");
+  }
+
+  void get_check_constraints(CheckConstraintsResponse& _return, const CheckConstraintsRequest& request) {
+    // Your implementation goes here
+    printf("get_check_constraints\n");
   }
 
   bool update_table_column_statistics(const ColumnStatistics& stats_obj) {
@@ -717,6 +747,16 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
     printf("commit_txn\n");
   }
 
+  void get_valid_write_ids(GetValidWriteIdsResponse& _return, const GetValidWriteIdsRequest& rqst) {
+    // Your implementation goes here
+    printf("get_valid_write_ids\n");
+  }
+
+  void allocate_table_write_ids(AllocateTableWriteIdsResponse& _return, const AllocateTableWriteIdsRequest& rqst) {
+    // Your implementation goes here
+    printf("allocate_table_write_ids\n");
+  }
+
   void lock(LockResponse& _return, const LockRequest& rqst) {
     // Your implementation goes here
     printf("lock\n");
@@ -825,6 +865,181 @@ class ThriftHiveMetastoreHandler : virtual public ThriftHiveMetastoreIf {
   void get_metastore_db_uuid(std::string& _return) {
     // Your implementation goes here
     printf("get_metastore_db_uuid\n");
+  }
+
+  void create_resource_plan(WMCreateResourcePlanResponse& _return, const WMCreateResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("create_resource_plan\n");
+  }
+
+  void get_resource_plan(WMGetResourcePlanResponse& _return, const WMGetResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("get_resource_plan\n");
+  }
+
+  void get_active_resource_plan(WMGetActiveResourcePlanResponse& _return, const WMGetActiveResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("get_active_resource_plan\n");
+  }
+
+  void get_all_resource_plans(WMGetAllResourcePlanResponse& _return, const WMGetAllResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("get_all_resource_plans\n");
+  }
+
+  void alter_resource_plan(WMAlterResourcePlanResponse& _return, const WMAlterResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("alter_resource_plan\n");
+  }
+
+  void validate_resource_plan(WMValidateResourcePlanResponse& _return, const WMValidateResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("validate_resource_plan\n");
+  }
+
+  void drop_resource_plan(WMDropResourcePlanResponse& _return, const WMDropResourcePlanRequest& request) {
+    // Your implementation goes here
+    printf("drop_resource_plan\n");
+  }
+
+  void create_wm_trigger(WMCreateTriggerResponse& _return, const WMCreateTriggerRequest& request) {
+    // Your implementation goes here
+    printf("create_wm_trigger\n");
+  }
+
+  void alter_wm_trigger(WMAlterTriggerResponse& _return, const WMAlterTriggerRequest& request) {
+    // Your implementation goes here
+    printf("alter_wm_trigger\n");
+  }
+
+  void drop_wm_trigger(WMDropTriggerResponse& _return, const WMDropTriggerRequest& request) {
+    // Your implementation goes here
+    printf("drop_wm_trigger\n");
+  }
+
+  void get_triggers_for_resourceplan(WMGetTriggersForResourePlanResponse& _return, const WMGetTriggersForResourePlanRequest& request) {
+    // Your implementation goes here
+    printf("get_triggers_for_resourceplan\n");
+  }
+
+  void create_wm_pool(WMCreatePoolResponse& _return, const WMCreatePoolRequest& request) {
+    // Your implementation goes here
+    printf("create_wm_pool\n");
+  }
+
+  void alter_wm_pool(WMAlterPoolResponse& _return, const WMAlterPoolRequest& request) {
+    // Your implementation goes here
+    printf("alter_wm_pool\n");
+  }
+
+  void drop_wm_pool(WMDropPoolResponse& _return, const WMDropPoolRequest& request) {
+    // Your implementation goes here
+    printf("drop_wm_pool\n");
+  }
+
+  void create_or_update_wm_mapping(WMCreateOrUpdateMappingResponse& _return, const WMCreateOrUpdateMappingRequest& request) {
+    // Your implementation goes here
+    printf("create_or_update_wm_mapping\n");
+  }
+
+  void drop_wm_mapping(WMDropMappingResponse& _return, const WMDropMappingRequest& request) {
+    // Your implementation goes here
+    printf("drop_wm_mapping\n");
+  }
+
+  void create_or_drop_wm_trigger_to_pool_mapping(WMCreateOrDropTriggerToPoolMappingResponse& _return, const WMCreateOrDropTriggerToPoolMappingRequest& request) {
+    // Your implementation goes here
+    printf("create_or_drop_wm_trigger_to_pool_mapping\n");
+  }
+
+  void create_ischema(const ISchema& schema) {
+    // Your implementation goes here
+    printf("create_ischema\n");
+  }
+
+  void alter_ischema(const AlterISchemaRequest& rqst) {
+    // Your implementation goes here
+    printf("alter_ischema\n");
+  }
+
+  void get_ischema(ISchema& _return, const ISchemaName& name) {
+    // Your implementation goes here
+    printf("get_ischema\n");
+  }
+
+  void drop_ischema(const ISchemaName& name) {
+    // Your implementation goes here
+    printf("drop_ischema\n");
+  }
+
+  void add_schema_version(const SchemaVersion& schemaVersion) {
+    // Your implementation goes here
+    printf("add_schema_version\n");
+  }
+
+  void get_schema_version(SchemaVersion& _return, const SchemaVersionDescriptor& schemaVersion) {
+    // Your implementation goes here
+    printf("get_schema_version\n");
+  }
+
+  void get_schema_latest_version(SchemaVersion& _return, const ISchemaName& schemaName) {
+    // Your implementation goes here
+    printf("get_schema_latest_version\n");
+  }
+
+  void get_schema_all_versions(std::vector<SchemaVersion> & _return, const ISchemaName& schemaName) {
+    // Your implementation goes here
+    printf("get_schema_all_versions\n");
+  }
+
+  void drop_schema_version(const SchemaVersionDescriptor& schemaVersion) {
+    // Your implementation goes here
+    printf("drop_schema_version\n");
+  }
+
+  void get_schemas_by_cols(FindSchemasByColsResp& _return, const FindSchemasByColsRqst& rqst) {
+    // Your implementation goes here
+    printf("get_schemas_by_cols\n");
+  }
+
+  void map_schema_version_to_serde(const MapSchemaVersionToSerdeRequest& rqst) {
+    // Your implementation goes here
+    printf("map_schema_version_to_serde\n");
+  }
+
+  void set_schema_version_state(const SetSchemaVersionStateRequest& rqst) {
+    // Your implementation goes here
+    printf("set_schema_version_state\n");
+  }
+
+  void add_serde(const SerDeInfo& serde) {
+    // Your implementation goes here
+    printf("add_serde\n");
+  }
+
+  void get_serde(SerDeInfo& _return, const GetSerdeRequest& rqst) {
+    // Your implementation goes here
+    printf("get_serde\n");
+  }
+
+  void get_lock_materialization_rebuild(LockResponse& _return, const std::string& dbName, const std::string& tableName, const int64_t txnId) {
+    // Your implementation goes here
+    printf("get_lock_materialization_rebuild\n");
+  }
+
+  bool heartbeat_lock_materialization_rebuild(const std::string& dbName, const std::string& tableName, const int64_t txnId) {
+    // Your implementation goes here
+    printf("heartbeat_lock_materialization_rebuild\n");
+  }
+
+  void add_runtime_stats(const RuntimeStat& stat) {
+    // Your implementation goes here
+    printf("add_runtime_stats\n");
+  }
+
+  void get_runtime_stats(std::vector<RuntimeStat> & _return, const GetRuntimeStatsRequest& rqst) {
+    // Your implementation goes here
+    printf("get_runtime_stats\n");
   }
 
 };

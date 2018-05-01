@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -40,6 +40,8 @@ public class VectorMapJoinOptimizedCreateHashTable {
     ReusableGetAdaptor hashMapRowGetter = mapJoinTableContainer.createGetter(refKey);
 
     boolean isOuterJoin = !desc.isNoOuterJoin();
+
+    // UNDONE
     VectorMapJoinDesc vectorDesc = (VectorMapJoinDesc) desc.getVectorDesc();
     HashTableKind hashTableKind = vectorDesc.getHashTableKind();
     HashTableKeyType hashTableKeyType = vectorDesc.getHashTableKeyType();

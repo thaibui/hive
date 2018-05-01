@@ -24,7 +24,6 @@ POSTHOOK: query: describe formatted v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@v
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 	 	 
 # Detailed Table Information	 	 
@@ -33,6 +32,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -71,7 +71,6 @@ POSTHOOK: query: describe formatted w
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@w
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -81,6 +80,7 @@ Database:           	default
 Retention:          	0                   	 
 Table Type:         	VIRTUAL_VIEW        	 
 Table Parameters:	 	 
+	bucketing_version   	2                   
 #### A masked pattern was here ####
 	 	 
 # Storage Information	 	 
@@ -137,12 +137,10 @@ STAGE PLANS:
   Stage: Stage-1
       Create View Operator:
         Create View
-          or replace: false
           columns: id int, _c1 string
           expanded text: SELECT `items`.`id`, `items`.`info`['price'] FROM `default`.`items`
           name: default.priceview
           original text: SELECT items.id, items.info['price'] FROM items
-          rewrite enabled: false
 
 PREHOOK: query: CREATE VIEW priceview AS SELECT items.id, items.info['price'] FROM items
 PREHOOK: type: CREATEVIEW

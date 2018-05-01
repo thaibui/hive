@@ -78,6 +78,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -650,7 +651,7 @@ STAGE PLANS:
             alias: src3
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 filter predicates:
@@ -690,6 +691,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -1302,6 +1304,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -1923,6 +1926,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -2491,7 +2495,7 @@ STAGE PLANS:
             alias: src1
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 keys:
@@ -2503,7 +2507,7 @@ STAGE PLANS:
             alias: src3
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 keys:
@@ -2538,6 +2542,7 @@ STAGE PLANS:
                     key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                     sort order: ++++++
                     Statistics: Num rows: 121 Data size: 1284 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -2594,7 +2599,7 @@ STAGE PLANS:
             alias: src1
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 filter predicates:
@@ -2650,6 +2655,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -3222,7 +3228,7 @@ STAGE PLANS:
             alias: src3
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 filter predicates:
@@ -3262,6 +3268,7 @@ STAGE PLANS:
                   key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                   sort order: ++++++
                   Statistics: Num rows: 1100 Data size: 11686 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -3377,6 +3384,7 @@ STAGE PLANS:
                     key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                     sort order: ++++++
                     Statistics: Num rows: 365 Data size: 3878 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:
@@ -3455,7 +3463,7 @@ STAGE PLANS:
             alias: src1
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               HashTable Sink Operator
                 keys:
@@ -3482,7 +3490,7 @@ STAGE PLANS:
             alias: src3
             Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
             Filter Operator
-              predicate: ((key > 10) and (key < 10)) (type: boolean)
+              predicate: ((key < 10) and (key > 10)) (type: boolean)
               Statistics: Num rows: 55 Data size: 584 Basic stats: COMPLETE Column stats: NONE
               Map Join Operator
                 condition map:
@@ -3502,6 +3510,7 @@ STAGE PLANS:
                     key expressions: _col0 (type: string), _col1 (type: string), _col2 (type: string), _col3 (type: string), _col4 (type: string), _col5 (type: string)
                     sort order: ++++++
                     Statistics: Num rows: 121 Data size: 1284 Basic stats: COMPLETE Column stats: NONE
+      Execution mode: vectorized
       Local Work:
         Map Reduce Local Work
       Reduce Operator Tree:

@@ -1,37 +1,40 @@
 /*
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.table;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.metastore.MetaStoreUtils;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.exec.ReplCopyTask;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.exec.repl.ReplStateLogWork;
-import org.apache.hadoop.hive.ql.exec.repl.bootstrap.ReplLoadTask;
+import org.apache.hadoop.hive.ql.exec.repl.bootstrap.AddDependencyToLeaves;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.events.TableEvent;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.TaskTracker;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.util.Context;
+import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.util.PathUtils;
+import org.apache.hadoop.hive.ql.exec.util.DAGTraversal;
+import org.apache.hadoop.hive.ql.lockmgr.HiveTxnManager;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.EximUtil;
 import org.apache.hadoop.hive.ql.parse.ImportSemanticAnalyzer;
@@ -40,7 +43,9 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.parse.repl.ReplLogger;
 import org.apache.hadoop.hive.ql.plan.ImportTableDesc;
 import org.apache.hadoop.hive.ql.plan.LoadTableDesc;
+import org.apache.hadoop.hive.ql.plan.LoadTableDesc.LoadFileType;
 import org.apache.hadoop.hive.ql.plan.MoveWork;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,26 +66,28 @@ public class LoadTable {
   private final TableContext tableContext;
   private final TaskTracker tracker;
   private final TableEvent event;
+  private final HiveTxnManager txnMgr;
 
   public LoadTable(TableEvent event, Context context, ReplLogger replLogger,
-                   TableContext tableContext, TaskTracker limiter)
+                   TableContext tableContext, TaskTracker limiter, HiveTxnManager txnMgr)
       throws SemanticException, IOException {
     this.event = event;
     this.context = context;
     this.replLogger = replLogger;
     this.tableContext = tableContext;
     this.tracker = new TaskTracker(limiter);
+    this.txnMgr = txnMgr;
   }
 
   private void createTableReplLogTask(String tableName, TableType tableType) throws SemanticException {
     ReplStateLogWork replLogWork = new ReplStateLogWork(replLogger,tableName, tableType);
-    Task<ReplStateLogWork> replLogTask = TaskFactory.get(replLogWork, context.hiveConf);
-    ReplLoadTask.dependency(tracker.tasks(), replLogTask);
+    Task<ReplStateLogWork> replLogTask = TaskFactory.get(replLogWork);
+    DAGTraversal.traverse(tracker.tasks(), new AddDependencyToLeaves(replLogTask));
 
     if (tracker.tasks().isEmpty()) {
       tracker.addTask(replLogTask);
     } else {
-      ReplLoadTask.dependency(tracker.tasks(), replLogTask);
+      DAGTraversal.traverse(tracker.tasks(), new AddDependencyToLeaves(replLogTask));
 
       List<Task<? extends Serializable>> visited = new ArrayList<>();
       tracker.updateTaskCount(replLogTask, visited);
@@ -218,12 +225,15 @@ public class LoadTable {
   private Task<?> loadTableTask(Table table, ReplicationSpec replicationSpec, Path tgtPath,
       Path fromURI) {
     Path dataPath = new Path(fromURI, EximUtil.DATA_PATH_NAME);
-    Path tmpPath = context.utils.getExternalTmpPath(tgtPath);
+    Path tmpPath = PathUtils.getExternalTmpPath(tgtPath, context.pathInfo);
     Task<?> copyTask =
         ReplCopyTask.getLoadCopyTask(replicationSpec, dataPath, tmpPath, context.hiveConf);
 
     LoadTableDesc loadTableWork = new LoadTableDesc(
-        tmpPath, Utilities.getTableDesc(table), new TreeMap<>(), replicationSpec.isReplace()
+        tmpPath, Utilities.getTableDesc(table), new TreeMap<>(),
+        replicationSpec.isReplace() ? LoadFileType.REPLACE_ALL : LoadFileType.OVERWRITE_EXISTING,
+        //todo: what is the point of this?  If this is for replication, who would have opened a txn?
+        txnMgr.getCurrentTxnId()
     );
     MoveWork moveWork =
         new MoveWork(new HashSet<>(), new HashSet<>(), loadTableWork, null, false);

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,7 +18,10 @@
  */
 package org.apache.hive.hcatalog.pig;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,14 +34,11 @@ import java.util.Set;
 
 import org.apache.hadoop.hive.cli.CliSessionState;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.hive.ql.CommandNeedRetryException;
-import org.apache.hadoop.hive.ql.Driver;
+import org.apache.hadoop.hive.ql.DriverFactory;
+import org.apache.hadoop.hive.ql.IDriver;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormats;
-import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
-
-import org.apache.hadoop.util.Shell;
 import org.apache.pig.ExecType;
 import org.apache.pig.PigServer;
 import org.apache.pig.backend.executionengine.ExecException;
@@ -50,24 +50,18 @@ import org.apache.pig.data.TupleFactory;
 import org.apache.pig.impl.logicalLayer.FrontendException;
 import org.apache.pig.impl.logicalLayer.schema.Schema;
 import org.apache.pig.impl.logicalLayer.schema.Schema.FieldSchema;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 public class TestHCatLoaderComplexSchema {
 
   //private static MiniCluster cluster = MiniCluster.buildCluster();
-  private static Driver driver;
+  private static IDriver driver;
   //private static Properties props;
   private static final Logger LOG = LoggerFactory.getLogger(TestHCatLoaderComplexSchema.class);
 
@@ -92,26 +86,15 @@ public class TestHCatLoaderComplexSchema {
     this.storageFormat = storageFormat;
   }
 
-  private void dropTable(String tablename) throws IOException, CommandNeedRetryException {
+  private void dropTable(String tablename) throws Exception {
     driver.run("drop table " + tablename);
   }
 
-  private void createTable(String tablename, String schema, String partitionedBy) throws IOException, CommandNeedRetryException {
-    String createTable;
-    createTable = "create table " + tablename + "(" + schema + ") ";
-    if ((partitionedBy != null) && (!partitionedBy.trim().isEmpty())) {
-      createTable = createTable + "partitioned by (" + partitionedBy + ") ";
-    }
-    createTable = createTable + "stored as " + storageFormat;
-    LOG.info("Creating table:\n {}", createTable);
-    CommandProcessorResponse result = driver.run(createTable);
-    int retCode = result.getResponseCode();
-    if (retCode != 0) {
-      throw new IOException("Failed to create table. [" + createTable + "], return code from hive driver : [" + retCode + " " + result.getErrorMessage() + "]");
-    }
+  private void createTable(String tablename, String schema, String partitionedBy) throws Exception {
+    AbstractHCatLoaderTest.createTable(tablename, schema, partitionedBy, driver, storageFormat);
   }
 
-  private void createTable(String tablename, String schema) throws IOException, CommandNeedRetryException {
+  private void createTable(String tablename, String schema) throws Exception {
     createTable(tablename, schema, null);
   }
 
@@ -125,7 +108,7 @@ public class TestHCatLoaderComplexSchema {
     .setVar(HiveConf.ConfVars.HIVE_AUTHORIZATION_MANAGER,
         "org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactory");
 
-    driver = new Driver(hiveConf);
+    driver = DriverFactory.newDriver(hiveConf);
     SessionState.start(new CliSessionState(hiveConf));
     //props = new Properties();
     //props.setProperty("fs.default.name", cluster.getProperties().getProperty("fs.default.name"));
@@ -219,12 +202,13 @@ public class TestHCatLoaderComplexSchema {
     verifyWriteRead("testSyntheticComplexSchema2", pigSchema, tableSchema2, data, false);
   }
 
-  private void verifyWriteRead(String tablename, String pigSchema, String tableSchema, List<Tuple> data, boolean provideSchemaToStorer)
-    throws IOException, CommandNeedRetryException, ExecException, FrontendException {
+  private void verifyWriteRead(String tablename, String pigSchema, String tableSchema, List<Tuple> data,
+      boolean provideSchemaToStorer) throws Exception {
     verifyWriteRead(tablename, pigSchema, tableSchema, data, data, provideSchemaToStorer);
   }
-  private void verifyWriteRead(String tablename, String pigSchema, String tableSchema, List<Tuple> data, List<Tuple> result, boolean provideSchemaToStorer)
-    throws IOException, CommandNeedRetryException, ExecException, FrontendException {
+
+  private void verifyWriteRead(String tablename, String pigSchema, String tableSchema, List<Tuple> data,
+      List<Tuple> result, boolean provideSchemaToStorer) throws Exception {
     MockLoader.setData(tablename + "Input", data);
     try {
       createTable(tablename, tableSchema);

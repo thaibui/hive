@@ -35,10 +35,12 @@ POSTHOOK: Lineage: decimal_1.v EXPRESSION []
 PREHOOK: query: analyze table decimal_1 compute statistics for columns
 PREHOOK: type: QUERY
 PREHOOK: Input: default@decimal_1
+PREHOOK: Output: default@decimal_1
 #### A masked pattern was here ####
 POSTHOOK: query: analyze table decimal_1 compute statistics for columns
 POSTHOOK: type: QUERY
 POSTHOOK: Input: default@decimal_1
+POSTHOOK: Output: default@decimal_1
 #### A masked pattern was here ####
 PREHOOK: query: desc formatted decimal_1 v
 PREHOOK: type: DESCTABLE
@@ -46,9 +48,18 @@ PREHOOK: Input: default@decimal_1
 POSTHOOK: query: desc formatted decimal_1 v
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@decimal_1
-# col_name            	data_type           	min                 	max                 	num_nulls           	distinct_count      	avg_col_len         	max_col_len         	num_trues           	num_falses          	comment             	bitVector           
-	 	 	 	 	 	 	 	 	 	 	 
-v                   	decimal(10,0)       	                    	                    	500                 	1                   	                    	                    	                    	                    	HL                  	from deserializer   
+col_name            	v                   	 	 	 	 	 	 	 	 	 	 
+data_type           	decimal(10,0)       	 	 	 	 	 	 	 	 	 	 
+min                 	                    	 	 	 	 	 	 	 	 	 	 
+max                 	                    	 	 	 	 	 	 	 	 	 	 
+num_nulls           	500                 	 	 	 	 	 	 	 	 	 	 
+distinct_count      	1                   	 	 	 	 	 	 	 	 	 	 
+avg_col_len         	                    	 	 	 	 	 	 	 	 	 	 
+max_col_len         	                    	 	 	 	 	 	 	 	 	 	 
+num_trues           	                    	 	 	 	 	 	 	 	 	 	 
+num_falses          	                    	 	 	 	 	 	 	 	 	 	 
+bitVector           	HL                  	 	 	 	 	 	 	 	 	 	 
+comment             	from deserializer   	 	 	 	 	 	 	 	 	 	 
 COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\",\"COLUMN_STATS\":{\"t\":\"true\",\"u\":\"true\",\"v\":\"true\"}}	 	 	 	 	 	 	 	 	 	 
 PREHOOK: query: explain select * from decimal_1 order by t limit 100
 PREHOOK: type: QUERY
@@ -75,6 +86,7 @@ STAGE PLANS:
                 Statistics: Num rows: 500 Data size: 112112 Basic stats: COMPLETE Column stats: COMPLETE
                 TopN Hash Memory Usage: 0.1
                 value expressions: _col1 (type: decimal(5,0)), _col2 (type: decimal(10,0))
+      Execution mode: vectorized
       Reduce Operator Tree:
         Select Operator
           expressions: KEY.reducesinkkey0 (type: decimal(4,2)), VALUE._col0 (type: decimal(5,0)), VALUE._col1 (type: decimal(10,0))

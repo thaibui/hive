@@ -98,6 +98,7 @@ STAGE PLANS:
               Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
               TopN Hash Memory Usage: 0.1
               value expressions: _col1 (type: bigint)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Select Operator
           expressions: KEY.reducesinkkey0 (type: array<string>), VALUE._col0 (type: bigint)
@@ -126,7 +127,8 @@ STAGE PLANS:
               name: default.dest1
 
   Stage: Stage-4
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
   Stage: Stage-5
     Map Reduce
@@ -139,6 +141,7 @@ STAGE PLANS:
               Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: NONE
               TopN Hash Memory Usage: 0.1
               value expressions: _col1 (type: bigint)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Group By Operator
           aggregations: count(VALUE._col0)
@@ -163,6 +166,7 @@ STAGE PLANS:
               Statistics: Num rows: 250 Data size: 2656 Basic stats: COMPLETE Column stats: NONE
               TopN Hash Memory Usage: 0.1
               value expressions: _col1 (type: bigint)
+      Execution mode: vectorized
       Reduce Operator Tree:
         Select Operator
           expressions: KEY.reducesinkkey0 (type: map<string,string>), VALUE._col0 (type: bigint)
@@ -191,7 +195,8 @@ STAGE PLANS:
               name: default.dest2
 
   Stage: Stage-7
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: FROM SRC
 INSERT OVERWRITE TABLE DEST1 SELECT ARRAY(SRC.key) as keyarray, COUNT(1) GROUP BY ARRAY(SRC.key) ORDER BY keyarray limit 10

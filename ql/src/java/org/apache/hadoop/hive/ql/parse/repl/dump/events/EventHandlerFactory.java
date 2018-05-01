@@ -34,6 +34,7 @@ public class EventHandlerFactory {
 
   static {
     register(MessageFactory.ADD_PARTITION_EVENT, AddPartitionHandler.class);
+    register(MessageFactory.ALTER_DATABASE_EVENT, AlterDatabaseHandler.class);
     register(MessageFactory.ALTER_PARTITION_EVENT, AlterPartitionHandler.class);
     register(MessageFactory.ALTER_TABLE_EVENT, AlterTableHandler.class);
     register(MessageFactory.CREATE_FUNCTION_EVENT, CreateFunctionHandler.class);
@@ -47,6 +48,12 @@ public class EventHandlerFactory {
     register(MessageFactory.ADD_UNIQUECONSTRAINT_EVENT, AddUniqueConstraintHandler.class);
     register(MessageFactory.ADD_NOTNULLCONSTRAINT_EVENT, AddNotNullConstraintHandler.class);
     register(MessageFactory.DROP_CONSTRAINT_EVENT, DropConstraintHandler.class);
+    register(MessageFactory.CREATE_DATABASE_EVENT, CreateDatabaseHandler.class);
+    register(MessageFactory.DROP_DATABASE_EVENT, DropDatabaseHandler.class);
+    register(MessageFactory.OPEN_TXN_EVENT, OpenTxnHandler.class);
+    register(MessageFactory.COMMIT_TXN_EVENT, CommitTxnHandler.class);
+    register(MessageFactory.ABORT_TXN_EVENT, AbortTxnHandler.class);
+    register(MessageFactory.ALLOC_WRITE_ID_EVENT, AllocWriteIdHandler.class);
   }
 
   static void register(String event, Class<? extends EventHandler> handlerClazz) {

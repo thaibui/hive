@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -95,7 +95,7 @@ public class LlapServiceDriver {
   private static final String HBASE_SERDE_CLASS = "org.apache.hadoop.hive.hbase.HBaseSerDe";
   private static final String[] NEEDED_CONFIGS = LlapDaemonConfiguration.DAEMON_CONFIGS;
   private static final String[] OPTIONAL_CONFIGS = LlapDaemonConfiguration.SSL_DAEMON_CONFIGS;
-  private static final String OUTPUT_DIR_PREFIX = "llap-slider-";
+  private static final String OUTPUT_DIR_PREFIX = "llap-yarn-";
 
   // This is not a config that users set in hive-site. It's only use is to share information
   // between the java component of the service driver and the python component.
@@ -398,7 +398,15 @@ public class LlapServiceDriver {
               org.apache.logging.log4j.core.Appender.class, // log4j-core
               org.apache.logging.slf4j.Log4jLogger.class, // log4j-slf4j
               // log4j-1.2-API needed for NDC
-              org.apache.log4j.NDC.class, };
+              org.apache.log4j.config.Log4j1ConfigurationFactory.class,
+              io.netty.util.NetUtil.class, // netty4
+              org.jboss.netty.util.NetUtil.class, //netty3
+              org.apache.arrow.vector.types.pojo.ArrowType.class, //arrow-vector
+              org.apache.arrow.memory.BaseAllocator.class, //arrow-memory
+              org.apache.arrow.flatbuf.Schema.class, //arrow-format
+              com.google.flatbuffers.Table.class, //flatbuffers
+              com.carrotsearch.hppc.ByteArrayDeque.class //hppc
+              };
 
           for (Class<?> c : dependencies) {
             Path jarPath = new Path(Utilities.jarFinderGetJar(c));
@@ -452,22 +460,22 @@ public class LlapServiceDriver {
           if (options.getIsHiveAux()) {
             // Note: we don't add ADDED jars, RELOADABLE jars, etc. That is by design; there are too many ways
             // to add jars in Hive, some of which are session/etc. specific. Env + conf + arg should be enough.
-            addAuxJarsToSet(auxJars, conf.getAuxJars());
-            addAuxJarsToSet(auxJars, System.getenv("HIVE_AUX_JARS_PATH"));
+            addAuxJarsToSet(auxJars, conf.getAuxJars(), ",");
+            addAuxJarsToSet(auxJars, System.getenv("HIVE_AUX_JARS_PATH"), ":");
             LOG.info("Adding the following aux jars from the environment and configs: " + auxJars);
           }
 
-          addAuxJarsToSet(auxJars, options.getAuxJars());
+          addAuxJarsToSet(auxJars, options.getAuxJars(), ",");
           for (String jarPath : auxJars) {
             lfs.copyFromLocalFile(new Path(jarPath), libDir);
           }
           return null;
         }
 
-        private void addAuxJarsToSet(HashSet<String> auxJarSet, String auxJars) {
+        private void addAuxJarsToSet(HashSet<String> auxJarSet, String auxJars, String delimiter) {
           if (auxJars != null && !auxJars.isEmpty()) {
             // TODO: transitive dependencies warning?
-            String[] jarPaths = auxJars.split(",");
+            String[] jarPaths = auxJars.split(delimiter);
             for (String jarPath : jarPaths) {
               if (!jarPath.isEmpty()) {
                 auxJarSet.add(jarPath);
@@ -588,8 +596,9 @@ public class LlapServiceDriver {
         }
         rc = runPackagePy(args, tmpDir, scriptParent, version, outputDir);
         if (rc == 0) {
-          LlapSliderUtils.startCluster(conf, options.getName(), "llap-" + version + ".zip",
-              packageDir, HiveConf.getVar(conf, ConfVars.LLAP_DAEMON_QUEUE_NAME));
+          LlapSliderUtils.startCluster(conf, options.getName(),
+              "llap-" + version + ".tar.gz", packageDir,
+              HiveConf.getVar(conf, ConfVars.LLAP_DAEMON_QUEUE_NAME));
         }
       } else {
         rc = 0;
@@ -612,7 +621,7 @@ public class LlapServiceDriver {
 
   private int runPackagePy(String[] args, Path tmpDir, Path scriptParent,
       String version, String outputDir) throws IOException, InterruptedException {
-    Path scriptPath = new Path(new Path(scriptParent, "slider"), "package.py");
+    Path scriptPath = new Path(new Path(scriptParent, "yarn"), "package.py");
     List<String> scriptArgs = new ArrayList<>(args.length + 7);
     scriptArgs.add("python");
     scriptArgs.add(scriptPath.toString());
@@ -643,7 +652,7 @@ public class LlapServiceDriver {
 
   private JSONObject createConfigJson(long containerSize, long cache, long xmx,
                                       String java_home) throws JSONException {
-    // extract configs for processing by the python fragments in Slider
+    // extract configs for processing by the python fragments in YARN Service
     JSONObject configs = new JSONObject();
 
     configs.put("java.home", java_home);

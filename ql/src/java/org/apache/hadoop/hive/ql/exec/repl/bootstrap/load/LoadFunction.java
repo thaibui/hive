@@ -1,19 +1,19 @@
 /*
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.apache.hadoop.hive.ql.exec.repl.bootstrap.load;
 
@@ -22,12 +22,13 @@ import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.exec.Task;
 import org.apache.hadoop.hive.ql.exec.TaskFactory;
 import org.apache.hadoop.hive.ql.exec.repl.ReplStateLogWork;
+import org.apache.hadoop.hive.ql.exec.repl.bootstrap.AddDependencyToLeaves;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.events.FunctionEvent;
 import org.apache.hadoop.hive.ql.exec.repl.bootstrap.load.util.Context;
+import org.apache.hadoop.hive.ql.exec.util.DAGTraversal;
 import org.apache.hadoop.hive.ql.parse.EximUtil;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.parse.repl.ReplLogger;
-import org.apache.hadoop.hive.ql.exec.repl.bootstrap.ReplLoadTask;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.CreateFunctionHandler;
 import org.apache.hadoop.hive.ql.parse.repl.load.message.MessageHandler;
 import org.slf4j.Logger;
@@ -60,8 +61,8 @@ public class LoadFunction {
   private void createFunctionReplLogTask(List<Task<? extends Serializable>> functionTasks,
                                          String functionName) {
     ReplStateLogWork replLogWork = new ReplStateLogWork(replLogger, functionName);
-    Task<ReplStateLogWork> replLogTask = TaskFactory.get(replLogWork, context.hiveConf);
-    ReplLoadTask.dependency(functionTasks, replLogTask);
+    Task<ReplStateLogWork> replLogTask = TaskFactory.get(replLogWork);
+    DAGTraversal.traverse(functionTasks, new AddDependencyToLeaves(replLogTask));
   }
 
   public TaskTracker tasks() throws IOException, SemanticException {
@@ -74,7 +75,7 @@ public class LoadFunction {
       List<Task<? extends Serializable>> tasks = handler.handle(
           new MessageHandler.Context(
               dbNameToLoadIn, null, fromPath.toString(), null, null, context.hiveConf,
-              context.hiveDb, null, LOG)
+              context.hiveDb, context.nestedContext, LOG)
       );
       createFunctionReplLogTask(tasks, handler.getFunctionName());
       tasks.forEach(tracker::addTask);

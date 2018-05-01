@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,6 +20,7 @@ package org.apache.hadoop.hive.ql.optimizer.calcite.translator;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -58,6 +59,7 @@ import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.common.type.HiveIntervalDayTime;
 import org.apache.hadoop.hive.common.type.HiveIntervalYearMonth;
 import org.apache.hadoop.hive.common.type.HiveVarchar;
+import org.apache.hadoop.hive.common.type.TimestampTZ;
 import org.apache.hadoop.hive.ql.ErrorMsg;
 import org.apache.hadoop.hive.ql.exec.FunctionRegistry;
 import org.apache.hadoop.hive.ql.optimizer.calcite.CalciteSemanticException;
@@ -255,6 +257,7 @@ public class RexNodeConverter {
             func.getChildren().size() != 0;
     boolean isBetween = !isNumeric && tgtUdf instanceof GenericUDFBetween;
     boolean isIN = !isNumeric && tgtUdf instanceof GenericUDFIn;
+    boolean isAllPrimitive = true;
 
     if (isNumeric) {
       tgtDT = func.getTypeInfo();
@@ -310,6 +313,8 @@ public class RexNodeConverter {
         }
       }
 
+      isAllPrimitive =
+          isAllPrimitive && tmpExprNode.getTypeInfo().getCategory() == Category.PRIMITIVE;
       argTypeBldr.add(TypeConverter.convert(tmpExprNode.getTypeInfo(), cluster.getTypeFactory()));
       tmpRN = convert(tmpExprNode);
       childRexNodeLst.add(tmpRN);
@@ -334,8 +339,15 @@ public class RexNodeConverter {
       } else if (HiveFloorDate.ALL_FUNCTIONS.contains(calciteOp)) {
         // If it is a floor <date> operator, we need to rewrite it
         childRexNodeLst = rewriteFloorDateChildren(calciteOp, childRexNodeLst);
+      } else if (calciteOp.getKind() == SqlKind.IN && childRexNodeLst.size() == 2 && isAllPrimitive) {
+        // if it is a single item in an IN clause, transform A IN (B) to A = B
+        // from IN [A,B] => EQUALS [A,B]
+        // except complex types
+        calciteOp =
+            SqlFunctionConverter.getCalciteOperator("=", FunctionRegistry.getFunctionInfo("=")
+                .getGenericUDF(), argTypeBldr.build(), retType);
       }
-      expr = cluster.getRexBuilder().makeCall(calciteOp, childRexNodeLst);
+      expr = cluster.getRexBuilder().makeCall(retType, calciteOp, childRexNodeLst);
     } else {
       retType = expr.getType();
     }
@@ -436,7 +448,7 @@ public class RexNodeConverter {
     // Calcite always needs the else clause to be defined explicitly
     if (newChildRexNodeLst.size() % 2 == 0) {
       newChildRexNodeLst.add(cluster.getRexBuilder().makeNullLiteral(
-              newChildRexNodeLst.get(newChildRexNodeLst.size()-1).getType().getSqlTypeName()));
+              newChildRexNodeLst.get(newChildRexNodeLst.size()-1).getType()));
     }
     return newChildRexNodeLst;
   }
@@ -619,17 +631,22 @@ public class RexNodeConverter {
       }
       BigDecimal bd = (BigDecimal) value;
       BigInteger unscaled = bd.unscaledValue();
-      if (unscaled.compareTo(MIN_LONG_BI) >= 0 && unscaled.compareTo(MAX_LONG_BI) <= 0) {
-        calciteLiteral = rexBuilder.makeExactLiteral(bd);
+
+
+      int precision = bd.unscaledValue().abs().toString().length();
+      int scale = bd.scale();
+      RelDataType relType;
+
+      if (precision > scale) {
+        // bd is greater than or equal to 1
+        relType =
+            cluster.getTypeFactory().createSqlType(SqlTypeName.DECIMAL, precision, scale);
       } else {
-        // CBO doesn't support unlimited precision decimals. In practice, this
-        // will work...
-        // An alternative would be to throw CboSemanticException and fall back
-        // to no CBO.
-        RelDataType relType = cluster.getTypeFactory().createSqlType(SqlTypeName.DECIMAL,
-            unscaled.toString().length(), bd.scale());
-        calciteLiteral = rexBuilder.makeExactLiteral(bd, relType);
+        // bd is less than 1
+        relType =
+            cluster.getTypeFactory().createSqlType(SqlTypeName.DECIMAL, scale + 1, scale);
       }
+      calciteLiteral = rexBuilder.makeExactLiteral(bd, relType);
       break;
     case FLOAT:
       calciteLiteral = rexBuilder.makeApproxLiteral(
@@ -681,6 +698,20 @@ public class RexNodeConverter {
           SqlTypeName.TIMESTAMP,
           rexBuilder.getTypeFactory().getTypeSystem().getDefaultPrecision(SqlTypeName.TIMESTAMP)),
         false);
+      break;
+    case TIMESTAMPLOCALTZ:
+      final TimestampString tsLocalTZString;
+      if (value == null) {
+        tsLocalTZString = null;
+      } else {
+        Instant i = ((TimestampTZ)value).getZonedDateTime().toInstant();
+        tsLocalTZString = TimestampString
+            .fromMillisSinceEpoch(i.toEpochMilli())
+            .withNanos(i.getNano());
+      }
+      calciteLiteral = rexBuilder.makeTimestampWithLocalTimeZoneLiteral(
+        tsLocalTZString,
+        rexBuilder.getTypeFactory().getTypeSystem().getDefaultPrecision(SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE));
       break;
     case INTERVAL_YEAR_MONTH:
       // Calcite year-month literal value is months as BigDecimal

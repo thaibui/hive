@@ -30,7 +30,8 @@ STAGE PLANS:
                   Statistics: Num rows: 500 Data size: 5312 Basic stats: COMPLETE Column stats: COMPLETE
 
   Stage: Stage-1
-    Stats-Aggr Operator
+    Stats Work
+      Basic Stats Work:
 
 PREHOOK: query: analyze table analyze_src compute statistics
 PREHOOK: type: QUERY
@@ -47,7 +48,6 @@ POSTHOOK: query: describe formatted analyze_src
 POSTHOOK: type: DESCTABLE
 POSTHOOK: Input: default@analyze_src
 # col_name            	data_type           	comment             
-	 	 
 key                 	string              	                    
 value               	string              	                    
 	 	 
@@ -59,6 +59,7 @@ Retention:          	0
 Table Type:         	MANAGED_TABLE       	 
 Table Parameters:	 	 
 	COLUMN_STATS_ACCURATE	{\"BASIC_STATS\":\"true\"}
+	bucketing_version   	2                   
 	numFiles            	1                   
 	numRows             	500                 
 	rawDataSize         	5312                
