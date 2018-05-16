@@ -21,6 +21,8 @@ package org.apache.hive.service.cli.operation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
@@ -111,8 +113,14 @@ public class GetTablesOperation extends MetadataOperation {
 
       String tablePattern = convertIdentifierPattern(tableName, true);
 
-      for (TableMeta tableMeta :
-          metastoreClient.getTableMeta(schemaPattern, tablePattern, tableTypeList)) {
+      // getTableMeta returns more than the users are authorized to see, so let's get all tables the users
+      // can see via getAllTables method first then we intersect the two
+      Set<String> tableNames = new HashSet<>(metastoreClient.getAllTables(schemaPattern, tableName));
+      List<TableMeta> tables = metastoreClient.getTableMeta(schemaPattern, tablePattern, tableTypeList)
+          .stream().filter(t -> tableNames.contains(t.getTableName()))
+          .collect(Collectors.toList());
+
+      for (TableMeta tableMeta : tables) {
         String tableType = tableTypeMapping.mapToClientType(tableMeta.getTableType());
         rowSet.addRow(new Object[] {
               DEFAULT_HIVE_CATALOG,
