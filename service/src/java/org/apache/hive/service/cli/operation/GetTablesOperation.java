@@ -116,7 +116,7 @@ public class GetTablesOperation extends MetadataOperation {
 
       // getTableMeta returns more than the users are authorized to see, so let's get all tables the users
       // can see via getAllTables method first then we intersect the two
-      Set<String> tableNames = new HashSet<>(metastoreClient.getAllTables(schemaPattern, tableName));
+      Set<String> tableNames = new HashSet<>(metastoreClient.getAllTables(schemaName));
       List<TableMeta> tables = metastoreClient.getTableMeta(schemaPattern, tablePattern, tableTypeList)
           .stream().filter(t -> tableNames.contains(t.getTableName()))
           .collect(Collectors.toList());
