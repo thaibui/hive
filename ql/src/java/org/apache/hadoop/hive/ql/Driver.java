@@ -2133,6 +2133,11 @@ public class Driver implements IDriver {
           tsk.updateTaskMetrics(metrics);
         }
       }
+      // Add fetch tasks to runnable as well
+      if (null != plan.getFetchTask()) {
+        driverCxt.addToRunnable(plan.getFetchTask());
+        plan.getFetchTask().updateTaskMetrics(metrics);
+      }
 
       preExecutionCacheActions();
 
