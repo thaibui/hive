@@ -65,7 +65,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   @Override
   public void initialize(QueryState queryState, QueryPlan queryPlan, DriverContext ctx,
       CompilationOpContext opContext) {
-    LOG.info("FETCH_TASK: initializing.");
+    LOG.info("initializing.");
     super.initialize(queryState, queryPlan, ctx, opContext);
     work.initializeForFetch(opContext);
 
@@ -108,7 +108,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
   @Override
   public int execute(DriverContext driverContext) {
-    LOG.info("FETCH_TASK: pre-fetching.");
+    LOG.info("pre-fetching.");
     // fetch task now is a blocking sync task instead of a delay execution
     // at the time of ResultSet fetch. This eliminates the negative query where
     // the fetch task will hang forever waiting for the result (that is not found)
@@ -116,7 +116,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
     try {
       preFetchedResult = internalFetch(resultSet);
     } catch (IOException e) {
-      throw new RuntimeException("Encountered exception while fetching result set", e);
+      throw new RuntimeException(e);
     }
 
     return 0;
@@ -146,7 +146,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   public boolean fetch(List res) throws IOException {
     boolean result = preFetchedResult;
     if (result) {
-      LOG.info("FETCH_TASK: using pre-fetched results with " + maxRows + " max rows out of " + resultSet.size() + " total rows.");
+      LOG.info("using pre-fetched results with " + maxRows + " max rows out of " + resultSet.size() + " total rows.");
 
       for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
         res.add(resultSet.get(i));
@@ -163,7 +163,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   }
 
   private boolean internalFetch(List res) throws IOException {
-    LOG.info("FETCH_TASK: begin fetching " + maxRows + " max rows of " + totalRows + "/" + work.getLimit() + " total rows.");
+    LOG.info("begin fetching " + maxRows + " max rows of " + totalRows + "/" + work.getLimit() + " total rows.");
 
     sink.reset(res);
     int rowsRet = work.getLeastNumRows();
