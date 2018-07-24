@@ -20,6 +20,8 @@ package org.apache.hadoop.hive.ql.exec;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -50,6 +52,8 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   private FetchOperator fetch;
   private ListSinkOperator sink;
   private int totalRows;
+  private List resultSet = new ArrayList();
+  private boolean fetchResult = false;
   private static transient final Logger LOG = LoggerFactory.getLogger(FetchTask.class);
 
   public FetchTask() {
@@ -62,6 +66,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   @Override
   public void initialize(QueryState queryState, QueryPlan queryPlan, DriverContext ctx,
       CompilationOpContext opContext) {
+    LOG.info("FETCH_TASK: begin initialization.");
     super.initialize(queryState, queryPlan, ctx, opContext);
     work.initializeForFetch(opContext);
 
@@ -104,7 +109,17 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
   @Override
   public int execute(DriverContext driverContext) {
-    assert false;
+    LOG.info("FETCH_TASK: begin execution.");
+    // fetch task now is a blocking sync task instead of a delay execution
+    // at the time of ResultSet fetch. This eliminates the negative query where
+    // the fetch task will hang forever waiting for the result (that is not found)
+
+    try {
+      fetchResult = internalFetch(resultSet);
+    } catch (IOException e) {
+      throw new RuntimeException("Encountered exception while fetching result set", e);
+    }
+
     return 0;
   }
 
@@ -130,6 +145,18 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   }
 
   public boolean fetch(List res) throws IOException {
+    LOG.info("FETCH_TASK: using pre-fetched data with " + maxRows + " max rows of " + totalRows + " total rows.");
+
+    sink.reset(res);
+
+    Collections.copy(res, resultSet);
+
+    return fetchResult;
+  }
+
+  public boolean internalFetch(List res) throws IOException {
+    LOG.info("FETCH_TASK: begin fetching " + maxRows + " max rows of " + totalRows + " total rows.");
+
     sink.reset(res);
     int rowsRet = work.getLeastNumRows();
     if (rowsRet <= 0) {
