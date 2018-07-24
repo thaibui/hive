@@ -2507,7 +2507,6 @@ public class Driver implements IDriver {
       if (fetchTask.getWork().isUsingThriftJDBCBinarySerDe()) {
         maxRows = 1;
       }
-      // we need the max rows at the time of execution in order to fetch them correctly
       fetchTask.setMaxRows(maxRows);
       return fetchTask.fetch(res);
     }
