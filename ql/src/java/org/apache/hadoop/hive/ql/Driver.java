@@ -2133,8 +2133,9 @@ public class Driver implements IDriver {
           tsk.updateTaskMetrics(metrics);
         }
       }
-      // Add fetch tasks to runnable as well
-      if (null != plan.getFetchTask()) {
+      // Add fetch tasks to when the plan consists of only a fetch task
+      // i.e. this query has been converted from a regular root task
+      if (null != plan.getFetchTask() && plan.getRootTasks().isEmpty()) {
         driverCxt.addToRunnable(plan.getFetchTask());
         plan.getFetchTask().updateTaskMetrics(metrics);
       }
