@@ -149,14 +149,18 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
     sink.reset(res);
 
-    for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
-      res.add(resultSet.get(i));
-    }
-
-    // reset states
-    resultSet = new ArrayList();
     boolean result = fetchResult;
-    fetchResult = false;
+    if (result) {
+      for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
+        res.add(resultSet.get(i));
+      }
+
+      // reset states
+      resultSet = new ArrayList();
+      fetchResult = false;
+    } else {
+      result = internalFetch(res);
+    }
 
     return result;
   }
