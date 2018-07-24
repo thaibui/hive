@@ -20,6 +20,7 @@ package org.apache.hadoop.hive.ql.exec;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -50,6 +51,8 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   private FetchOperator fetch;
   private ListSinkOperator sink;
   private int totalRows;
+  private List resultSet = new ArrayList();
+  private boolean preFetchedResult = false;
   private static transient final Logger LOG = LoggerFactory.getLogger(FetchTask.class);
 
   public FetchTask() {
@@ -62,6 +65,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   @Override
   public void initialize(QueryState queryState, QueryPlan queryPlan, DriverContext ctx,
       CompilationOpContext opContext) {
+    LOG.info("initializing.");
     super.initialize(queryState, queryPlan, ctx, opContext);
     work.initializeForFetch(opContext);
 
@@ -104,7 +108,17 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
   @Override
   public int execute(DriverContext driverContext) {
-    assert false;
+    LOG.info("pre-fetching.");
+
+    /* Fetch task could take a long time if there's no result. This pre-fetching ensures
+    that if the "no result case" ever happens, the users will see their query in running
+    status instead of completed immediately */
+    try {
+      preFetchedResult = internalFetch(resultSet);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     return 0;
   }
 
@@ -130,6 +144,27 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   }
 
   public boolean fetch(List res) throws IOException {
+    boolean result = preFetchedResult;
+    if (result) {
+      LOG.info("using pre-fetched results with " + maxRows + " max rows out of " + resultSet.size() + " total rows.");
+
+      for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
+        res.add(resultSet.get(i));
+      }
+
+      // reset states
+      resultSet = new ArrayList();
+      preFetchedResult = false;
+    } else {
+      result = internalFetch(res);
+    }
+
+    return result;
+  }
+
+  private boolean internalFetch(List res) throws IOException {
+    LOG.info("begin fetching " + maxRows + " max rows of " + totalRows + "/" + work.getLimit() + " total rows.");
+
     sink.reset(res);
     int rowsRet = work.getLeastNumRows();
     if (rowsRet <= 0) {
