@@ -21,7 +21,6 @@ package org.apache.hadoop.hive.ql.exec;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -53,7 +52,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   private ListSinkOperator sink;
   private int totalRows;
   private List resultSet = new ArrayList();
-  private boolean fetchResult = false;
+  private boolean cachedResult = false;
   private static transient final Logger LOG = LoggerFactory.getLogger(FetchTask.class);
 
   public FetchTask() {
@@ -115,7 +114,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
     // the fetch task will hang forever waiting for the result (that is not found)
 
     try {
-      fetchResult = internalFetch(resultSet);
+      cachedResult = internalFetch(resultSet);
     } catch (IOException e) {
       throw new RuntimeException("Encountered exception while fetching result set", e);
     }
@@ -147,9 +146,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   public boolean fetch(List res) throws IOException {
     LOG.info("FETCH_TASK: using pre-fetched data with " + maxRows + " max rows of " + totalRows + " total rows.");
 
-    sink.reset(res);
-
-    boolean result = fetchResult;
+    boolean result = cachedResult;
     if (result) {
       for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
         res.add(resultSet.get(i));
@@ -157,7 +154,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
       // reset states
       resultSet = new ArrayList();
-      fetchResult = false;
+      cachedResult = false;
     } else {
       result = internalFetch(res);
     }
