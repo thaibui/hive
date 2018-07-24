@@ -148,15 +148,35 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
     LOG.info("FETCH_TASK: using pre-fetched data with " + maxRows + " max rows of " + totalRows + " total rows.");
 
     sink.reset(res);
+    // making sure that fetch(..) behavior remains the same
+    int rowsRet = work.getLeastNumRows();
+    if (rowsRet <= 0) {
+      rowsRet = work.getLimit() >= 0 ? Math.min(work.getLimit() - totalRows, maxRows) : maxRows;
+    }
 
-    for (int i = 0; i < resultSet.size(); i++) {
+    for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
       res.add(resultSet.get(i));
     }
 
-    return fetchResult;
+    // making sure that fetch(..) behavior remains the same
+    if (rowsRet <= 0 || work.getLimit() == totalRows) {
+      try {
+        fetch.clearFetchContext();
+      } catch (HiveException e) {
+        throw new IOException(e);
+      }
+      return false;
+    }
+
+    // reset states
+    resultSet = new ArrayList();
+    boolean result = fetchResult;
+    fetchResult = false;
+
+    return result;
   }
 
-  public boolean internalFetch(List res) throws IOException {
+  private boolean internalFetch(List res) throws IOException {
     LOG.info("FETCH_TASK: begin fetching " + maxRows + " max rows of " + totalRows + " total rows.");
 
     sink.reset(res);
