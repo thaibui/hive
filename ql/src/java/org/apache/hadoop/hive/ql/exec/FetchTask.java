@@ -149,7 +149,9 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
     sink.reset(res);
 
-    Collections.copy(res, resultSet);
+    for (int i = 0; i < resultSet.size(); i++) {
+      res.add(resultSet.get(i));
+    }
 
     return fetchResult;
   }
