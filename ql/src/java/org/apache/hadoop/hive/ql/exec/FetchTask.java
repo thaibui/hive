@@ -109,10 +109,10 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   @Override
   public int execute(DriverContext driverContext) {
     LOG.info("pre-fetching.");
-    // fetch task now is a blocking sync task instead of a delay execution
-    // at the time of ResultSet fetch. This eliminates the negative query where
-    // the fetch task will hang forever waiting for the result (that is not found)
 
+    /* Fetch task could take a long time if there's no result. This pre-fetching ensures
+    that if the "no result case" ever happens, the users will see their query in running
+    status instead of completed immediately */
     try {
       preFetchedResult = internalFetch(resultSet);
     } catch (IOException e) {
