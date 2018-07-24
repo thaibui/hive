@@ -52,7 +52,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   private ListSinkOperator sink;
   private int totalRows;
   private List resultSet = new ArrayList();
-  private boolean cachedResult = false;
+  private boolean preFetchedResult = false;
   private static transient final Logger LOG = LoggerFactory.getLogger(FetchTask.class);
 
   public FetchTask() {
@@ -65,7 +65,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   @Override
   public void initialize(QueryState queryState, QueryPlan queryPlan, DriverContext ctx,
       CompilationOpContext opContext) {
-    LOG.info("FETCH_TASK: begin initialization.");
+    LOG.info("FETCH_TASK: initializing.");
     super.initialize(queryState, queryPlan, ctx, opContext);
     work.initializeForFetch(opContext);
 
@@ -108,13 +108,13 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
 
   @Override
   public int execute(DriverContext driverContext) {
-    LOG.info("FETCH_TASK: begin execution.");
+    LOG.info("FETCH_TASK: pre-fetching.");
     // fetch task now is a blocking sync task instead of a delay execution
     // at the time of ResultSet fetch. This eliminates the negative query where
     // the fetch task will hang forever waiting for the result (that is not found)
 
     try {
-      cachedResult = internalFetch(resultSet);
+      preFetchedResult = internalFetch(resultSet);
     } catch (IOException e) {
       throw new RuntimeException("Encountered exception while fetching result set", e);
     }
@@ -144,17 +144,17 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   }
 
   public boolean fetch(List res) throws IOException {
-    LOG.info("FETCH_TASK: using pre-fetched data with " + maxRows + " max rows of " + totalRows + " total rows.");
-
-    boolean result = cachedResult;
+    boolean result = preFetchedResult;
     if (result) {
+      LOG.info("FETCH_TASK: using pre-fetched results with " + maxRows + " max rows out of " + resultSet.size() + " total rows.");
+
       for (int i = 0; i < Math.min(resultSet.size(), maxRows); i++) {
         res.add(resultSet.get(i));
       }
 
       // reset states
       resultSet = new ArrayList();
-      cachedResult = false;
+      preFetchedResult = false;
     } else {
       result = internalFetch(res);
     }
@@ -163,7 +163,7 @@ public class FetchTask extends Task<FetchWork> implements Serializable {
   }
 
   private boolean internalFetch(List res) throws IOException {
-    LOG.info("FETCH_TASK: begin fetching " + maxRows + " max rows of " + totalRows + " total rows.");
+    LOG.info("FETCH_TASK: begin fetching " + maxRows + " max rows of " + totalRows + "/" + work.getLimit() + " total rows.");
 
     sink.reset(res);
     int rowsRet = work.getLeastNumRows();
