@@ -151,7 +151,7 @@ public class TaskExecutorService extends AbstractService
     this.waitQueue = new EvictingPriorityBlockingQueue<>(waitQueueComparator, waitQueueSize);
     this.clock = clock == null ? new MonotonicClock() : clock;
     this.threadPoolExecutor = new ThreadPoolExecutor(numExecutors, // core pool size
-        numExecutors, // max pool size
+        numExecutors * 2, // max pool size, 2x numExecutors to avoid unnecessary rejected execution due to numSlotsAvailable race condition
         1, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), // direct hand-off
         new ExecutorThreadFactory(classLoader));
     this.executorService = MoreExecutors.listeningDecorator(threadPoolExecutor);
