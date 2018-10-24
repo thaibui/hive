@@ -68,6 +68,11 @@ public class HiveRelOpMaterializationValidator extends HiveRelShuttleImpl {
   static final Logger LOG = LoggerFactory.getLogger(HiveRelOpMaterializationValidator.class);
 
   protected String invalidMaterializationReason;
+  protected boolean allowExternalTables;
+
+  public HiveRelOpMaterializationValidator(boolean allowExternalTables) {
+    this.allowExternalTables = allowExternalTables;
+  }
 
   public void validateQueryMaterialization(RelNode relNode) {
     try {
@@ -86,8 +91,7 @@ public class HiveRelOpMaterializationValidator extends HiveRelShuttleImpl {
       if (tab.isTemporary()) {
         fail(tab.getTableName() + " is a temporary table");
       }
-      TableType tt = tab.getTableType();
-      if (tab.getTableType() == TableType.EXTERNAL_TABLE) {
+      if (!allowExternalTables && tab.getTableType() == TableType.EXTERNAL_TABLE) {
         fail(tab.getFullyQualifiedName() + " is an external table");
       }
       return scan;

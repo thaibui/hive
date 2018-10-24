@@ -1677,7 +1677,10 @@ public class CalcitePlanner extends SemanticAnalyzer {
       // Validate query materialization (materialized views, query results caching.
       // This check needs to occur before constant folding, which may remove some
       // function calls from the query plan.
-      HiveRelOpMaterializationValidator matValidator = new HiveRelOpMaterializationValidator();
+      boolean allowCachedExternalTables =
+          HiveConf.getBoolVar(conf, HiveConf.ConfVars.HIVE_QUERY_RESULTS_CACHE_EXTERNAL_TABLES_ENABLED);
+      HiveRelOpMaterializationValidator matValidator =
+          new HiveRelOpMaterializationValidator(allowCachedExternalTables);
       matValidator.validateQueryMaterialization(calciteGenPlan);
       if (!matValidator.isValidMaterialization()) {
         String reason = matValidator.getInvalidMaterializationReason();
