@@ -4329,18 +4329,6 @@ public class DDLSemanticAnalyzer extends BaseSemanticAnalyzer {
     // It can be fully qualified name or use default database
     Table materializedViewTable = getTable(mvName, true);
 
-    // One last test: if we are enabling the rewrite, we need to check that query
-    // only uses transactional (MM and ACID) tables
-    if (enableFlag) {
-      for (String tableName : materializedViewTable.getCreationMetadata().getTablesUsed()) {
-        Table table = getTable(tableName, true);
-        if (!AcidUtils.isTransactionalTable(table)) {
-          throw new SemanticException("Automatic rewriting for materialized view cannot "
-              + "be enabled if the materialized view uses non-transactional tables");
-        }
-      }
-    }
-
     inputs.add(new ReadEntity(materializedViewTable));
     outputs.add(new WriteEntity(materializedViewTable, WriteEntity.WriteType.DDL_EXCLUSIVE));
     rootTasks.add(TaskFactory.get(new DDLWork(getInputs(), getOutputs(),

@@ -13349,11 +13349,6 @@ public class SemanticAnalyzer extends BaseSemanticAnalyzer {
           if (table.isMaterializedView()) {
             throw new SemanticException("View definition references materialized view " + alias);
           }
-          if (createVwDesc.isMaterialized() && createVwDesc.isRewriteEnabled() &&
-              !AcidUtils.isTransactionalTable(table)) {
-            throw new SemanticException("Automatic rewriting for materialized view cannot "
-                + "be enabled if the materialized view uses non-transactional tables");
-          }
         } catch (HiveException ex) {
           throw new SemanticException(ex);
         }

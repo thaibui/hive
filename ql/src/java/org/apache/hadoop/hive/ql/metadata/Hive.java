@@ -1387,7 +1387,7 @@ public class Hive {
                 TimeUnit.MILLISECONDS);
         Materialization materializationInvInfo = null;
         boolean outdated = false;
-        if (diff < 0L) {
+        if (diff <= 0L) {
           // We only consider the materialized view to be outdated if forceOutdated = true, i.e.,
           // if it is a rebuild. Otherwise, it passed the test and we use it as it is.
           outdated = forceMVContentsUpToDate;
@@ -1419,8 +1419,8 @@ public class Hive {
           }
         }
 
-        if (outdated && (!tryIncrementalRewriting || materializationInvInfo == null
-            || txnList == null || materializationInvInfo.isSourceTablesUpdateDeleteModified())) {
+        if (outdated && (!tryIncrementalRewriting || txnList == null 
+            || (materializationInvInfo != null && materializationInvInfo.isSourceTablesUpdateDeleteModified()))) {
           // We will not try partial rewriting either because the config specification, this
           // is a rebuild over some non-transactional table, or there were update/delete
           // operations in the source tables (not supported yet)
